@@ -27,6 +27,6 @@ async function bootstrap() {
   const port = process.env.PORT || 4000;
   await app.listen(port);
   console.log(`🚀 Application is running on: http://localhost:${port}`);
-  console.log(`🎮 GraphQL Playground: http://localhost:${port}/graphql`);
+  console.log(`📊 GraphQL API: http://localhost:${port}/graphql`);
 }
 bootstrap();

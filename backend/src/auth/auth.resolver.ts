@@ -51,6 +51,7 @@ export class AuthResolver {
   @Query(() => User)
   @UseGuards(GqlAuthGuard)
   async me(@CurrentUser() user: User): Promise<User> {
+    console.log('Current User:', user);
     return user;
   }
 }

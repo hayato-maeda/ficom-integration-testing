@@ -3,9 +3,9 @@ import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../prisma/prisma.service';
-import type { AuthResponse } from './dto/auth.response';
-import type { LoginInput } from './dto/login.input';
-import type { SignUpInput } from './dto/signup.input';
+import { AuthResponse } from './dto/auth.response';
+import { LoginInput } from './dto/login.input';
+import { SignUpInput } from './dto/signup.input';
 
 /**
  * 認証サービス

@@ -4,8 +4,8 @@ import { User } from '../users/models/user.model';
 import { AuthService } from './auth.service';
 import { CurrentUser } from './decorators/current-user.decorator';
 import { AuthResponse } from './dto/auth.response';
-import type { LoginInput } from './dto/login.input';
-import type { SignUpInput } from './dto/signup.input';
+import { LoginInput } from './dto/login.input';
+import { SignUpInput } from './dto/signup.input';
 import { GqlAuthGuard } from './guards/gql-auth.guard';
 
 /**
@@ -23,7 +23,9 @@ export class AuthResolver {
    * @returns 認証レスポンス（JWT トークンとユーザー情報）
    */
   @Mutation(() => AuthResponse)
-  async signUp(@Args('signUpInput') signUpInput: SignUpInput): Promise<AuthResponse> {
+  async signUp(
+    @Args('signUpInput', { type: () => SignUpInput }) signUpInput: SignUpInput,
+  ): Promise<AuthResponse> {
     return this.authService.signUp(signUpInput);
   }
 
@@ -34,7 +36,9 @@ export class AuthResolver {
    * @returns 認証レスポンス（JWT トークンとユーザー情報）
    */
   @Mutation(() => AuthResponse)
-  async login(@Args('loginInput') loginInput: LoginInput): Promise<AuthResponse> {
+  async login(
+    @Args('loginInput', { type: () => LoginInput }) loginInput: LoginInput,
+  ): Promise<AuthResponse> {
     return this.authService.login(loginInput);
   }
 

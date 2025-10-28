@@ -8,6 +8,11 @@ import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
 import { PrismaModule } from './prisma/prisma.module';
 
+/**
+ * アプリケーションルートモジュール
+ * すべてのモジュールを統合し、アプリケーションの構成を定義します。
+ * GraphQL API、認証、データベース接続などの基本機能を設定します。
+ */
 @Module({
   imports: [
     ConfigModule.forRoot({

@@ -2,16 +2,20 @@ import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 
+/**
+ * アプリケーションのブートストラップ
+ * NestJS アプリケーションを起動し、必要な設定を行います。
+ */
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  // CORS configuration
+  // CORS 設定
   app.enableCors({
     origin: process.env.CORS_ORIGIN || 'http://localhost:3000',
     credentials: true,
   });
 
-  // Global validation pipe
+  // グローバルバリデーションパイプ
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,

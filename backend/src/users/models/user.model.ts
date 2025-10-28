@@ -1,22 +1,32 @@
 import { Field, HideField, ID, ObjectType } from '@nestjs/graphql';
 
+/**
+ * ユーザーエンティティ
+ * システムを利用するユーザーの情報を表します。
+ */
 @ObjectType()
 export class User {
+  /** ユーザーID */
   @Field(() => ID)
   id: string;
 
-  @Field()
+  /** メールアドレス */
+  @Field(() => String)
   email: string;
 
+  /** パスワード（GraphQLスキーマから隠蔽） */
   @HideField()
   password: string;
 
-  @Field()
+  /** ユーザー名 */
+  @Field(() => String)
   name: string;
 
-  @Field()
+  /** 作成日時 */
+  @Field(() => Date)
   createdAt: Date;
 
-  @Field()
+  /** 更新日時 */
+  @Field(() => Date)
   updatedAt: Date;
 }

@@ -1,5 +1,5 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
+// Prismaスキーマ定義ファイル
+// 詳細: https://pris.ly/d/prisma-schema
 
 generator client {
   provider = "prisma-client-js"
@@ -10,20 +10,9 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-enum TestCaseStatus {
-  DRAFT
-  IN_REVIEW
-  APPROVED
-  REJECTED
-  ARCHIVED
-}
-
-enum ApprovalStatus {
-  PENDING
-  APPROVED
-  REJECTED
-}
-
+/// ユーザー
+/// システムを利用するユーザーの情報を管理します。
+/// 認証情報（email, password）とプロフィール（name）を持ちます。
 model User {
   id        String   @id @default(cuid())
   email     String   @unique
@@ -32,7 +21,7 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  // Relations
+  // リレーション
   createdTestCases TestCase[] @relation("TestCaseCreator")
   approvals        Approval[]
   uploadedFiles    File[]
@@ -41,19 +30,23 @@ model User {
   @@map("users")
 }
 
+/// テストケース
+/// 結合テストの内容を管理します。
+/// タイトル、説明、手順、期待結果、実績、ステータスなどの情報を持ちます。
+/// ステータス: DRAFT（下書き）, IN_REVIEW（レビュー中）, APPROVED（承認済み）, REJECTED（却下）, ARCHIVED（アーカイブ）
 model TestCase {
-  id             String         @id @default(cuid())
+  id             String   @id @default(cuid())
   title          String
   description    String?
-  steps          String         @db.Text
-  expectedResult String         @db.Text
-  actualResult   String?        @db.Text
-  status         TestCaseStatus @default(DRAFT)
+  steps          String   @db.Text
+  expectedResult String   @db.Text
+  actualResult   String?  @db.Text
+  status         String   @default("DRAFT")
   createdById    String
-  createdAt      DateTime       @default(now())
-  updatedAt      DateTime       @updatedAt
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
-  // Relations
+  // リレーション
   createdBy User         @relation("TestCaseCreator", fields: [createdById], references: [id])
   tags      TestCaseTag[]
   files     File[]
@@ -63,24 +56,29 @@ model TestCase {
   @@map("test_cases")
 }
 
+/// タグ
+/// テストケースを分類するためのタグを管理します。
+/// タグ名とカラーコードを持ちます。
 model Tag {
   id        String   @id @default(cuid())
   name      String   @unique
   color     String?
   createdAt DateTime @default(now())
 
-  // Relations
+  // リレーション
   testCases TestCaseTag[]
 
   @@map("tags")
 }
 
+/// テストケースタグ中間テーブル
+/// テストケースとタグの多対多リレーションを管理します。
 model TestCaseTag {
   testCaseId String
   tagId      String
   assignedAt DateTime @default(now())
 
-  // Relations
+  // リレーション
   testCase TestCase @relation(fields: [testCaseId], references: [id], onDelete: Cascade)
   tag      Tag      @relation(fields: [tagId], references: [id], onDelete: Cascade)
 
@@ -88,6 +86,9 @@ model TestCaseTag {
   @@map("test_case_tags")
 }
 
+/// ファイル
+/// テストケースに添付されるファイルの情報を管理します。
+/// スクリーンショットやログファイルなどを保存します。
 model File {
   id         String   @id @default(cuid())
   filename   String
@@ -98,23 +99,27 @@ model File {
   uploadedBy String
   createdAt  DateTime @default(now())
 
-  // Relations
+  // リレーション
   testCase TestCase @relation(fields: [testCaseId], references: [id], onDelete: Cascade)
   uploader User     @relation(fields: [uploadedBy], references: [id])
 
   @@map("files")
 }
 
+/// 承認
+/// テストケースに対する承認・却下の情報を管理します。
+/// コメント付きで承認状態を記録できます。
+/// ステータス: PENDING（承認待ち）, APPROVED（承認）, REJECTED（却下）
 model Approval {
-  id         String         @id @default(cuid())
+  id         String   @id @default(cuid())
   testCaseId String
   userId     String
-  status     ApprovalStatus @default(PENDING)
-  comment    String?        @db.Text
-  createdAt  DateTime       @default(now())
-  updatedAt  DateTime       @updatedAt
+  status     String   @default("PENDING")
+  comment    String?  @db.Text
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
-  // Relations
+  // リレーション
   testCase TestCase @relation(fields: [testCaseId], references: [id], onDelete: Cascade)
   user     User     @relation(fields: [userId], references: [id])
 
@@ -122,6 +127,9 @@ model Approval {
   @@map("approvals")
 }
 
+/// コメント
+/// テストケースに対するコメントを管理します。
+/// レビューやフィードバックを記録します。
 model Comment {
   id         String   @id @default(cuid())
   content    String   @db.Text
@@ -130,7 +138,7 @@ model Comment {
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
-  // Relations
+  // リレーション
   testCase TestCase @relation(fields: [testCaseId], references: [id], onDelete: Cascade)
   user     User     @relation(fields: [userId], references: [id])
 

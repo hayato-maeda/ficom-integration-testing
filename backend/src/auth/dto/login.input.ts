@@ -1,14 +1,20 @@
 import { Field, InputType } from '@nestjs/graphql';
 import { IsEmail, IsNotEmpty, IsString } from 'class-validator';
 
+/**
+ * ログイン入力データ
+ * ユーザーログイン時に必要な情報
+ */
 @InputType()
 export class LoginInput {
-  @Field()
+  /** メールアドレス */
+  @Field(() => String)
   @IsEmail()
   @IsNotEmpty()
   email: string;
 
-  @Field()
+  /** パスワード */
+  @Field(() => String)
   @IsString()
   @IsNotEmpty()
   password: string;

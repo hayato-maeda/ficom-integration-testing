@@ -14,7 +14,7 @@ datasource db {
 /// システムを利用するユーザーの情報を管理します。
 /// 認証情報（email, password）とプロフィール（name）を持ちます。
 model User {
-  id        String   @id @default(cuid())
+  id        Int      @id @default(autoincrement())
   email     String   @unique
   password  String
   name      String
@@ -35,14 +35,14 @@ model User {
 /// タイトル、説明、手順、期待結果、実績、ステータスなどの情報を持ちます。
 /// ステータス: DRAFT（下書き）, IN_REVIEW（レビュー中）, APPROVED（承認済み）, REJECTED（却下）, ARCHIVED（アーカイブ）
 model TestCase {
-  id             String   @id @default(cuid())
+  id             Int      @id @default(autoincrement())
   title          String
   description    String?
   steps          String   @db.Text
   expectedResult String   @db.Text
   actualResult   String?  @db.Text
   status         String   @default("DRAFT")
-  createdById    String
+  createdById    Int
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
@@ -60,7 +60,7 @@ model TestCase {
 /// テストケースを分類するためのタグを管理します。
 /// タグ名とカラーコードを持ちます。
 model Tag {
-  id        String   @id @default(cuid())
+  id        Int      @id @default(autoincrement())
   name      String   @unique
   color     String?
   createdAt DateTime @default(now())
@@ -74,8 +74,8 @@ model Tag {
 /// テストケースタグ中間テーブル
 /// テストケースとタグの多対多リレーションを管理します。
 model TestCaseTag {
-  testCaseId String
-  tagId      String
+  testCaseId Int
+  tagId      Int
   assignedAt DateTime @default(now())
 
   // リレーション
@@ -90,13 +90,13 @@ model TestCaseTag {
 /// テストケースに添付されるファイルの情報を管理します。
 /// スクリーンショットやログファイルなどを保存します。
 model File {
-  id         String   @id @default(cuid())
+  id         Int      @id @default(autoincrement())
   filename   String
   path       String
   mimeType   String
   size       Int
-  testCaseId String
-  uploadedBy String
+  testCaseId Int
+  uploadedBy Int
   createdAt  DateTime @default(now())
 
   // リレーション
@@ -111,9 +111,9 @@ model File {
 /// コメント付きで承認状態を記録できます。
 /// ステータス: PENDING（承認待ち）, APPROVED（承認）, REJECTED（却下）
 model Approval {
-  id         String   @id @default(cuid())
-  testCaseId String
-  userId     String
+  id         Int      @id @default(autoincrement())
+  testCaseId Int
+  userId     Int
   status     String   @default("PENDING")
   comment    String?  @db.Text
   createdAt  DateTime @default(now())
@@ -131,10 +131,10 @@ model Approval {
 /// テストケースに対するコメントを管理します。
 /// レビューやフィードバックを記録します。
 model Comment {
-  id         String   @id @default(cuid())
+  id         Int      @id @default(autoincrement())
   content    String   @db.Text
-  testCaseId String
-  userId     String
+  testCaseId Int
+  userId     Int
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 

@@ -10,7 +10,6 @@ import { AuthGuard } from '@nestjs/passport';
  */
 @Injectable()
 export class GqlAuthGuard extends AuthGuard('jwt') {
-
   /**
    * GraphQL コンテキストからリクエストオブジェクトを取得
    * @param context - 実行コンテキスト

@@ -1,10 +1,6 @@
 import { PrismaClient, TestCase, User } from '@prisma/client';
 
-export async function createComments(
-  prisma: PrismaClient,
-  testCases: TestCase[],
-  users: User[],
-) {
+export async function createComments(prisma: PrismaClient, testCases: TestCase[], users: User[]) {
   console.log('Creating comments...');
 
   await Promise.all([

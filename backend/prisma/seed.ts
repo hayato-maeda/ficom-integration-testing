@@ -1,11 +1,11 @@
 import { PrismaClient } from '@prisma/client';
-import { createUsers } from './seed/user';
+import { createApprovals } from './seed/approval';
+import { createComments } from './seed/comment';
+import { createFiles } from './seed/file';
 import { createTags } from './seed/tag';
 import { createTestCases } from './seed/testCase';
 import { createTestCaseTags } from './seed/testCaseTag';
-import { createFiles } from './seed/file';
-import { createApprovals } from './seed/approval';
-import { createComments } from './seed/comment';
+import { createUsers } from './seed/user';
 
 const prisma = new PrismaClient();
 

@@ -1,0 +1,166 @@
+// Prismaスキーマ定義ファイル
+// 詳細: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+/// ユーザー
+/// システムを利用するユーザーの情報を管理します。
+/// 認証情報（email, password）とプロフィール（name）を持ちます。
+model User {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  password  String
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // リレーション
+  createdTestCases TestCase[]     @relation("TestCaseCreator")
+  approvals        Approval[]
+  uploadedFiles    File[]
+  comments         Comment[]
+  refreshTokens    RefreshToken[]
+
+  @@map("users")
+}
+
+/// テストケース
+/// 結合テストの内容を管理します。
+/// タイトル、説明、手順、期待結果、実績、ステータスなどの情報を持ちます。
+/// ステータス: DRAFT（下書き）, IN_REVIEW（レビュー中）, APPROVED（承認済み）, REJECTED（却下）, ARCHIVED（アーカイブ）
+model TestCase {
+  id             Int      @id @default(autoincrement())
+  title          String
+  description    String?
+  steps          String   @db.Text
+  expectedResult String   @db.Text
+  actualResult   String?  @db.Text
+  status         String   @default("DRAFT")
+  createdById    Int
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  // リレーション
+  createdBy User         @relation("TestCaseCreator", fields: [createdById], references: [id])
+  tags      TestCaseTag[]
+  files     File[]
+  approvals Approval[]
+  comments  Comment[]
+
+  @@map("test_cases")
+}
+
+/// タグ
+/// テストケースを分類するためのタグを管理します。
+/// タグ名とカラーコードを持ちます。
+model Tag {
+  id        Int      @id @default(autoincrement())
+  name      String   @unique
+  color     String?
+  createdAt DateTime @default(now())
+
+  // リレーション
+  testCases TestCaseTag[]
+
+  @@map("tags")
+}
+
+/// テストケースタグ中間テーブル
+/// テストケースとタグの多対多リレーションを管理します。
+model TestCaseTag {
+  testCaseId Int
+  tagId      Int
+  assignedAt DateTime @default(now())
+
+  // リレーション
+  testCase TestCase @relation(fields: [testCaseId], references: [id], onDelete: Cascade)
+  tag      Tag      @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([testCaseId, tagId])
+  @@map("test_case_tags")
+}
+
+/// ファイル
+/// テストケースに添付されるファイルの情報を管理します。
+/// スクリーンショットやログファイルなどを保存します。
+model File {
+  id         Int      @id @default(autoincrement())
+  filename   String
+  path       String
+  mimeType   String
+  size       Int
+  testCaseId Int
+  uploadedBy Int
+  createdAt  DateTime @default(now())
+
+  // リレーション
+  testCase TestCase @relation(fields: [testCaseId], references: [id], onDelete: Cascade)
+  uploader User     @relation(fields: [uploadedBy], references: [id])
+
+  @@map("files")
+}
+
+/// 承認
+/// テストケースに対する承認・却下の情報を管理します。
+/// コメント付きで承認状態を記録できます。
+/// ステータス: PENDING（承認待ち）, APPROVED（承認）, REJECTED（却下）
+model Approval {
+  id         Int      @id @default(autoincrement())
+  testCaseId Int
+  userId     Int
+  status     String   @default("PENDING")
+  comment    String?  @db.Text
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  // リレーション
+  testCase TestCase @relation(fields: [testCaseId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id])
+
+  @@unique([testCaseId, userId])
+  @@map("approvals")
+}
+
+/// コメント
+/// テストケースに対するコメントを管理します。
+/// レビューやフィードバックを記録します。
+model Comment {
+  id         Int      @id @default(autoincrement())
+  content    String   @db.Text
+  testCaseId Int
+  userId     Int
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  // リレーション
+  testCase TestCase @relation(fields: [testCaseId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id])
+
+  @@map("comments")
+}
+
+/// リフレッシュトークン
+/// JWT トークンの更新に使用するリフレッシュトークンを管理します。
+/// トークンローテーション機能により、セキュリティを強化します。
+model RefreshToken {
+  id        Int      @id @default(autoincrement())
+  token     String   @unique
+  userId    Int
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  isRevoked Boolean  @default(false)
+
+  // リレーション
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([token])
+  @@map("refresh_tokens")
+}

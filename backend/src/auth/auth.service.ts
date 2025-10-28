@@ -1,8 +1,8 @@
+import { randomUUID } from 'node:crypto';
 import { ConflictException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
-import { randomUUID } from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuthResponse } from './dto/auth.response';
 import { LoginInput } from './dto/login.input';

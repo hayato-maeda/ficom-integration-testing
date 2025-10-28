@@ -22,7 +22,7 @@ export interface JwtPayload {
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
   constructor(
-    private readonly configService: ConfigService,
+    readonly configService: ConfigService,
     private readonly prismaService: PrismaService,
   ) {
     const secret = configService.get<string>('JWT_SECRET');

@@ -1,10 +1,6 @@
 import { PrismaClient, TestCase, User } from '@prisma/client';
 
-export async function createApprovals(
-  prisma: PrismaClient,
-  testCases: TestCase[],
-  users: User[],
-) {
+export async function createApprovals(prisma: PrismaClient, testCases: TestCase[], users: User[]) {
   console.log('Creating approvals...');
 
   await Promise.all([
@@ -48,8 +44,7 @@ export async function createApprovals(
         testCaseId: testCases[3].id,
         userId: users[3].id,
         status: 'REJECTED',
-        comment:
-          'エラーの詳細が不足しています。エラーログとスクリーンショットを追加してください。',
+        comment: 'エラーの詳細が不足しています。エラーログとスクリーンショットを追加してください。',
       },
     }),
 

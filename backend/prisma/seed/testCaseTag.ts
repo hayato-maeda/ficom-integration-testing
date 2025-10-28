@@ -1,10 +1,6 @@
-import { PrismaClient, TestCase, Tag } from '@prisma/client';
+import { PrismaClient, Tag, TestCase } from '@prisma/client';
 
-export async function createTestCaseTags(
-  prisma: PrismaClient,
-  testCases: TestCase[],
-  tags: Tag[],
-) {
+export async function createTestCaseTags(prisma: PrismaClient, testCases: TestCase[], tags: Tag[]) {
   console.log('Creating test case tags...');
 
   await Promise.all([

@@ -1,10 +1,6 @@
 import { PrismaClient, TestCase, User } from '@prisma/client';
 
-export async function createFiles(
-  prisma: PrismaClient,
-  testCases: TestCase[],
-  users: User[],
-) {
+export async function createFiles(prisma: PrismaClient, testCases: TestCase[], users: User[]) {
   console.log('Creating files...');
 
   await Promise.all([

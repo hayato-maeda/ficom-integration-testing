@@ -5,6 +5,7 @@ import { AuthService } from './auth.service';
 import { CurrentUser } from './decorators/current-user.decorator';
 import { AuthResponse } from './dto/auth.response';
 import { LoginInput } from './dto/login.input';
+import { RefreshTokenInput } from './dto/refresh-token.input';
 import { SignUpInput } from './dto/signup.input';
 import { GqlAuthGuard } from './guards/gql-auth.guard';
 
@@ -40,6 +41,20 @@ export class AuthResolver {
     @Args('loginInput', { type: () => LoginInput }) loginInput: LoginInput,
   ): Promise<AuthResponse> {
     return this.authService.login(loginInput);
+  }
+
+  /**
+   * リフレッシュトークンミューテーション
+   * リフレッシュトークンを使用して新しいアクセストークンを取得します。
+   * @param refreshTokenInput - リフレッシュトークン入力データ
+   * @returns 新しい認証レスポンス（新しいトークンとユーザー情報）
+   */
+  @Mutation(() => AuthResponse)
+  async refreshToken(
+    @Args('refreshTokenInput', { type: () => RefreshTokenInput })
+    refreshTokenInput: RefreshTokenInput,
+  ): Promise<AuthResponse> {
+    return this.authService.refreshAccessToken(refreshTokenInput.refreshToken);
   }
 
   /**

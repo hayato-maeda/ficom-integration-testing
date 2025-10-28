@@ -22,10 +22,11 @@ model User {
   updatedAt DateTime @updatedAt
 
   // リレーション
-  createdTestCases TestCase[] @relation("TestCaseCreator")
+  createdTestCases TestCase[]     @relation("TestCaseCreator")
   approvals        Approval[]
   uploadedFiles    File[]
   comments         Comment[]
+  refreshTokens    RefreshToken[]
 
   @@map("users")
 }
@@ -143,4 +144,23 @@ model Comment {
   user     User     @relation(fields: [userId], references: [id])
 
   @@map("comments")
+}
+
+/// リフレッシュトークン
+/// JWT トークンの更新に使用するリフレッシュトークンを管理します。
+/// トークンローテーション機能により、セキュリティを強化します。
+model RefreshToken {
+  id        Int      @id @default(autoincrement())
+  token     String   @unique
+  userId    Int
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  isRevoked Boolean  @default(false)
+
+  // リレーション
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([token])
+  @@map("refresh_tokens")
 }

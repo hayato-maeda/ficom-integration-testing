@@ -4,6 +4,7 @@
 
 type AuthResponse {
   accessToken: String!
+  refreshToken: String!
   user: User!
 }
 
@@ -19,11 +20,16 @@ input LoginInput {
 
 type Mutation {
   login(loginInput: LoginInput!): AuthResponse!
+  refreshToken(refreshTokenInput: RefreshTokenInput!): AuthResponse!
   signUp(signUpInput: SignUpInput!): AuthResponse!
 }
 
 type Query {
   me: User!
+}
+
+input RefreshTokenInput {
+  refreshToken: String!
 }
 
 input SignUpInput {

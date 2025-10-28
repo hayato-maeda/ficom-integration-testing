@@ -11,6 +11,10 @@ export class AuthResponse {
   @Field(() => String)
   accessToken: string;
 
+  /** リフレッシュトークン */
+  @Field(() => String)
+  refreshToken: string;
+
   /** ユーザー情報 */
   @Field(() => User)
   user: User;

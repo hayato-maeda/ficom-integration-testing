@@ -1,0 +1,138 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum TestCaseStatus {
+  DRAFT
+  IN_REVIEW
+  APPROVED
+  REJECTED
+  ARCHIVED
+}
+
+enum ApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  createdTestCases TestCase[] @relation("TestCaseCreator")
+  approvals        Approval[]
+  uploadedFiles    File[]
+  comments         Comment[]
+
+  @@map("users")
+}
+
+model TestCase {
+  id             String         @id @default(cuid())
+  title          String
+  description    String?
+  steps          String         @db.Text
+  expectedResult String         @db.Text
+  actualResult   String?        @db.Text
+  status         TestCaseStatus @default(DRAFT)
+  createdById    String
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  // Relations
+  createdBy User         @relation("TestCaseCreator", fields: [createdById], references: [id])
+  tags      TestCaseTag[]
+  files     File[]
+  approvals Approval[]
+  comments  Comment[]
+
+  @@map("test_cases")
+}
+
+model Tag {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  color     String?
+  createdAt DateTime @default(now())
+
+  // Relations
+  testCases TestCaseTag[]
+
+  @@map("tags")
+}
+
+model TestCaseTag {
+  testCaseId String
+  tagId      String
+  assignedAt DateTime @default(now())
+
+  // Relations
+  testCase TestCase @relation(fields: [testCaseId], references: [id], onDelete: Cascade)
+  tag      Tag      @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([testCaseId, tagId])
+  @@map("test_case_tags")
+}
+
+model File {
+  id         String   @id @default(cuid())
+  filename   String
+  path       String
+  mimeType   String
+  size       Int
+  testCaseId String
+  uploadedBy String
+  createdAt  DateTime @default(now())
+
+  // Relations
+  testCase TestCase @relation(fields: [testCaseId], references: [id], onDelete: Cascade)
+  uploader User     @relation(fields: [uploadedBy], references: [id])
+
+  @@map("files")
+}
+
+model Approval {
+  id         String         @id @default(cuid())
+  testCaseId String
+  userId     String
+  status     ApprovalStatus @default(PENDING)
+  comment    String?        @db.Text
+  createdAt  DateTime       @default(now())
+  updatedAt  DateTime       @updatedAt
+
+  // Relations
+  testCase TestCase @relation(fields: [testCaseId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id])
+
+  @@unique([testCaseId, userId])
+  @@map("approvals")
+}
+
+model Comment {
+  id         String   @id @default(cuid())
+  content    String   @db.Text
+  testCaseId String
+  userId     String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  // Relations
+  testCase TestCase @relation(fields: [testCaseId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id])
+
+  @@map("comments")
+}

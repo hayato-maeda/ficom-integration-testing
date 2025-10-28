@@ -8,7 +8,7 @@ import { Field, HideField, ID, ObjectType } from '@nestjs/graphql';
 export class User {
   /** ユーザーID */
   @Field(() => ID)
-  id: string;
+  id: number;
 
   /** メールアドレス */
   @Field(() => String)

@@ -99,7 +99,7 @@ export class AuthService {
    * @returns JWT トークン
    * @private
    */
-  private generateToken(userId: string, email: string): string {
+  private generateToken(userId: number, email: string): string {
     const payload = { sub: userId, email };
     return this.jwtService.sign(payload);
   }

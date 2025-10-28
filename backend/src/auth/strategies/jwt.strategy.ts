@@ -10,7 +10,7 @@ import { PrismaService } from '../../prisma/prisma.service';
  */
 export interface JwtPayload {
   /** ユーザーID（subject） */
-  sub: string;
+  sub: number;
   /** メールアドレス */
   email: string;
 }

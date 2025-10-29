@@ -61,7 +61,13 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     });
 
     if (revokedToken) {
-      throw new UnauthorizedException('Token has been revoked');
+      // ブラックリストの有効期限をチェック
+      // expiresAtを過ぎている場合は、元々のJWT有効期限も切れているはずなので無視
+      if (new Date() < revokedToken.expiresAt) {
+        throw new UnauthorizedException('Token has been revoked');
+      }
+      // expiresAtを過ぎている場合は、ブラックリストから論理的に削除された扱い
+      // （元々のJWT有効期限チェックがPassportにより先に行われる）
     }
 
     // ユーザーを取得

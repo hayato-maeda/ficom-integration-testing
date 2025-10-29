@@ -1,4 +1,5 @@
 import { join } from 'node:path';
+import { HttpStatus } from '@nestjs/common';
 import type { Params } from 'nestjs-pino';
 
 /**
@@ -16,10 +17,10 @@ export const pinoLoggerConfig = (): Params => {
       genReqId: (req) => req.headers['x-request-id'] || crypto.randomUUID(),
       // カスタムログレベル設定
       customLogLevel: (_req, res, err) => {
-        if (res.statusCode >= 500 || err) {
+        if (res.statusCode >= HttpStatus.INTERNAL_SERVER_ERROR || err) {
           return 'error';
         }
-        if (res.statusCode >= 400) {
+        if (res.statusCode >= HttpStatus.BAD_REQUEST) {
           return 'warn';
         }
         return 'info';

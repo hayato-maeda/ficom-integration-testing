@@ -123,14 +123,9 @@ export class TestCasesService {
       throw new UnauthorizedException('Only the creator can update this test case');
     }
 
-    // 更新データの準備（undefinedのフィールドを除外）
-    const updateData: Record<string, unknown> = {};
-    if (updateTestCaseInput.title !== undefined) updateData.title = updateTestCaseInput.title;
-    if (updateTestCaseInput.description !== undefined) updateData.description = updateTestCaseInput.description;
-    if (updateTestCaseInput.steps !== undefined) updateData.steps = updateTestCaseInput.steps;
-    if (updateTestCaseInput.expectedResult !== undefined) updateData.expectedResult = updateTestCaseInput.expectedResult;
-    if (updateTestCaseInput.actualResult !== undefined) updateData.actualResult = updateTestCaseInput.actualResult;
-    if (updateTestCaseInput.status !== undefined) updateData.status = updateTestCaseInput.status;
+    // 更新データの準備（idを除外し、undefinedのフィールドは除外）
+    const { id: _id, ...updateFields } = updateTestCaseInput;
+    const updateData = Object.fromEntries(Object.entries(updateFields).filter(([_, value]) => value !== undefined));
 
     const testCase = await this.prismaService.testCase.update({
       where: { id: updateTestCaseInput.id },

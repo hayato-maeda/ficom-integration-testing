@@ -20,7 +20,7 @@ export const TestCaseStatus = {
 /**
  * テストケースステータスの型
  */
-export type TestCaseStatusType = typeof TestCaseStatus[keyof typeof TestCaseStatus];
+export type TestCaseStatusType = (typeof TestCaseStatus)[keyof typeof TestCaseStatus];
 
 /**
  * テストケースエンティティ

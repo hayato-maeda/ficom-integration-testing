@@ -13,6 +13,9 @@ export const pinoLoggerConfig = (): Params => {
   return {
     pinoHttp: {
       level: logLevel,
+      // pid と hostname を全ログから除外（pino のデフォルト付与フィールドを無効化）
+      // base に null を設定すると pid, hostname などのベースプロパティが出力されない
+      base: null,
       // リクエストIDの自動生成
       genReqId: (req) => req.headers['x-request-id'] || crypto.randomUUID(),
       // カスタムログレベル設定
@@ -64,7 +67,6 @@ export const pinoLoggerConfig = (): Params => {
                 options: {
                   colorize: true,
                   translateTime: 'SYS:standard',
-                  ignore: 'pid,hostname',
                   singleLine: false,
                   messageFormat: '{msg}',
                 },

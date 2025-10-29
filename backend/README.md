@@ -10,17 +10,19 @@ NestJS + GraphQL + Prisma + PostgreSQLで構築された結合テスト管理ツ
 - **ORM**: Prisma 6.x
 - **Authentication**: JWT + Passport
 - **Validation**: class-validator, class-transformer
+- **Logging**: Pino (高性能JSON構造化ログ)
 - **Code Quality**: Biome (Linter + Formatter)
 
 ## 機能
 
-- ✅ JWT認証（サインアップ/ログイン）
+- ✅ JWT認証（サインアップ/ログイン/トークンリフレッシュ）
 - ✅ ユーザー管理
+- ✅ 高性能ロギングシステム（Pino）
+- ✅ GraphQL API（Apollo Sandbox付き）
 - 🚧 テストケース管理（CRUD）
 - 🚧 タグ・カテゴリによる分類
 - 🚧 コメント付き承認フロー
 - 🚧 ファイル添付機能
-- ✅ GraphQL API（Playground付き）
 
 ## データモデル
 
@@ -212,6 +214,60 @@ query Me {
 ```
 Authorization: Bearer <accessToken>
 ```
+
+## ロギング
+
+Pinoを使用した高性能ロギングシステムを採用しています。
+
+### 基本的な使い方
+
+```typescript
+import { Injectable } from '@nestjs/common';
+import { PinoLogger } from 'nestjs-pino';
+
+@Injectable()
+export class YourService {
+  constructor(private readonly logger: PinoLogger) {
+    this.logger.setContext(YourService.name);
+  }
+
+  someMethod() {
+    // 情報ログ
+    this.logger.info('Processing started');
+
+    // 構造化ログ（追加コンテキスト付き）
+    this.logger.info({ userId: 123 }, 'User logged in');
+
+    // エラーログ
+    try {
+      // ...
+    } catch (error) {
+      this.logger.error(error, 'Operation failed');
+    }
+  }
+}
+```
+
+### ログレベル
+
+環境変数 `LOG_LEVEL` で制御：
+
+```env
+LOG_LEVEL=info  # fatal, error, warn, info, debug, trace
+```
+
+### ログ出力先
+
+- **開発環境**: コンソール（pino-pretty） + ファイル（`logs/app.*.log`）
+- **本番環境**: ファイル（`logs/app.*.log`、JSON形式）
+
+### ログファイル
+
+- **保存先**: `backend/logs/`
+- **ローテーション**: 日次 + 10MB
+- **保持期間**: 30日
+
+詳細は [`docs/logging.md`](./docs/logging.md) を参照してください。
 
 ## プロジェクト構造
 

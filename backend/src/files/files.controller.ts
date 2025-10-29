@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { extname, join } from 'node:path';
 import {
   Controller,
@@ -20,6 +21,8 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { User } from '../users/models/user.model';
 import { FilesService } from './files.service';
 import type { File } from './models/file.model';
+
+const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 
 /**
  * ファイルコントローラー
@@ -46,14 +49,14 @@ export class FilesController {
       storage: diskStorage({
         destination: join(process.cwd(), 'uploads'),
         filename: (_req, file, callback) => {
-          const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
+          const uuid = randomUUID();
           const ext = extname(file.originalname);
-          const filename = `${file.originalname.replace(ext, '')}-${uniqueSuffix}${ext}`;
+          const filename = `${file.originalname.replace(ext, '')}-${uuid}${ext}`;
           callback(null, filename);
         },
       }),
       limits: {
-        fileSize: 10 * 1024 * 1024, // 10MB制限
+        fileSize: MAX_FILE_SIZE,
       },
     }),
   )

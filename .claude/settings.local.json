@@ -9,7 +9,9 @@
       "Bash(npm run prisma:generate:*)",
       "Bash(npm run build:*)",
       "Bash(npm run lint:check:*)",
-      "Bash(npm run start:dev:*)"
+      "Bash(npm run start:dev:*)",
+      "Bash(npx tsc:*)",
+      "Bash(npm test)"
     ],
     "deny": [],
     "ask": []

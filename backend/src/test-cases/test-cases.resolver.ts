@@ -1,7 +1,9 @@
 import { UseGuards } from '@nestjs/common';
-import { Args, ID, Mutation, Query, Resolver } from '@nestjs/graphql';
+import { Args, ID, Mutation, Parent, Query, ResolveField, Resolver } from '@nestjs/graphql';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { GqlAuthGuard } from '../auth/guards/gql-auth.guard';
+import { Tag } from '../tags/models/tag.model';
+import { TagsService } from '../tags/tags.service';
 import { User } from '../users/models/user.model';
 import { CreateTestCaseInput } from './dto/create-test-case.input';
 import { UpdateTestCaseInput } from './dto/update-test-case.input';
@@ -15,7 +17,10 @@ import { TestCasesService } from './test-cases.service';
 @Resolver(() => TestCase)
 @UseGuards(GqlAuthGuard)
 export class TestCasesResolver {
-  constructor(private readonly testCasesService: TestCasesService) {}
+  constructor(
+    private readonly testCasesService: TestCasesService,
+    private readonly tagsService: TagsService,
+  ) {}
 
   /**
    * テストケース作成ミューテーション
@@ -75,5 +80,15 @@ export class TestCasesResolver {
   @Mutation(() => TestCase)
   async deleteTestCase(@Args('id', { type: () => ID }) id: number, @CurrentUser() user: User): Promise<TestCase> {
     return this.testCasesService.remove(id, user.id);
+  }
+
+  /**
+   * テストケースのタグフィールドリゾルバー
+   * @param testCase - 親のテストケースオブジェクト
+   * @returns タグの一覧
+   */
+  @ResolveField(() => [Tag])
+  async tags(@Parent() testCase: TestCase): Promise<Tag[]> {
+    return this.tagsService.getTagsByTestCase(testCase.id);
   }
 }

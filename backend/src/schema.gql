@@ -2,10 +2,20 @@
 # THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
 # ------------------------------------------------------
 
+input AssignTagInput {
+  tagId: ID!
+  testCaseId: ID!
+}
+
 type AuthResponse {
   accessToken: String!
   refreshToken: String!
   user: User!
+}
+
+input CreateTagInput {
+  color: String
+  name: String!
 }
 
 input CreateTestCaseInput {
@@ -27,16 +37,24 @@ input LoginInput {
 }
 
 type Mutation {
+  assignTag(assignTagInput: AssignTagInput!): Boolean!
+  createTag(createTagInput: CreateTagInput!): Tag!
   createTestCase(createTestCaseInput: CreateTestCaseInput!): TestCase!
+  deleteTag(id: ID!): Tag!
   deleteTestCase(id: ID!): TestCase!
   login(loginInput: LoginInput!): AuthResponse!
   refreshToken(refreshTokenInput: RefreshTokenInput!): AuthResponse!
   signUp(signUpInput: SignUpInput!): AuthResponse!
+  unassignTag(tagId: ID!, testCaseId: ID!): Boolean!
+  updateTag(updateTagInput: UpdateTagInput!): Tag!
   updateTestCase(updateTestCaseInput: UpdateTestCaseInput!): TestCase!
 }
 
 type Query {
   me: User!
+  tag(id: ID!): Tag!
+  tags: [Tag!]!
+  tagsByTestCase(testCaseId: ID!): [Tag!]!
   testCase(id: ID!): TestCase!
   testCases: [TestCase!]!
 }
@@ -52,6 +70,13 @@ input SignUpInput {
   password: String!
 }
 
+type Tag {
+  color: String
+  createdAt: DateTime!
+  id: ID!
+  name: String!
+}
+
 type TestCase {
   actualResult: String
   createdAt: DateTime!
@@ -62,8 +87,15 @@ type TestCase {
   id: ID!
   status: String!
   steps: String!
+  tags: [Tag!]
   title: String!
   updatedAt: DateTime!
+}
+
+input UpdateTagInput {
+  color: String
+  id: ID!
+  name: String
 }
 
 input UpdateTestCaseInput {

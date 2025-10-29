@@ -1,4 +1,5 @@
 import { Field, ID, ObjectType } from '@nestjs/graphql';
+import { Tag } from '../../tags/models/tag.model';
 import { User } from '../../users/models/user.model';
 
 /**
@@ -63,6 +64,10 @@ export class TestCase {
   /** 作成者 */
   @Field(() => User)
   createdBy: User;
+
+  /** タグ */
+  @Field(() => [Tag], { nullable: true })
+  tags?: Tag[];
 
   /** 作成日時 */
   @Field(() => Date)

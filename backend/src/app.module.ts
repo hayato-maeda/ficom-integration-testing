@@ -12,6 +12,7 @@ import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
 import { LoggerModule } from './common/logger/logger.module';
 import { PrismaModule } from './prisma/prisma.module';
+import { TagsModule } from './tags/tags.module';
 import { TestCasesModule } from './test-cases/test-cases.module';
 
 const isProduction = process.env.NODE_ENV === 'production';
@@ -39,6 +40,7 @@ const isNotProduction = !isProduction;
     PrismaModule,
     AuthModule,
     TestCasesModule,
+    TagsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

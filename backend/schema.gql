@@ -3,8 +3,8 @@
 # ------------------------------------------------------
 
 input AssignTagInput {
-  tagId: ID!
-  testCaseId: ID!
+  tagId: Int!
+  testCaseId: Int!
 }
 
 type AuthResponse {
@@ -31,6 +31,19 @@ A date-time string at UTC, such as 2019-12-03T09:54:33Z, compliant with the date
 """
 scalar DateTime
 
+type File {
+  createdAt: DateTime!
+  filename: String!
+  id: Int!
+  mimeType: String!
+  path: String!
+  size: Int!
+  testCase: TestCase!
+  testCaseId: Int!
+  uploadedBy: Int!
+  uploader: User!
+}
+
 input LoginInput {
   email: String!
   password: String!
@@ -40,22 +53,25 @@ type Mutation {
   assignTag(assignTagInput: AssignTagInput!): Boolean!
   createTag(createTagInput: CreateTagInput!): Tag!
   createTestCase(createTestCaseInput: CreateTestCaseInput!): TestCase!
-  deleteTag(id: ID!): Tag!
-  deleteTestCase(id: ID!): TestCase!
+  deleteTag(id: Int!): Tag!
+  deleteTestCase(id: Int!): TestCase!
   login(loginInput: LoginInput!): AuthResponse!
   refreshToken(refreshTokenInput: RefreshTokenInput!): AuthResponse!
   signUp(signUpInput: SignUpInput!): AuthResponse!
-  unassignTag(tagId: ID!, testCaseId: ID!): Boolean!
+  unassignTag(tagId: Int!, testCaseId: Int!): Boolean!
   updateTag(updateTagInput: UpdateTagInput!): Tag!
   updateTestCase(updateTestCaseInput: UpdateTestCaseInput!): TestCase!
 }
 
 type Query {
+  file(id: Int!): File!
+  files: [File!]!
+  filesByTestCase(testCaseId: Int!): [File!]!
   me: User!
-  tag(id: ID!): Tag!
+  tag(id: Int!): Tag!
   tags: [Tag!]!
-  tagsByTestCase(testCaseId: ID!): [Tag!]!
-  testCase(id: ID!): TestCase!
+  tagsByTestCase(testCaseId: Int!): [Tag!]!
+  testCase(id: Int!): TestCase!
   testCases: [TestCase!]!
 }
 
@@ -73,7 +89,7 @@ input SignUpInput {
 type Tag {
   color: String
   createdAt: DateTime!
-  id: ID!
+  id: Int!
   name: String!
 }
 
@@ -81,10 +97,11 @@ type TestCase {
   actualResult: String
   createdAt: DateTime!
   createdBy: User!
-  createdById: ID!
+  createdById: Int!
   description: String
   expectedResult: String!
-  id: ID!
+  files: [File!]
+  id: Int!
   status: String!
   steps: String!
   tags: [Tag!]
@@ -94,7 +111,7 @@ type TestCase {
 
 input UpdateTagInput {
   color: String
-  id: ID!
+  id: Int!
   name: String
 }
 
@@ -102,7 +119,7 @@ input UpdateTestCaseInput {
   actualResult: String
   description: String
   expectedResult: String
-  id: ID!
+  id: Int!
   status: String
   steps: String
   title: String
@@ -111,7 +128,7 @@ input UpdateTestCaseInput {
 type User {
   createdAt: DateTime!
   email: String!
-  id: ID!
+  id: Int!
   name: String!
   updatedAt: DateTime!
 }

@@ -1,5 +1,5 @@
 import { UseGuards } from '@nestjs/common';
-import { Args, ID, Mutation, Query, Resolver } from '@nestjs/graphql';
+import { Args, Int, Mutation, Query, Resolver } from '@nestjs/graphql';
 import { GqlAuthGuard } from '../auth/guards/gql-auth.guard';
 import { AssignTagInput } from './dto/assign-tag.input';
 import { CreateTagInput } from './dto/create-tag.input';
@@ -44,7 +44,7 @@ export class TagsResolver {
    * @returns タグ
    */
   @Query(() => Tag)
-  async tag(@Args('id', { type: () => ID }) id: number): Promise<Tag> {
+  async tag(@Args('id', { type: () => Int }) id: number): Promise<Tag> {
     return this.tagsService.findOne(id);
   }
 
@@ -67,7 +67,7 @@ export class TagsResolver {
    * @returns 削除されたタグ
    */
   @Mutation(() => Tag)
-  async deleteTag(@Args('id', { type: () => ID }) id: number): Promise<Tag> {
+  async deleteTag(@Args('id', { type: () => Int }) id: number): Promise<Tag> {
     return this.tagsService.remove(id);
   }
 
@@ -92,8 +92,8 @@ export class TagsResolver {
    */
   @Mutation(() => Boolean)
   async unassignTag(
-    @Args('testCaseId', { type: () => ID }) testCaseId: number,
-    @Args('tagId', { type: () => ID }) tagId: number,
+    @Args('testCaseId', { type: () => Int }) testCaseId: number,
+    @Args('tagId', { type: () => Int }) tagId: number,
   ): Promise<boolean> {
     return this.tagsService.unassignTag(testCaseId, tagId);
   }
@@ -104,7 +104,7 @@ export class TagsResolver {
    * @returns タグの一覧
    */
   @Query(() => [Tag])
-  async tagsByTestCase(@Args('testCaseId', { type: () => ID }) testCaseId: number): Promise<Tag[]> {
+  async tagsByTestCase(@Args('testCaseId', { type: () => Int }) testCaseId: number): Promise<Tag[]> {
     return this.tagsService.getTagsByTestCase(testCaseId);
   }
 }

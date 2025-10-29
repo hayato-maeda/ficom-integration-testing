@@ -102,7 +102,7 @@ query TestCases {
 
 **GraphQL**:
 ```graphql
-query TestCase($id: ID!) {
+query TestCase($id: Int!) {
   testCase(id: $id) {
     id
     title
@@ -179,7 +179,7 @@ mutation UpdateTestCase($updateTestCaseInput: UpdateTestCaseInput!) {
 
 **GraphQL**:
 ```graphql
-mutation DeleteTestCase($id: ID!) {
+mutation DeleteTestCase($id: Int!) {
   deleteTestCase(id: $id) {
     id
     title
@@ -238,14 +238,14 @@ ARCHIVED ← ←
 
 | フィールド | 型 | 必須 | 説明 |
 |-----------|-----|------|------|
-| id | ID | ✓ | テストケースID（自動採番） |
+| id | Int | ✓ | テストケースID（自動採番） |
 | title | String | ✓ | タイトル |
 | description | String | | 説明 |
 | steps | String | ✓ | テスト手順（複数行可） |
 | expectedResult | String | ✓ | 期待結果 |
 | actualResult | String | | 実績結果 |
 | status | String | ✓ | ステータス（デフォルト: DRAFT） |
-| createdById | ID | ✓ | 作成者ID |
+| createdById | Int | ✓ | 作成者ID |
 | createdBy | User | ✓ | 作成者情報 |
 | createdAt | DateTime | ✓ | 作成日時 |
 | updatedAt | DateTime | ✓ | 更新日時 |
@@ -337,7 +337,7 @@ await updateTestCase({
 
 // 4. 削除
 const DELETE_TEST_CASE = gql`
-  mutation DeleteTestCase($id: ID!) {
+  mutation DeleteTestCase($id: Int!) {
     deleteTestCase(id: $id) {
       id
     }

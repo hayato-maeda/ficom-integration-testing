@@ -1,4 +1,4 @@
-import { Field, ID, ObjectType } from '@nestjs/graphql';
+import { Field, Int, ObjectType } from '@nestjs/graphql';
 
 /**
  * タグエンティティ
@@ -7,7 +7,7 @@ import { Field, ID, ObjectType } from '@nestjs/graphql';
 @ObjectType()
 export class Tag {
   /** タグID */
-  @Field(() => ID)
+  @Field(() => Int)
   id: number;
 
   /** タグ名 */

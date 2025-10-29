@@ -1,7 +1,9 @@
 import { UseGuards } from '@nestjs/common';
-import { Args, ID, Mutation, Parent, Query, ResolveField, Resolver } from '@nestjs/graphql';
+import { Args, Int, Mutation, Parent, Query, ResolveField, Resolver } from '@nestjs/graphql';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { GqlAuthGuard } from '../auth/guards/gql-auth.guard';
+import { FilesService } from '../files/files.service';
+import { File } from '../files/models/file.model';
 import { Tag } from '../tags/models/tag.model';
 import { TagsService } from '../tags/tags.service';
 import { User } from '../users/models/user.model';
@@ -20,6 +22,7 @@ export class TestCasesResolver {
   constructor(
     private readonly testCasesService: TestCasesService,
     private readonly tagsService: TagsService,
+    private readonly filesService: FilesService,
   ) {}
 
   /**
@@ -52,7 +55,7 @@ export class TestCasesResolver {
    * @returns テストケース
    */
   @Query(() => TestCase)
-  async testCase(@Args('id', { type: () => ID }) id: number): Promise<TestCase> {
+  async testCase(@Args('id', { type: () => Int }) id: number): Promise<TestCase> {
     return this.testCasesService.findOne(id);
   }
 
@@ -78,7 +81,7 @@ export class TestCasesResolver {
    * @returns 削除されたテストケース
    */
   @Mutation(() => TestCase)
-  async deleteTestCase(@Args('id', { type: () => ID }) id: number, @CurrentUser() user: User): Promise<TestCase> {
+  async deleteTestCase(@Args('id', { type: () => Int }) id: number, @CurrentUser() user: User): Promise<TestCase> {
     return this.testCasesService.remove(id, user.id);
   }
 
@@ -90,5 +93,15 @@ export class TestCasesResolver {
   @ResolveField(() => [Tag])
   async tags(@Parent() testCase: TestCase): Promise<Tag[]> {
     return this.tagsService.getTagsByTestCase(testCase.id);
+  }
+
+  /**
+   * テストケースのファイルフィールドリゾルバー
+   * @param testCase - 親のテストケースオブジェクト
+   * @returns ファイルの一覧
+   */
+  @ResolveField(() => [File])
+  async files(@Parent() testCase: TestCase): Promise<File[]> {
+    return this.filesService.findByTestCase(testCase.id);
   }
 }

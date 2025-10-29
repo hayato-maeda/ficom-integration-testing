@@ -78,7 +78,7 @@ query Tags {
 
 **GraphQL**:
 ```graphql
-query Tag($id: ID!) {
+query Tag($id: Int!) {
   tag(id: $id) {
     id
     name
@@ -135,7 +135,7 @@ mutation UpdateTag($updateTagInput: UpdateTagInput!) {
 
 **GraphQL**:
 ```graphql
-mutation DeleteTag($id: ID!) {
+mutation DeleteTag($id: Int!) {
   deleteTag(id: $id) {
     id
     name
@@ -178,7 +178,7 @@ mutation AssignTag($assignTagInput: AssignTagInput!) {
 
 **GraphQL**:
 ```graphql
-mutation UnassignTag($testCaseId: ID!, $tagId: ID!) {
+mutation UnassignTag($testCaseId: Int!, $tagId: Int!) {
   unassignTag(testCaseId: $testCaseId, tagId: $tagId)
 }
 ```
@@ -199,7 +199,7 @@ mutation UnassignTag($testCaseId: ID!, $tagId: ID!) {
 
 **GraphQL**:
 ```graphql
-query TagsByTestCase($testCaseId: ID!) {
+query TagsByTestCase($testCaseId: Int!) {
   tagsByTestCase(testCaseId: $testCaseId) {
     id
     name
@@ -216,7 +216,7 @@ query TagsByTestCase($testCaseId: ID!) {
 
 **GraphQL**:
 ```graphql
-query TestCase($id: ID!) {
+query TestCase($id: Int!) {
   testCase(id: $id) {
     id
     title
@@ -237,7 +237,7 @@ query TestCase($id: ID!) {
 
 | フィールド | 型 | 必須 | 説明 |
 |-----------|-----|------|------|
-| id | ID | ✓ | タグID（自動採番） |
+| id | Int | ✓ | タグID（自動採番） |
 | name | String | ✓ | タグ名（一意） |
 | color | String | | カラーコード（例: #FF5733） |
 | createdAt | DateTime | ✓ | 作成日時 |
@@ -297,7 +297,7 @@ await assignTag({
 
 // 3. テストケースのタグを取得
 const GET_TEST_CASE_WITH_TAGS = gql`
-  query TestCase($id: ID!) {
+  query TestCase($id: Int!) {
     testCase(id: $id) {
       id
       title

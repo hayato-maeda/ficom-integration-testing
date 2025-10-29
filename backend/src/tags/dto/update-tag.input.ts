@@ -1,4 +1,4 @@
-import { Field, ID, InputType } from '@nestjs/graphql';
+import { Field, InputType, Int } from '@nestjs/graphql';
 import { IsInt, IsNotEmpty, IsOptional, IsString, Matches } from 'class-validator';
 
 /**
@@ -7,7 +7,7 @@ import { IsInt, IsNotEmpty, IsOptional, IsString, Matches } from 'class-validato
 @InputType()
 export class UpdateTagInput {
   /** タグID */
-  @Field(() => ID)
+  @Field(() => Int)
   @IsNotEmpty({ message: 'id should not be empty' })
   @IsInt({ message: 'id must be an integer' })
   id: number;

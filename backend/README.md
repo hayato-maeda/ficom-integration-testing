@@ -293,11 +293,11 @@ backend/
 │   │       └── user.model.ts  # GraphQL型定義
 │   ├── app.module.ts          # ルートモジュール
 │   ├── main.ts                # エントリーポイント
-│   └── schema.gql             # 自動生成されるGraphQLスキーマ
 ├── biome.json                 # Biome設定
 ├── nest-cli.json              # NestJS CLI設定
 ├── tsconfig.json              # TypeScript設定
 └── package.json               # 依存関係
+└── schema.gql             # 自動生成されるGraphQLスキーマ
 ```
 
 ## 次のステップ

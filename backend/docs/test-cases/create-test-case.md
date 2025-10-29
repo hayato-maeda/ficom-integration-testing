@@ -104,14 +104,14 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 
 | フィールド | 型 | 説明 |
 |-----------|-----|------|
-| `id` | ID | テストケースID |
+| `id` | Int | テストケースID |
 | `title` | String | タイトル |
 | `description` | String | 説明 |
 | `steps` | String | テスト手順 |
 | `expectedResult` | String | 期待結果 |
 | `actualResult` | String | 実績結果 |
 | `status` | String | ステータス（DRAFT/IN_REVIEW/APPROVED/REJECTED/ARCHIVED） |
-| `createdById` | ID | 作成者ID |
+| `createdById` | Int | 作成者ID |
 | `createdBy` | User | 作成者情報 |
 | `createdAt` | DateTime | 作成日時 |
 | `updatedAt` | DateTime | 更新日時 |

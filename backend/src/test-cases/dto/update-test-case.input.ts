@@ -1,4 +1,4 @@
-import { Field, ID, InputType } from '@nestjs/graphql';
+import { Field, InputType, Int } from '@nestjs/graphql';
 import { IsIn, IsInt, IsNotEmpty, IsOptional, IsString } from 'class-validator';
 import { TestCaseStatus } from '../models/test-case.model';
 
@@ -8,7 +8,7 @@ import { TestCaseStatus } from '../models/test-case.model';
 @InputType()
 export class UpdateTestCaseInput {
   /** テストケースID */
-  @Field(() => ID)
+  @Field(() => Int)
   @IsNotEmpty({ message: 'id should not be empty' })
   @IsInt({ message: 'id must be an integer' })
   id: number;

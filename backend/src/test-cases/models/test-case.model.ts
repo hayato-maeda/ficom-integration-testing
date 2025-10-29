@@ -1,4 +1,5 @@
-import { Field, ID, ObjectType } from '@nestjs/graphql';
+import { Field, Int, ObjectType } from '@nestjs/graphql';
+import { File } from '../../files/models/file.model';
 import { Tag } from '../../tags/models/tag.model';
 import { User } from '../../users/models/user.model';
 
@@ -30,7 +31,7 @@ export type TestCaseStatusType = (typeof TestCaseStatus)[keyof typeof TestCaseSt
 @ObjectType()
 export class TestCase {
   /** テストケースID */
-  @Field(() => ID)
+  @Field(() => Int)
   id: number;
 
   /** タイトル */
@@ -58,7 +59,7 @@ export class TestCase {
   status: string;
 
   /** 作成者ID */
-  @Field(() => ID)
+  @Field(() => Int)
   createdById: number;
 
   /** 作成者 */
@@ -68,6 +69,10 @@ export class TestCase {
   /** タグ */
   @Field(() => [Tag], { nullable: true })
   tags?: Tag[];
+
+  /** ファイル */
+  @Field(() => [File], { nullable: true })
+  files?: File[];
 
   /** 作成日時 */
   @Field(() => Date)

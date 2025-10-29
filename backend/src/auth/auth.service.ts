@@ -41,12 +41,16 @@ export class AuthService {
     // パスワードをハッシュ化
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // ユーザーを作成
+    // トークン有効化タイムスタンプを準備（JWT の iat は秒単位なのでミリ秒を0にする）
+    const tokenValidFrom = new Date(Math.floor(Date.now() / 1000) * 1000);
+
+    // ユーザーを作成（トークン有効化タイムスタンプを設定）
     const user = await this.prismaService.user.create({
       data: {
         email,
         password: hashedPassword,
         name,
+        tokenValidFromTimestamp: tokenValidFrom,
       },
     });
 
@@ -88,26 +92,55 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
+    // トークン有効化タイムスタンプを現在時刻に更新（既存トークンをすべて無効化）
+    // JWT の iat は秒単位なので、ミリ秒を0にして精度を合わせる
+    const tokenValidFrom = new Date(Math.floor(Date.now() / 1000) * 1000);
+    await this.prismaService.user.update({
+      where: { id: user.id },
+      data: { tokenValidFromTimestamp: tokenValidFrom },
+    });
+
+    // 既存のリフレッシュトークンをすべて無効化（セッション無効化）
+    await this.prismaService.refreshToken.updateMany({
+      where: {
+        userId: user.id,
+        isRevoked: false,
+      },
+      data: {
+        isRevoked: true,
+      },
+    });
+
     // JWT アクセストークンを生成
     const accessToken = this.generateToken(user.id, user.email);
 
     // リフレッシュトークンを生成
     const refreshToken = await this.createRefreshToken(user.id);
 
+    // 更新されたユーザー情報を取得
+    const updatedUser = await this.prismaService.user.findUnique({
+      where: { id: user.id },
+    });
+
+    if (!updatedUser) {
+      throw new UnauthorizedException('User not found after update');
+    }
+
     return {
       accessToken,
       refreshToken,
-      user,
+      user: updatedUser,
     };
   }
 
   /**
    * リフレッシュトークンを使用してアクセストークンを更新
    * @param refreshToken - リフレッシュトークン
+   * @param oldAccessToken - 古いアクセストークン（無効化するため）
    * @returns 新しい認証レスポンス
    * @throws UnauthorizedException - リフレッシュトークンが無効な場合
    */
-  async refreshAccessToken(refreshToken: string): Promise<AuthResponse> {
+  async refreshAccessToken(refreshToken: string, oldAccessToken: string): Promise<AuthResponse> {
     // リフレッシュトークンを検証
     const storedToken = await this.prismaService.refreshToken.findUnique({
       where: { token: refreshToken },
@@ -125,6 +158,19 @@ export class AuthService {
     if (new Date() > storedToken.expiresAt) {
       throw new UnauthorizedException('Refresh token has expired');
     }
+
+    // 古いアクセストークンをブラックリストに追加（JWTの有効期限まで）
+    const jwtExpiresIn = this.configService.get<string>('JWT_EXPIRES_IN') || '1h';
+    const expiresInMs = this.parseTimeString(jwtExpiresIn);
+    const tokenExpiresAt = new Date(Date.now() + expiresInMs);
+
+    await this.prismaService.revokedToken.create({
+      data: {
+        token: oldAccessToken,
+        userId: storedToken.userId,
+        expiresAt: tokenExpiresAt,
+      },
+    });
 
     // 古いリフレッシュトークンを無効化（トークンローテーション）
     await this.prismaService.refreshToken.update({

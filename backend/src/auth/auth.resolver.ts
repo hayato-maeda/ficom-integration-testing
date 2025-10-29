@@ -50,7 +50,7 @@ export class AuthResolver {
     @Args('refreshTokenInput', { type: () => RefreshTokenInput })
     refreshTokenInput: RefreshTokenInput,
   ): Promise<AuthResponse> {
-    return this.authService.refreshAccessToken(refreshTokenInput.refreshToken);
+    return this.authService.refreshAccessToken(refreshTokenInput.refreshToken, refreshTokenInput.oldAccessToken);
   }
 
   /**

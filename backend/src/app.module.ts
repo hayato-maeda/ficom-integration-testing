@@ -10,6 +10,7 @@ import { GraphQLModule } from '@nestjs/graphql';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
+import { LoggerModule } from './common/logger/logger.module';
 import { PrismaModule } from './prisma/prisma.module';
 
 const isProduction = process.env.NODE_ENV === 'production';
@@ -33,6 +34,7 @@ const isNotProduction = !isProduction;
           : ApolloServerPluginLandingPageLocalDefault({ footer: false }),
       ],
     }),
+    LoggerModule,
     PrismaModule,
     AuthModule,
   ],

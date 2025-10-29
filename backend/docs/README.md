@@ -15,6 +15,9 @@ backend/docs/
 │   ├── login.md          # ログインAPI
 │   ├── refresh-token.md  # トークンリフレッシュAPI
 │   └── me.md            # 現在のユーザー取得API
+├── test-cases/           # テストケース管理
+│   ├── README.md         # テストケースAPIガイド
+│   └── create-test-case.md # テストケース作成API
 └── common/               # 共通機能
     └── logging.md        # ロギングガイド
 ```
@@ -34,6 +37,28 @@ backend/docs/
 - [login](./auth/login.md) - ログイン
 - [refreshToken](./auth/refresh-token.md) - トークンリフレッシュ
 - [me](./auth/me.md) - 現在のユーザー取得
+
+### 📋 [テストケース管理 (test-cases)](./test-cases/)
+
+結合テストのテストケースを管理するためのAPIドキュメント
+
+- **対象ユーザー**: テスト担当者、開発者
+- **主な機能**: テストケースのCRUD操作、ステータス管理
+- **認証要件**: すべてのAPIで認証必須
+
+**含まれるAPI**:
+- [createTestCase](./test-cases/create-test-case.md) - テストケース作成
+- testCases - テストケース一覧取得
+- testCase - テストケース取得
+- updateTestCase - テストケース更新
+- deleteTestCase - テストケース削除
+
+**テストケースステータス**:
+- DRAFT（下書き）
+- IN_REVIEW（レビュー中）
+- APPROVED（承認済み）
+- REJECTED（却下）
+- ARCHIVED（アーカイブ）
 
 ### 🛠️ [共通機能 (common)](./common/)
 

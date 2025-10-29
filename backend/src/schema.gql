@@ -8,6 +8,14 @@ type AuthResponse {
   user: User!
 }
 
+input CreateTestCaseInput {
+  actualResult: String
+  description: String
+  expectedResult: String!
+  steps: String!
+  title: String!
+}
+
 """
 A date-time string at UTC, such as 2019-12-03T09:54:33Z, compliant with the date-time format.
 """
@@ -19,13 +27,18 @@ input LoginInput {
 }
 
 type Mutation {
+  createTestCase(createTestCaseInput: CreateTestCaseInput!): TestCase!
+  deleteTestCase(id: ID!): TestCase!
   login(loginInput: LoginInput!): AuthResponse!
   refreshToken(refreshTokenInput: RefreshTokenInput!): AuthResponse!
   signUp(signUpInput: SignUpInput!): AuthResponse!
+  updateTestCase(updateTestCaseInput: UpdateTestCaseInput!): TestCase!
 }
 
 type Query {
   me: User!
+  testCase(id: ID!): TestCase!
+  testCases: [TestCase!]!
 }
 
 input RefreshTokenInput {
@@ -37,6 +50,30 @@ input SignUpInput {
   email: String!
   name: String!
   password: String!
+}
+
+type TestCase {
+  actualResult: String
+  createdAt: DateTime!
+  createdBy: User!
+  createdById: ID!
+  description: String
+  expectedResult: String!
+  id: ID!
+  status: String!
+  steps: String!
+  title: String!
+  updatedAt: DateTime!
+}
+
+input UpdateTestCaseInput {
+  actualResult: String
+  description: String
+  expectedResult: String
+  id: ID!
+  status: String
+  steps: String
+  title: String
 }
 
 type User {

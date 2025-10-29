@@ -29,6 +29,7 @@ type Query {
 }
 
 input RefreshTokenInput {
+  oldAccessToken: String!
   refreshToken: String!
 }
 

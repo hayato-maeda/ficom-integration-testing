@@ -9,8 +9,6 @@
       "Bash(npm run prisma:generate:*)",
       "Bash(npm run build:*)",
       "Bash(npm run lint:check:*)",
-      "Bash(psql:*)",
-      "Bash(npx prisma db push:*)",
       "Bash(npm run start:dev:*)"
     ],
     "deny": [],

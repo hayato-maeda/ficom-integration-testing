@@ -12,4 +12,10 @@ export class RefreshTokenInput {
   @IsNotEmpty({ message: 'Refresh token is required' })
   @IsString()
   refreshToken: string;
+
+  /** 古いアクセストークン（無効化するため） */
+  @Field(() => String)
+  @IsNotEmpty({ message: 'Old access token is required' })
+  @IsString()
+  oldAccessToken: string;
 }

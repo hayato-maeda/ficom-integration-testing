@@ -75,7 +75,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
 
     // トークンの発行時刻が tokenValidFromTimestamp より前の場合は無効
     if (user.tokenValidFromTimestamp && payload.iat) {
-      const tokenIssuedAt = new Date(payload.iat * 1000); // iat は秒単位なのでミリ秒に変換
+      const tokenIssuedAt = new Date(payload.iat * 1000); // iatは秒単位なのでミリ秒単位に変換
       if (tokenIssuedAt < user.tokenValidFromTimestamp) {
         throw new UnauthorizedException('Token has been invalidated by re-login');
       }

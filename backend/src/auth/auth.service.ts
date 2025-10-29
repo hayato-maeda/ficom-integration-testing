@@ -42,8 +42,7 @@ export class AuthService {
     const hashedPassword = await bcrypt.hash(password, 10);
 
     // トークン有効化タイムスタンプを準備（JWT の iat は秒単位なのでミリ秒を0にする）
-    const now = new Date();
-    now.setMilliseconds(0);
+    const tokenValidFrom = new Date(Math.floor(Date.now() / 1000) * 1000);
 
     // ユーザーを作成（トークン有効化タイムスタンプを設定）
     const user = await this.prismaService.user.create({
@@ -51,7 +50,7 @@ export class AuthService {
         email,
         password: hashedPassword,
         name,
-        tokenValidFromTimestamp: now,
+        tokenValidFromTimestamp: tokenValidFrom,
       },
     });
 
@@ -95,11 +94,10 @@ export class AuthService {
 
     // トークン有効化タイムスタンプを現在時刻に更新（既存トークンをすべて無効化）
     // JWT の iat は秒単位なので、ミリ秒を0にして精度を合わせる
-    const now = new Date();
-    now.setMilliseconds(0);
+    const tokenValidFrom = new Date(Math.floor(Date.now() / 1000) * 1000);
     await this.prismaService.user.update({
       where: { id: user.id },
-      data: { tokenValidFromTimestamp: now },
+      data: { tokenValidFromTimestamp: tokenValidFrom },
     });
 
     // 既存のリフレッシュトークンをすべて無効化（セッション無効化）

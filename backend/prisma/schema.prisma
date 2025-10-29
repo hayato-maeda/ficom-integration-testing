@@ -23,11 +23,12 @@ model User {
   updatedAt                DateTime  @updatedAt
 
   // リレーション
-  createdTestCases TestCase[]     @relation("TestCaseCreator")
+  createdTestCases TestCase[]      @relation("TestCaseCreator")
   approvals        Approval[]
   uploadedFiles    File[]
   comments         Comment[]
   refreshTokens    RefreshToken[]
+  revokedTokens    RevokedToken[]
 
   @@map("users")
 }
@@ -175,6 +176,9 @@ model RevokedToken {
   userId    Int
   expiresAt DateTime
   createdAt DateTime @default(now())
+
+  // リレーション
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([token])
   @@index([expiresAt])

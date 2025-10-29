@@ -1,12 +1,5 @@
-"use client";
-
 import type { Metadata } from "next";
-import { ThemeProvider } from "@mui/material/styles";
-import CssBaseline from "@mui/material/CssBaseline";
-import { QueryProvider } from "@/lib/query-client";
-import { EmotionCacheProvider } from "@/lib/emotion-cache";
-import { AuthProvider } from "@/lib/auth-context";
-import { theme } from "@/lib/theme";
+import { RootLayoutClient } from "./layout-client";
 
 export const metadata: Metadata = {
   title: "FICOM Integration Testing",
@@ -21,14 +14,7 @@ export default function RootLayout({
   return (
     <html lang="ja">
       <body>
-        <EmotionCacheProvider>
-          <ThemeProvider theme={theme}>
-            <CssBaseline />
-            <QueryProvider>
-              <AuthProvider>{children}</AuthProvider>
-            </QueryProvider>
-          </ThemeProvider>
-        </EmotionCacheProvider>
+        <RootLayoutClient>{children}</RootLayoutClient>
       </body>
     </html>
   );

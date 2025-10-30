@@ -47,7 +47,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           localStorage.setItem('refreshToken', newRefreshToken);
           setUser(userData);
         } else {
-          // トークンリフレッシュ失敗
           localStorage.removeItem('accessToken');
           localStorage.removeItem('refreshToken');
           setUser(null);
@@ -64,47 +63,38 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // ログイン
   const login = async (input: LoginInput): Promise<MutationResponse<AuthResponse>> => {
-    return new Promise(async (resolve, rejects) => {
-      await loginMutation({
-        variables: input,
-        onCompleted: (data) => {
-          console.log('Login data:', data);
-          if (data?.login?.isValid && data.login.data) {
-            const { accessToken, refreshToken } = data.login.data;
-            localStorage.setItem('accessToken', accessToken);
-            localStorage.setItem('refreshToken', refreshToken);
-          }
+    try {
+      const result = await loginMutation({ variables: input });
 
-          resolve(data.login);
-        },
-        onError: (error) => {
-          console.error('Login error:', error);
-          rejects({ isValid: false, message: 'ログインに失敗しました', data: null });
-        },
-      });
-    });
+      if (result.data?.login?.isValid && result.data.login.data) {
+        const { accessToken, refreshToken } = result.data.login.data;
+        localStorage.setItem('accessToken', accessToken);
+        localStorage.setItem('refreshToken', refreshToken);
+      }
+
+      return result.data?.login || { isValid: false, message: 'ログインに失敗しました', data: null };
+    } catch (error) {
+      console.error('Login error:', error);
+      return { isValid: false, message: 'ログインに失敗しました', data: null };
+    }
   };
 
   // サインアップ
   const signup = async (input: SignupInput): Promise<MutationResponse<AuthResponse>> => {
-    return new Promise(async (resolve, rejects) => {
-      await signupMutation({
-        variables: input,
-        onCompleted: (data) => {
-          if (data?.signUp?.isValid && data.signUp.data) {
-            const { accessToken, refreshToken } = data.signUp.data;
-            localStorage.setItem('accessToken', accessToken);
-            localStorage.setItem('refreshToken', refreshToken);
-          }
+    try {
+      const result = await signupMutation({ variables: input });
 
-          resolve(data.signUp);
-        },
-        onError: (error) => {
-          console.error('Signup error:', error);
-          rejects({ isValid: false, message: 'ユーザー登録に失敗しました', data: null });
-        },
-      });
-    });
+      if (result.data?.signUp?.isValid && result.data.signUp.data) {
+        const { accessToken, refreshToken } = result.data.signUp.data;
+        localStorage.setItem('accessToken', accessToken);
+        localStorage.setItem('refreshToken', refreshToken);
+      }
+
+      return result.data?.signUp || { isValid: false, message: 'ユーザー登録に失敗しました', data: null };
+    } catch (error) {
+      console.error('Signup error:', error);
+      return { isValid: false, message: 'ユーザー登録に失敗しました', data: null };
+    }
   };
 
   // ログアウト

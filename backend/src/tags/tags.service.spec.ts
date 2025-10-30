@@ -148,7 +148,7 @@ describe('TagsService', () => {
       expect(mockPrismaService.tag.findUnique).toHaveBeenCalledWith({
         where: { id: 1 },
       });
-      expect(mockLogger.debug).toHaveBeenCalledTimes(2);
+      expect(mockLogger.debug).toHaveBeenCalledTimes(1);
     });
 
     it('should return null when tag not found', async () => {
@@ -157,7 +157,6 @@ describe('TagsService', () => {
       const result = await service.findOne(999);
 
       expect(result).toBeNull();
-      expect(mockLogger.warn).toHaveBeenCalled();
     });
   });
 

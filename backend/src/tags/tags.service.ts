@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PinoLogger } from 'nestjs-pino';
+import { TAGS_MESSAGES } from '../common/messages/tags.messages';
 import { PrismaService } from '../prisma/prisma.service';
 import { AssignTagInput } from './dto/assign-tag.input';
 import { CreateTagInput } from './dto/create-tag.input';
@@ -37,7 +38,7 @@ export class TagsService {
       this.logger.warn({ name: createTagInput.name }, 'Tag name already exists');
       return {
         isValid: false,
-        message: `タグ名「${createTagInput.name}」は既に存在します`,
+        message: TAGS_MESSAGES.TAG_NAME_EXISTS(createTagInput.name),
         data: null,
       };
     }
@@ -53,7 +54,7 @@ export class TagsService {
 
     return {
       isValid: true,
-      message: 'タグを作成しました',
+      message: TAGS_MESSAGES.TAG_CREATED,
       data: tag,
     };
   }
@@ -108,7 +109,7 @@ export class TagsService {
       this.logger.warn({ tagId: updateTagInput.id }, 'Tag not found for update');
       return {
         isValid: false,
-        message: `ID ${updateTagInput.id} のタグが見つかりません`,
+        message: TAGS_MESSAGES.TAG_NOT_FOUND(updateTagInput.id),
         data: null,
       };
     }
@@ -123,7 +124,7 @@ export class TagsService {
         this.logger.warn({ name: updateTagInput.name }, 'Tag name already exists');
         return {
           isValid: false,
-          message: `タグ名「${updateTagInput.name}」は既に存在します`,
+          message: TAGS_MESSAGES.TAG_NAME_EXISTS(updateTagInput.name),
           data: null,
         };
       }
@@ -142,7 +143,7 @@ export class TagsService {
 
     return {
       isValid: true,
-      message: 'タグを更新しました',
+      message: TAGS_MESSAGES.TAG_UPDATED,
       data: tag,
     };
   }
@@ -164,7 +165,7 @@ export class TagsService {
       this.logger.warn({ tagId: id }, 'Tag not found for deletion');
       return {
         isValid: false,
-        message: `ID ${id} のタグが見つかりません`,
+        message: TAGS_MESSAGES.TAG_NOT_FOUND(id),
         data: null,
       };
     }
@@ -177,7 +178,7 @@ export class TagsService {
 
     return {
       isValid: true,
-      message: 'タグを削除しました',
+      message: TAGS_MESSAGES.TAG_DELETED,
       data: existingTag,
     };
   }
@@ -202,7 +203,7 @@ export class TagsService {
       this.logger.warn({ testCaseId: assignTagInput.testCaseId }, 'Test case not found');
       return {
         isValid: false,
-        message: `ID ${assignTagInput.testCaseId} のテストケースが見つかりません`,
+        message: TAGS_MESSAGES.TEST_CASE_NOT_FOUND(assignTagInput.testCaseId),
         data: null,
       };
     }
@@ -216,7 +217,7 @@ export class TagsService {
       this.logger.warn({ tagId: assignTagInput.tagId }, 'Tag not found');
       return {
         isValid: false,
-        message: `ID ${assignTagInput.tagId} のタグが見つかりません`,
+        message: TAGS_MESSAGES.TAG_NOT_FOUND(assignTagInput.tagId),
         data: null,
       };
     }
@@ -238,7 +239,7 @@ export class TagsService {
       );
       return {
         isValid: false,
-        message: 'このタグは既にテストケースに割り当てられています',
+        message: TAGS_MESSAGES.TAG_ALREADY_ASSIGNED,
         data: null,
       };
     }
@@ -257,7 +258,7 @@ export class TagsService {
 
     return {
       isValid: true,
-      message: 'タグを割り当てました',
+      message: TAGS_MESSAGES.TAG_ASSIGNED,
       data: true,
     };
   }
@@ -285,7 +286,7 @@ export class TagsService {
       this.logger.warn({ testCaseId, tagId }, 'Tag assignment not found');
       return {
         isValid: false,
-        message: 'このタグはテストケースに割り当てられていません',
+        message: TAGS_MESSAGES.TAG_NOT_ASSIGNED,
         data: null,
       };
     }
@@ -303,7 +304,7 @@ export class TagsService {
 
     return {
       isValid: true,
-      message: 'タグの割り当てを解除しました',
+      message: TAGS_MESSAGES.TAG_UNASSIGNED,
       data: true,
     };
   }

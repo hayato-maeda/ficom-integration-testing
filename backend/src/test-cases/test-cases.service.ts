@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PinoLogger } from 'nestjs-pino';
+import { TEST_CASES_MESSAGES } from '../common/messages/test-cases.messages';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateTestCaseInput } from './dto/create-test-case.input';
 import { TestCaseMutationResponse } from './dto/test-case-mutation.response';
@@ -46,7 +47,7 @@ export class TestCasesService {
 
     return {
       isValid: true,
-      message: 'テストケースを作成しました',
+      message: TEST_CASES_MESSAGES.TEST_CASE_CREATED,
       data: testCase,
     };
   }
@@ -108,7 +109,7 @@ export class TestCasesService {
       this.logger.warn({ testCaseId: updateTestCaseInput.id }, 'Test case not found for update');
       return {
         isValid: false,
-        message: `ID ${updateTestCaseInput.id} のテストケースが見つかりません`,
+        message: TEST_CASES_MESSAGES.TEST_CASE_NOT_FOUND(updateTestCaseInput.id),
         data: null,
       };
     }
@@ -121,7 +122,7 @@ export class TestCasesService {
       );
       return {
         isValid: false,
-        message: 'テストケースの作成者のみ更新できます',
+        message: TEST_CASES_MESSAGES.UNAUTHORIZED_UPDATE,
         data: null,
       };
     }
@@ -142,7 +143,7 @@ export class TestCasesService {
 
     return {
       isValid: true,
-      message: 'テストケースを更新しました',
+      message: TEST_CASES_MESSAGES.TEST_CASE_UPDATED,
       data: testCase,
     };
   }
@@ -168,7 +169,7 @@ export class TestCasesService {
       this.logger.warn({ testCaseId: id }, 'Test case not found for deletion');
       return {
         isValid: false,
-        message: `ID ${id} のテストケースが見つかりません`,
+        message: TEST_CASES_MESSAGES.TEST_CASE_NOT_FOUND(id),
         data: null,
       };
     }
@@ -181,7 +182,7 @@ export class TestCasesService {
       );
       return {
         isValid: false,
-        message: 'テストケースの作成者のみ削除できます',
+        message: TEST_CASES_MESSAGES.UNAUTHORIZED_DELETE,
         data: null,
       };
     }
@@ -194,7 +195,7 @@ export class TestCasesService {
 
     return {
       isValid: true,
-      message: 'テストケースを削除しました',
+      message: TEST_CASES_MESSAGES.TEST_CASE_DELETED,
       data: existingTestCase,
     };
   }

@@ -4,6 +4,7 @@ import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { PinoLogger } from 'nestjs-pino';
+import { AUTH_MESSAGES } from '../common/messages/auth.messages';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuthMutationResponse } from './dto/auth-mutation.response';
 import { LoginInput } from './dto/login.input';
@@ -43,7 +44,7 @@ export class AuthService {
       this.logger.warn({ email }, 'Registration attempt with existing email');
       return {
         isValid: false,
-        message: 'このメールアドレスは既に登録されています',
+        message: AUTH_MESSAGES.EMAIL_ALREADY_EXISTS,
         data: null,
       };
     }
@@ -53,7 +54,7 @@ export class AuthService {
       this.logger.warn({ email }, 'Registration attempt with invalid password');
       return {
         isValid: false,
-        message: 'パスワードは8文字以上で入力してください',
+        message: AUTH_MESSAGES.PASSWORD_TOO_SHORT,
         data: null,
       };
     }
@@ -84,7 +85,7 @@ export class AuthService {
 
     return {
       isValid: true,
-      message: 'ユーザー登録が完了しました',
+      message: AUTH_MESSAGES.SIGNUP_SUCCESS,
       data: {
         accessToken,
         refreshToken,
@@ -112,7 +113,7 @@ export class AuthService {
       this.logger.warn({ email }, 'Login failed: user not found');
       return {
         isValid: false,
-        message: 'メールアドレスまたはパスワードが正しくありません',
+        message: AUTH_MESSAGES.INVALID_CREDENTIALS,
         data: null,
       };
     }
@@ -124,7 +125,7 @@ export class AuthService {
       this.logger.warn({ userId: user.id, email }, 'Login failed: invalid password');
       return {
         isValid: false,
-        message: 'メールアドレスまたはパスワードが正しくありません',
+        message: AUTH_MESSAGES.INVALID_CREDENTIALS,
         data: null,
       };
     }
@@ -165,7 +166,7 @@ export class AuthService {
       this.logger.error({ userId: user.id }, 'User not found after update');
       return {
         isValid: false,
-        message: 'ユーザー情報の取得に失敗しました',
+        message: AUTH_MESSAGES.USER_NOT_FOUND_AFTER_UPDATE,
         data: null,
       };
     }
@@ -174,7 +175,7 @@ export class AuthService {
 
     return {
       isValid: true,
-      message: 'ログインに成功しました',
+      message: AUTH_MESSAGES.LOGIN_SUCCESS,
       data: {
         accessToken,
         refreshToken,
@@ -202,7 +203,7 @@ export class AuthService {
       this.logger.warn('Token refresh failed: invalid refresh token');
       return {
         isValid: false,
-        message: '無効なリフレッシュトークンです',
+        message: AUTH_MESSAGES.INVALID_REFRESH_TOKEN,
         data: null,
       };
     }
@@ -211,7 +212,7 @@ export class AuthService {
       this.logger.warn({ userId: storedToken.userId }, 'Token refresh failed: token revoked');
       return {
         isValid: false,
-        message: 'リフレッシュトークンは無効化されています',
+        message: AUTH_MESSAGES.REFRESH_TOKEN_REVOKED,
         data: null,
       };
     }
@@ -220,7 +221,7 @@ export class AuthService {
       this.logger.warn({ userId: storedToken.userId }, 'Token refresh failed: token expired');
       return {
         isValid: false,
-        message: 'リフレッシュトークンの有効期限が切れています',
+        message: AUTH_MESSAGES.REFRESH_TOKEN_EXPIRED,
         data: null,
       };
     }
@@ -254,7 +255,7 @@ export class AuthService {
 
     return {
       isValid: true,
-      message: 'トークンの更新に成功しました',
+      message: AUTH_MESSAGES.TOKEN_REFRESH_SUCCESS,
       data: {
         accessToken: newAccessToken,
         refreshToken: newRefreshToken,

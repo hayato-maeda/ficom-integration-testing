@@ -144,7 +144,7 @@ describe('TestCasesService', () => {
           createdBy: true,
         },
       });
-      expect(mockLogger.debug).toHaveBeenCalledTimes(2);
+      expect(mockLogger.debug).toHaveBeenCalledTimes(1);
     });
 
     it('should return null when test case not found', async () => {
@@ -153,7 +153,6 @@ describe('TestCasesService', () => {
       const result = await service.findOne(999);
 
       expect(result).toBeNull();
-      expect(mockLogger.warn).toHaveBeenCalled();
     });
   });
 

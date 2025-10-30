@@ -23,7 +23,7 @@
 |-----------|-----|------|------|
 | `signUpInput` | SignUpInput | ✓ | ユーザー登録情報 |
 | `signUpInput.email` | String | ✓ | メールアドレス（一意） |
-| `signUpInput.password` | String | ✓ | パスワード |
+| `signUpInput.password` | String | ✓ | パスワード（8文字以上） |
 | `signUpInput.name` | String | ✓ | ユーザー名 |
 
 ### GraphQLクエリ
@@ -31,14 +31,18 @@
 ```graphql
 mutation SignUp($signUpInput: SignUpInput!) {
   signUp(signUpInput: $signUpInput) {
-    accessToken
-    refreshToken
-    user {
-      id
-      email
-      name
-      createdAt
-      updatedAt
+    isValid
+    message
+    data {
+      accessToken
+      refreshToken
+      user {
+        id
+        email
+        name
+        createdAt
+        updatedAt
+      }
     }
   }
 }
@@ -64,14 +68,18 @@ mutation SignUp($signUpInput: SignUpInput!) {
 {
   "data": {
     "signUp": {
-      "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-      "refreshToken": "550e8400-e29b-41d4-a716-446655440000",
-      "user": {
-        "id": 1,
-        "email": "user@example.com",
-        "name": "山田太郎",
-        "createdAt": "2025-10-29T05:00:00.000Z",
-        "updatedAt": "2025-10-29T05:00:00.000Z"
+      "isValid": true,
+      "message": "ユーザー登録が完了しました",
+      "data": {
+        "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+        "refreshToken": "550e8400-e29b-41d4-a716-446655440000",
+        "user": {
+          "id": 1,
+          "email": "user@example.com",
+          "name": "山田太郎",
+          "createdAt": "2025-10-29T05:00:00.000Z",
+          "updatedAt": "2025-10-29T05:00:00.000Z"
+        }
       }
     }
   }
@@ -82,37 +90,57 @@ mutation SignUp($signUpInput: SignUpInput!) {
 
 | フィールド | 型 | 説明 |
 |-----------|-----|------|
-| `accessToken` | String | JWT アクセストークン（有効期限: 1時間） |
-| `refreshToken` | String | リフレッシュトークン（有効期限: 7日） |
-| `user` | User | 登録されたユーザー情報 |
-| `user.id` | Int | ユーザーID |
-| `user.email` | String | メールアドレス |
-| `user.name` | String | ユーザー名 |
-| `user.createdAt` | DateTime | 作成日時 |
-| `user.updatedAt` | DateTime | 更新日時 |
+| `isValid` | Boolean | 処理が成功したかどうか |
+| `message` | String | サーバーからのメッセージ |
+| `data` | AuthResponse? | 成功時の認証データ（失敗時はnull） |
+| `data.accessToken` | String | JWT アクセストークン（有効期限: 1時間） |
+| `data.refreshToken` | String | リフレッシュトークン（有効期限: 7日） |
+| `data.user` | User | 登録されたユーザー情報 |
+| `data.user.id` | Int | ユーザーID |
+| `data.user.email` | String | メールアドレス |
+| `data.user.name` | String | ユーザー名 |
+| `data.user.createdAt` | DateTime | 作成日時 |
+| `data.user.updatedAt` | DateTime | 更新日時 |
 
 ## エラー
 
 ### 1. メールアドレス重複エラー
 
-**ステータスコード**: 409 Conflict
+**ステータスコード**: 200 OK (GraphQL正常レスポンス)
 
 **条件**: 既に登録済みのメールアドレスを使用した場合
 
 ```json
 {
-  "errors": [
-    {
-      "message": "Email already exists",
-      "extensions": {
-        "code": "BAD_USER_INPUT"
-      }
+  "data": {
+    "signUp": {
+      "isValid": false,
+      "message": "このメールアドレスは既に登録されています",
+      "data": null
     }
-  ]
+  }
 }
 ```
 
-### 2. バリデーションエラー
+### 2. パスワード長さ不足エラー
+
+**ステータスコード**: 200 OK (GraphQL正常レスポンス)
+
+**条件**: パスワードが8文字未満の場合
+
+```json
+{
+  "data": {
+    "signUp": {
+      "isValid": false,
+      "message": "パスワードは8文字以上で入力してください",
+      "data": null
+    }
+  }
+}
+```
+
+### 3. バリデーションエラー
 
 **ステータスコード**: 400 Bad Request
 
@@ -164,6 +192,7 @@ mutation SignUp($signUpInput: SignUpInput!) {
 
 - ユーザー登録開始: `info` レベル
 - 重複メール検出: `warn` レベル
+- パスワード長さ不足: `warn` レベル
 - 登録成功: `info` レベル
 
 ```json
@@ -184,7 +213,7 @@ mutation SignUp($signUpInput: SignUpInput!) {
 curl -X POST http://localhost:4000/graphql \
   -H "Content-Type: application/json" \
   -d '{
-    "query": "mutation SignUp($signUpInput: SignUpInput!) { signUp(signUpInput: $signUpInput) { accessToken refreshToken user { id email name } } }",
+    "query": "mutation SignUp($signUpInput: SignUpInput!) { signUp(signUpInput: $signUpInput) { isValid message data { accessToken refreshToken user { id email name } } } }",
     "variables": {
       "signUpInput": {
         "email": "user@example.com",
@@ -207,12 +236,16 @@ const response = await fetch('http://localhost:4000/graphql', {
     query: `
       mutation SignUp($signUpInput: SignUpInput!) {
         signUp(signUpInput: $signUpInput) {
-          accessToken
-          refreshToken
-          user {
-            id
-            email
-            name
+          isValid
+          message
+          data {
+            accessToken
+            refreshToken
+            user {
+              id
+              email
+              name
+            }
           }
         }
       }
@@ -228,7 +261,14 @@ const response = await fetch('http://localhost:4000/graphql', {
 });
 
 const { data } = await response.json();
-console.log('Access Token:', data.signUp.accessToken);
+
+// 成功チェック
+if (data.signUp.isValid) {
+  console.log('Success:', data.signUp.message);
+  console.log('Access Token:', data.signUp.data.accessToken);
+} else {
+  console.error('Error:', data.signUp.message);
+}
 ```
 
 ## 次のステップ

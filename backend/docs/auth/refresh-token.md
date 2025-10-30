@@ -30,12 +30,16 @@
 ```graphql
 mutation RefreshToken($refreshTokenInput: RefreshTokenInput!) {
   refreshToken(refreshTokenInput: $refreshTokenInput) {
-    accessToken
-    refreshToken
-    user {
-      id
-      email
-      name
+    isValid
+    message
+    data {
+      accessToken
+      refreshToken
+      user {
+        id
+        email
+        name
+      }
     }
   }
 }
@@ -60,12 +64,16 @@ mutation RefreshToken($refreshTokenInput: RefreshTokenInput!) {
 {
   "data": {
     "refreshToken": {
-      "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...(NEW)",
-      "refreshToken": "p7q8r9s0-t1u2-v3w4-x5y6-z7a8b9c0d1e2(NEW)",
-      "user": {
-        "id": 1,
-        "email": "user@example.com",
-        "name": "山田太郎"
+      "isValid": true,
+      "message": "トークンの更新に成功しました",
+      "data": {
+        "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...(NEW)",
+        "refreshToken": "p7q8r9s0-t1u2-v3w4-x5y6-z7a8b9c0d1e2(NEW)",
+        "user": {
+          "id": 1,
+          "email": "user@example.com",
+          "name": "山田太郎"
+        }
       }
     }
   }
@@ -76,50 +84,51 @@ mutation RefreshToken($refreshTokenInput: RefreshTokenInput!) {
 
 | フィールド | 型 | 説明 |
 |-----------|-----|------|
-| `accessToken` | String | **新しい** JWT アクセストークン（有効期限: 1時間） |
-| `refreshToken` | String | **新しい** リフレッシュトークン（有効期限: 7日） |
-| `user` | User | ユーザー情報 |
-| `user.id` | Int | ユーザーID |
-| `user.email` | String | メールアドレス |
-| `user.name` | String | ユーザー名 |
+| `isValid` | Boolean | 処理が成功したかどうか |
+| `message` | String | サーバーからのメッセージ |
+| `data` | AuthResponse? | 成功時の認証データ（失敗時はnull） |
+| `data.accessToken` | String | **新しい** JWT アクセストークン（有効期限: 1時間） |
+| `data.refreshToken` | String | **新しい** リフレッシュトークン（有効期限: 7日） |
+| `data.user` | User | ユーザー情報 |
+| `data.user.id` | Int | ユーザーID |
+| `data.user.email` | String | メールアドレス |
+| `data.user.name` | String | ユーザー名 |
 
 ## エラー
 
 ### 1. 無効なリフレッシュトークン
 
-**ステータスコード**: 401 Unauthorized
+**ステータスコード**: 200 OK (GraphQL正常レスポンス)
 
 **条件**: リフレッシュトークンが存在しない、または無効
 
 ```json
 {
-  "errors": [
-    {
-      "message": "Invalid refresh token",
-      "extensions": {
-        "code": "UNAUTHENTICATED"
-      }
+  "data": {
+    "refreshToken": {
+      "isValid": false,
+      "message": "無効なリフレッシュトークンです",
+      "data": null
     }
-  ]
+  }
 }
 ```
 
 ### 2. 無効化済みトークン
 
-**ステータスコード**: 401 Unauthorized
+**ステータスコード**: 200 OK (GraphQL正常レスポンス)
 
 **条件**: リフレッシュトークンが既に無効化されている
 
 ```json
 {
-  "errors": [
-    {
-      "message": "Refresh token has been revoked",
-      "extensions": {
-        "code": "UNAUTHENTICATED"
-      }
+  "data": {
+    "refreshToken": {
+      "isValid": false,
+      "message": "リフレッシュトークンは無効化されています",
+      "data": null
     }
-  ]
+  }
 }
 ```
 
@@ -130,20 +139,19 @@ mutation RefreshToken($refreshTokenInput: RefreshTokenInput!) {
 
 ### 3. 期限切れトークン
 
-**ステータスコード**: 401 Unauthorized
+**ステータスコード**: 200 OK (GraphQL正常レスポンス)
 
 **条件**: リフレッシュトークンの有効期限が切れている
 
 ```json
 {
-  "errors": [
-    {
-      "message": "Refresh token has expired",
-      "extensions": {
-        "code": "UNAUTHENTICATED"
-      }
+  "data": {
+    "refreshToken": {
+      "isValid": false,
+      "message": "リフレッシュトークンの有効期限が切れています",
+      "data": null
     }
-  ]
+  }
 }
 ```
 
@@ -238,11 +246,15 @@ const response = await fetch('http://localhost:4000/graphql', {
     query: `
       mutation RefreshToken($refreshTokenInput: RefreshTokenInput!) {
         refreshToken(refreshTokenInput: $refreshTokenInput) {
-          accessToken
-          refreshToken
-          user {
-            id
-            email
+          isValid
+          message
+          data {
+            accessToken
+            refreshToken
+            user {
+              id
+              email
+            }
           }
         }
       }
@@ -258,9 +270,16 @@ const response = await fetch('http://localhost:4000/graphql', {
 
 const { data } = await response.json();
 
-// 新しいトークンで更新
-localStorage.setItem('accessToken', data.refreshToken.accessToken);
-localStorage.setItem('refreshToken', data.refreshToken.refreshToken);
+// 成功チェック
+if (data.refreshToken.isValid) {
+  // 新しいトークンで更新
+  localStorage.setItem('accessToken', data.refreshToken.data.accessToken);
+  localStorage.setItem('refreshToken', data.refreshToken.data.refreshToken);
+} else {
+  console.error('Token refresh failed:', data.refreshToken.message);
+  // ログイン画面へリダイレクト
+  window.location.href = '/login';
+}
 ```
 
 ### Apollo Client の自動リフレッシュ例
@@ -282,11 +301,15 @@ const errorLink = onError(({ graphQLErrors, operation, forward }) => {
 
           return fromPromise(
             refreshAccessToken()
-              .then((newTokens) => {
-                localStorage.setItem('accessToken', newTokens.accessToken);
-                localStorage.setItem('refreshToken', newTokens.refreshToken);
-                isRefreshing = false;
-                return newTokens.accessToken;
+              .then((result) => {
+                if (result.isValid) {
+                  localStorage.setItem('accessToken', result.data.accessToken);
+                  localStorage.setItem('refreshToken', result.data.refreshToken);
+                  isRefreshing = false;
+                  return result.data.accessToken;
+                } else {
+                  throw new Error(result.message);
+                }
               })
               .catch(() => {
                 // リフレッシュ失敗 → ログイン画面へ
@@ -314,7 +337,19 @@ async function refreshAccessToken() {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      query: REFRESH_TOKEN_MUTATION,
+      query: `
+        mutation RefreshToken($refreshTokenInput: RefreshTokenInput!) {
+          refreshToken(refreshTokenInput: $refreshTokenInput) {
+            isValid
+            message
+            data {
+              accessToken
+              refreshToken
+              user { id email }
+            }
+          }
+        }
+      `,
       variables: {
         refreshTokenInput: {
           refreshToken: localStorage.getItem('refreshToken'),

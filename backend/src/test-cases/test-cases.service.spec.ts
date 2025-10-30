@@ -1,4 +1,3 @@
-import { NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { PinoLogger } from 'nestjs-pino';
 import { PrismaService } from '../prisma/prisma.service';
@@ -6,8 +5,6 @@ import { TestCasesService } from './test-cases.service';
 
 describe('TestCasesService', () => {
   let service: TestCasesService;
-  let _prismaService: PrismaService;
-  let _logger: PinoLogger;
 
   const mockPrismaService = {
     testCase: {
@@ -67,8 +64,6 @@ describe('TestCasesService', () => {
     }).compile();
 
     service = module.get<TestCasesService>(TestCasesService);
-    _prismaService = module.get<PrismaService>(PrismaService);
-    _logger = module.get<PinoLogger>(PinoLogger);
 
     jest.clearAllMocks();
   });
@@ -92,7 +87,9 @@ describe('TestCasesService', () => {
         1,
       );
 
-      expect(result).toEqual(mockTestCase);
+      expect(result.isValid).toBe(true);
+      expect(result.message).toBe('テストケースを作成しました');
+      expect(result.data).toEqual(mockTestCase);
       expect(mockPrismaService.testCase.create).toHaveBeenCalledWith({
         data: {
           title: 'Test Case',
@@ -143,15 +140,15 @@ describe('TestCasesService', () => {
           createdBy: true,
         },
       });
-      expect(mockLogger.debug).toHaveBeenCalledTimes(2);
+      expect(mockLogger.debug).toHaveBeenCalledTimes(1);
     });
 
-    it('should throw NotFoundException when test case not found', async () => {
+    it('should return null when test case not found', async () => {
       mockPrismaService.testCase.findUnique.mockResolvedValue(null);
 
-      await expect(service.findOne(999)).rejects.toThrow(NotFoundException);
-      await expect(service.findOne(999)).rejects.toThrow('Test case with ID 999 not found');
-      expect(mockLogger.warn).toHaveBeenCalled();
+      const result = await service.findOne(999);
+
+      expect(result).toBeNull();
     });
   });
 
@@ -169,7 +166,9 @@ describe('TestCasesService', () => {
         1,
       );
 
-      expect(result).toEqual(updatedTestCase);
+      expect(result.isValid).toBe(true);
+      expect(result.message).toBe('テストケースを更新しました');
+      expect(result.data).toEqual(updatedTestCase);
       expect(mockPrismaService.testCase.findUnique).toHaveBeenCalledWith({
         where: { id: 1 },
       });
@@ -183,51 +182,37 @@ describe('TestCasesService', () => {
       expect(mockLogger.info).toHaveBeenCalledTimes(2);
     });
 
-    it('should throw NotFoundException when test case not found', async () => {
+    it('should return error when test case not found', async () => {
       mockPrismaService.testCase.findUnique.mockResolvedValue(null);
 
-      await expect(
-        service.update(
-          {
-            id: 999,
-            title: 'Updated Title',
-          },
-          1,
-        ),
-      ).rejects.toThrow(NotFoundException);
-      await expect(
-        service.update(
-          {
-            id: 999,
-            title: 'Updated Title',
-          },
-          1,
-        ),
-      ).rejects.toThrow('Test case with ID 999 not found');
+      const result = await service.update(
+        {
+          id: 999,
+          title: 'Updated Title',
+        },
+        1,
+      );
+
+      expect(result.isValid).toBe(false);
+      expect(result.message).toBe('ID 999 のテストケースが見つかりません');
+      expect(result.data).toBeNull();
       expect(mockLogger.warn).toHaveBeenCalled();
     });
 
-    it('should throw UnauthorizedException when user is not the creator', async () => {
+    it('should return error when user is not the creator', async () => {
       mockPrismaService.testCase.findUnique.mockResolvedValue(mockTestCase);
 
-      await expect(
-        service.update(
-          {
-            id: 1,
-            title: 'Updated Title',
-          },
-          2, // Different user ID
-        ),
-      ).rejects.toThrow(UnauthorizedException);
-      await expect(
-        service.update(
-          {
-            id: 1,
-            title: 'Updated Title',
-          },
-          2,
-        ),
-      ).rejects.toThrow('Only the creator can update this test case');
+      const result = await service.update(
+        {
+          id: 1,
+          title: 'Updated Title',
+        },
+        2, // Different user ID
+      );
+
+      expect(result.isValid).toBe(false);
+      expect(result.message).toBe('テストケースの作成者のみ更新できます');
+      expect(result.data).toBeNull();
       expect(mockLogger.warn).toHaveBeenCalled();
     });
   });
@@ -239,7 +224,9 @@ describe('TestCasesService', () => {
 
       const result = await service.remove(1, 1);
 
-      expect(result).toEqual(mockTestCase);
+      expect(result.isValid).toBe(true);
+      expect(result.message).toBe('テストケースを削除しました');
+      expect(result.data).toEqual(mockTestCase);
       expect(mockPrismaService.testCase.findUnique).toHaveBeenCalledWith({
         where: { id: 1 },
         include: {
@@ -252,19 +239,25 @@ describe('TestCasesService', () => {
       expect(mockLogger.info).toHaveBeenCalledTimes(2);
     });
 
-    it('should throw NotFoundException when test case not found', async () => {
+    it('should return error when test case not found', async () => {
       mockPrismaService.testCase.findUnique.mockResolvedValue(null);
 
-      await expect(service.remove(999, 1)).rejects.toThrow(NotFoundException);
-      await expect(service.remove(999, 1)).rejects.toThrow('Test case with ID 999 not found');
+      const result = await service.remove(999, 1);
+
+      expect(result.isValid).toBe(false);
+      expect(result.message).toBe('ID 999 のテストケースが見つかりません');
+      expect(result.data).toBeNull();
       expect(mockLogger.warn).toHaveBeenCalled();
     });
 
-    it('should throw UnauthorizedException when user is not the creator', async () => {
+    it('should return error when user is not the creator', async () => {
       mockPrismaService.testCase.findUnique.mockResolvedValue(mockTestCase);
 
-      await expect(service.remove(1, 2)).rejects.toThrow(UnauthorizedException);
-      await expect(service.remove(1, 2)).rejects.toThrow('Only the creator can delete this test case');
+      const result = await service.remove(1, 2);
+
+      expect(result.isValid).toBe(false);
+      expect(result.message).toBe('テストケースの作成者のみ削除できます');
+      expect(result.data).toBeNull();
       expect(mockLogger.warn).toHaveBeenCalled();
     });
   });

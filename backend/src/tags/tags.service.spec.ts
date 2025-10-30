@@ -1,4 +1,3 @@
-import { ConflictException, NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { PinoLogger } from 'nestjs-pino';
 import { PrismaService } from '../prisma/prisma.service';
@@ -6,8 +5,6 @@ import { TagsService } from './tags.service';
 
 describe('TagsService', () => {
   let service: TagsService;
-  let _prismaService: PrismaService;
-  let _logger: PinoLogger;
 
   const mockPrismaService = {
     tag: {
@@ -72,8 +69,6 @@ describe('TagsService', () => {
     }).compile();
 
     service = module.get<TagsService>(TagsService);
-    _prismaService = module.get<PrismaService>(PrismaService);
-    _logger = module.get<PinoLogger>(PinoLogger);
 
     jest.clearAllMocks();
   });
@@ -92,7 +87,9 @@ describe('TagsService', () => {
         color: '#FF0000',
       });
 
-      expect(result).toEqual(mockTag);
+      expect(result.isValid).toBe(true);
+      expect(result.message).toBe('タグを作成しました');
+      expect(result.data).toEqual(mockTag);
       expect(mockPrismaService.tag.findUnique).toHaveBeenCalledWith({
         where: { name: 'Test Tag' },
       });
@@ -105,21 +102,17 @@ describe('TagsService', () => {
       expect(mockLogger.info).toHaveBeenCalledTimes(2);
     });
 
-    it('should throw ConflictException when tag name already exists', async () => {
+    it('should return error when tag name already exists', async () => {
       mockPrismaService.tag.findUnique.mockResolvedValue(mockTag);
 
-      await expect(
-        service.create({
-          name: 'Test Tag',
-          color: '#FF0000',
-        }),
-      ).rejects.toThrow(ConflictException);
-      await expect(
-        service.create({
-          name: 'Test Tag',
-          color: '#FF0000',
-        }),
-      ).rejects.toThrow('Tag with name "Test Tag" already exists');
+      const result = await service.create({
+        name: 'Test Tag',
+        color: '#FF0000',
+      });
+
+      expect(result.isValid).toBe(false);
+      expect(result.message).toBe('タグ名「Test Tag」は既に存在します');
+      expect(result.data).toBeNull();
       expect(mockLogger.warn).toHaveBeenCalled();
     });
   });
@@ -151,15 +144,15 @@ describe('TagsService', () => {
       expect(mockPrismaService.tag.findUnique).toHaveBeenCalledWith({
         where: { id: 1 },
       });
-      expect(mockLogger.debug).toHaveBeenCalledTimes(2);
+      expect(mockLogger.debug).toHaveBeenCalledTimes(1);
     });
 
-    it('should throw NotFoundException when tag not found', async () => {
+    it('should return null when tag not found', async () => {
       mockPrismaService.tag.findUnique.mockResolvedValue(null);
 
-      await expect(service.findOne(999)).rejects.toThrow(NotFoundException);
-      await expect(service.findOne(999)).rejects.toThrow('Tag with ID 999 not found');
-      expect(mockLogger.warn).toHaveBeenCalled();
+      const result = await service.findOne(999);
+
+      expect(result).toBeNull();
     });
   });
 
@@ -175,7 +168,9 @@ describe('TagsService', () => {
         name: 'Updated Tag',
       });
 
-      expect(result).toEqual(updatedTag);
+      expect(result.isValid).toBe(true);
+      expect(result.message).toBe('タグを更新しました');
+      expect(result.data).toEqual(updatedTag);
       expect(mockPrismaService.tag.update).toHaveBeenCalledWith({
         where: { id: 1 },
         data: { name: 'Updated Tag' },
@@ -183,36 +178,33 @@ describe('TagsService', () => {
       expect(mockLogger.info).toHaveBeenCalledTimes(2);
     });
 
-    it('should throw NotFoundException when tag not found', async () => {
+    it('should return error when tag not found', async () => {
       mockPrismaService.tag.findUnique.mockResolvedValue(null);
 
-      await expect(
-        service.update({
-          id: 999,
-          name: 'Updated Tag',
-        }),
-      ).rejects.toThrow(NotFoundException);
-      await expect(
-        service.update({
-          id: 999,
-          name: 'Updated Tag',
-        }),
-      ).rejects.toThrow('Tag with ID 999 not found');
+      const result = await service.update({
+        id: 999,
+        name: 'Updated Tag',
+      });
+
+      expect(result.isValid).toBe(false);
+      expect(result.message).toBe('ID 999 のタグが見つかりません');
+      expect(result.data).toBeNull();
       expect(mockLogger.warn).toHaveBeenCalled();
     });
 
-    it('should throw ConflictException when new tag name already exists', async () => {
+    it('should return error when new tag name already exists', async () => {
       const anotherTag = { ...mockTag, id: 2, name: 'Existing Tag' };
       mockPrismaService.tag.findUnique.mockResolvedValueOnce(mockTag);
       mockPrismaService.tag.findUnique.mockResolvedValueOnce(anotherTag);
 
-      const updatePromise = service.update({
+      const result = await service.update({
         id: 1,
         name: 'Existing Tag',
       });
 
-      await expect(updatePromise).rejects.toThrow(ConflictException);
-      await expect(updatePromise).rejects.toThrow('Tag with name "Existing Tag" already exists');
+      expect(result.isValid).toBe(false);
+      expect(result.message).toBe('タグ名「Existing Tag」は既に存在します');
+      expect(result.data).toBeNull();
       expect(mockLogger.warn).toHaveBeenCalled();
     });
   });
@@ -224,7 +216,9 @@ describe('TagsService', () => {
 
       const result = await service.remove(1);
 
-      expect(result).toEqual(mockTag);
+      expect(result.isValid).toBe(true);
+      expect(result.message).toBe('タグを削除しました');
+      expect(result.data).toEqual(mockTag);
       expect(mockPrismaService.tag.findUnique).toHaveBeenCalledWith({
         where: { id: 1 },
       });
@@ -234,11 +228,14 @@ describe('TagsService', () => {
       expect(mockLogger.info).toHaveBeenCalledTimes(2);
     });
 
-    it('should throw NotFoundException when tag not found', async () => {
+    it('should return error when tag not found', async () => {
       mockPrismaService.tag.findUnique.mockResolvedValue(null);
 
-      await expect(service.remove(999)).rejects.toThrow(NotFoundException);
-      await expect(service.remove(999)).rejects.toThrow('Tag with ID 999 not found');
+      const result = await service.remove(999);
+
+      expect(result.isValid).toBe(false);
+      expect(result.message).toBe('ID 999 のタグが見つかりません');
+      expect(result.data).toBeNull();
       expect(mockLogger.warn).toHaveBeenCalled();
     });
   });
@@ -258,7 +255,9 @@ describe('TagsService', () => {
         tagId: 1,
       });
 
-      expect(result).toBe(true);
+      expect(result.isValid).toBe(true);
+      expect(result.message).toBe('タグを割り当てました');
+      expect(result.data).toBe(true);
       expect(mockPrismaService.testCase.findUnique).toHaveBeenCalledWith({
         where: { id: 1 },
       });
@@ -274,44 +273,36 @@ describe('TagsService', () => {
       expect(mockLogger.info).toHaveBeenCalledTimes(2);
     });
 
-    it('should throw NotFoundException when test case not found', async () => {
+    it('should return error when test case not found', async () => {
       mockPrismaService.testCase.findUnique.mockResolvedValue(null);
 
-      await expect(
-        service.assignTag({
-          testCaseId: 999,
-          tagId: 1,
-        }),
-      ).rejects.toThrow(NotFoundException);
-      await expect(
-        service.assignTag({
-          testCaseId: 999,
-          tagId: 1,
-        }),
-      ).rejects.toThrow('Test case with ID 999 not found');
+      const result = await service.assignTag({
+        testCaseId: 999,
+        tagId: 1,
+      });
+
+      expect(result.isValid).toBe(false);
+      expect(result.message).toBe('ID 999 のテストケースが見つかりません');
+      expect(result.data).toBeNull();
       expect(mockLogger.warn).toHaveBeenCalled();
     });
 
-    it('should throw NotFoundException when tag not found', async () => {
+    it('should return error when tag not found', async () => {
       mockPrismaService.testCase.findUnique.mockResolvedValue(mockTestCase);
       mockPrismaService.tag.findUnique.mockResolvedValue(null);
 
-      await expect(
-        service.assignTag({
-          testCaseId: 1,
-          tagId: 999,
-        }),
-      ).rejects.toThrow(NotFoundException);
-      await expect(
-        service.assignTag({
-          testCaseId: 1,
-          tagId: 999,
-        }),
-      ).rejects.toThrow('Tag with ID 999 not found');
+      const result = await service.assignTag({
+        testCaseId: 1,
+        tagId: 999,
+      });
+
+      expect(result.isValid).toBe(false);
+      expect(result.message).toBe('ID 999 のタグが見つかりません');
+      expect(result.data).toBeNull();
       expect(mockLogger.warn).toHaveBeenCalled();
     });
 
-    it('should throw ConflictException when tag already assigned', async () => {
+    it('should return error when tag already assigned', async () => {
       mockPrismaService.testCase.findUnique.mockResolvedValue(mockTestCase);
       mockPrismaService.tag.findUnique.mockResolvedValue(mockTag);
       mockPrismaService.testCaseTag.findUnique.mockResolvedValue({
@@ -319,18 +310,14 @@ describe('TagsService', () => {
         tagId: 1,
       });
 
-      await expect(
-        service.assignTag({
-          testCaseId: 1,
-          tagId: 1,
-        }),
-      ).rejects.toThrow(ConflictException);
-      await expect(
-        service.assignTag({
-          testCaseId: 1,
-          tagId: 1,
-        }),
-      ).rejects.toThrow('Tag is already assigned to this test case');
+      const result = await service.assignTag({
+        testCaseId: 1,
+        tagId: 1,
+      });
+
+      expect(result.isValid).toBe(false);
+      expect(result.message).toBe('このタグは既にテストケースに割り当てられています');
+      expect(result.data).toBeNull();
       expect(mockLogger.warn).toHaveBeenCalled();
     });
   });
@@ -348,7 +335,9 @@ describe('TagsService', () => {
 
       const result = await service.unassignTag(1, 1);
 
-      expect(result).toBe(true);
+      expect(result.isValid).toBe(true);
+      expect(result.message).toBe('タグの割り当てを解除しました');
+      expect(result.data).toBe(true);
       expect(mockPrismaService.testCaseTag.findUnique).toHaveBeenCalledWith({
         where: {
           testCaseId_tagId: {
@@ -368,11 +357,14 @@ describe('TagsService', () => {
       expect(mockLogger.info).toHaveBeenCalledTimes(2);
     });
 
-    it('should throw NotFoundException when assignment not found', async () => {
+    it('should return error when assignment not found', async () => {
       mockPrismaService.testCaseTag.findUnique.mockResolvedValue(null);
 
-      await expect(service.unassignTag(999, 1)).rejects.toThrow(NotFoundException);
-      await expect(service.unassignTag(999, 1)).rejects.toThrow('Tag is not assigned to this test case');
+      const result = await service.unassignTag(999, 1);
+
+      expect(result.isValid).toBe(false);
+      expect(result.message).toBe('このタグはテストケースに割り当てられていません');
+      expect(result.data).toBeNull();
       expect(mockLogger.warn).toHaveBeenCalled();
     });
   });

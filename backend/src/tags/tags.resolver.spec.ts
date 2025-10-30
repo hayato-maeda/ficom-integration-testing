@@ -4,7 +4,6 @@ import { TagsService } from './tags.service';
 
 describe('TagsResolver', () => {
   let resolver: TagsResolver;
-  let _tagsService: TagsService;
 
   const mockTag = {
     id: 1,
@@ -37,7 +36,6 @@ describe('TagsResolver', () => {
     }).compile();
 
     resolver = module.get<TagsResolver>(TagsResolver);
-    _tagsService = module.get<TagsService>(TagsService);
 
     jest.clearAllMocks();
   });

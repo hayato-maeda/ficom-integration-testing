@@ -1,7 +1,9 @@
-import { Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { PinoLogger } from 'nestjs-pino';
+import { TEST_CASES_MESSAGES } from '../common/messages/test-cases.messages';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateTestCaseInput } from './dto/create-test-case.input';
+import { TestCaseMutationResponse } from './dto/test-case-mutation.response';
 import { UpdateTestCaseInput } from './dto/update-test-case.input';
 import { TestCase } from './models/test-case.model';
 
@@ -22,9 +24,9 @@ export class TestCasesService {
    * テストケースを作成
    * @param createTestCaseInput - 作成データ
    * @param userId - 作成者のユーザーID
-   * @returns 作成されたテストケース
+   * @returns テストケースMutationレスポンス
    */
-  async create(createTestCaseInput: CreateTestCaseInput, userId: number): Promise<TestCase> {
+  async create(createTestCaseInput: CreateTestCaseInput, userId: number): Promise<TestCaseMutationResponse> {
     this.logger.info({ userId, title: createTestCaseInput.title }, 'Creating test case');
 
     const testCase = await this.prismaService.testCase.create({
@@ -43,7 +45,11 @@ export class TestCasesService {
 
     this.logger.info({ testCaseId: testCase.id, userId }, 'Test case created successfully');
 
-    return testCase;
+    return {
+      isValid: true,
+      message: TEST_CASES_MESSAGES.TEST_CASE_CREATED,
+      data: testCase,
+    };
   }
 
   /**
@@ -70,10 +76,9 @@ export class TestCasesService {
   /**
    * 特定のテストケースを取得
    * @param id - テストケースID
-   * @returns テストケース
-   * @throws NotFoundException - テストケースが見つからない場合
+   * @returns テストケースまたはnull
    */
-  async findOne(id: number): Promise<TestCase> {
+  async findOne(id: number): Promise<TestCase | null> {
     this.logger.debug({ testCaseId: id }, 'Fetching test case');
 
     const testCase = await this.prismaService.testCase.findUnique({
@@ -83,12 +88,7 @@ export class TestCasesService {
       },
     });
 
-    if (!testCase) {
-      this.logger.warn({ testCaseId: id }, 'Test case not found');
-      throw new NotFoundException(`Test case with ID ${id} not found`);
-    }
-
-    this.logger.debug({ testCaseId: id }, 'Test case fetched successfully');
+    this.logger.info({ fetchedTestCase: testCase }, 'Fetched test case');
 
     return testCase;
   }
@@ -97,11 +97,9 @@ export class TestCasesService {
    * テストケースを更新
    * @param updateTestCaseInput - 更新データ
    * @param userId - 更新を行うユーザーID
-   * @returns 更新されたテストケース
-   * @throws NotFoundException - テストケースが見つからない場合
-   * @throws UnauthorizedException - 作成者以外が更新しようとした場合
+   * @returns テストケースMutationレスポンス
    */
-  async update(updateTestCaseInput: UpdateTestCaseInput, userId: number): Promise<TestCase> {
+  async update(updateTestCaseInput: UpdateTestCaseInput, userId: number): Promise<TestCaseMutationResponse> {
     this.logger.info({ testCaseId: updateTestCaseInput.id, userId }, 'Updating test case');
 
     // テストケースの存在確認
@@ -111,7 +109,11 @@ export class TestCasesService {
 
     if (!existingTestCase) {
       this.logger.warn({ testCaseId: updateTestCaseInput.id }, 'Test case not found for update');
-      throw new NotFoundException(`Test case with ID ${updateTestCaseInput.id} not found`);
+      return {
+        isValid: false,
+        message: TEST_CASES_MESSAGES.TEST_CASE_NOT_FOUND(updateTestCaseInput.id),
+        data: null,
+      };
     }
 
     // 作成者のみ更新可能
@@ -120,7 +122,12 @@ export class TestCasesService {
         { testCaseId: updateTestCaseInput.id, userId, createdById: existingTestCase.createdById },
         'Unauthorized update attempt',
       );
-      throw new UnauthorizedException('Only the creator can update this test case');
+
+      return {
+        isValid: false,
+        message: TEST_CASES_MESSAGES.UNAUTHORIZED_UPDATE,
+        data: null,
+      };
     }
 
     // 更新データの準備（idを除外し、undefinedのフィールドは除外）
@@ -137,18 +144,20 @@ export class TestCasesService {
 
     this.logger.info({ testCaseId: testCase.id, userId }, 'Test case updated successfully');
 
-    return testCase;
+    return {
+      isValid: true,
+      message: TEST_CASES_MESSAGES.TEST_CASE_UPDATED,
+      data: testCase,
+    };
   }
 
   /**
    * テストケースを削除
    * @param id - テストケースID
    * @param userId - 削除を行うユーザーID
-   * @returns 削除されたテストケース
-   * @throws NotFoundException - テストケースが見つからない場合
-   * @throws UnauthorizedException - 作成者以外が削除しようとした場合
+   * @returns テストケースMutationレスポンス
    */
-  async remove(id: number, userId: number): Promise<TestCase> {
+  async remove(id: number, userId: number): Promise<TestCaseMutationResponse> {
     this.logger.info({ testCaseId: id, userId }, 'Deleting test case');
 
     // テストケースの存在確認
@@ -161,7 +170,11 @@ export class TestCasesService {
 
     if (!existingTestCase) {
       this.logger.warn({ testCaseId: id }, 'Test case not found for deletion');
-      throw new NotFoundException(`Test case with ID ${id} not found`);
+      return {
+        isValid: false,
+        message: TEST_CASES_MESSAGES.TEST_CASE_NOT_FOUND(id),
+        data: null,
+      };
     }
 
     // 作成者のみ削除可能
@@ -170,7 +183,11 @@ export class TestCasesService {
         { testCaseId: id, userId, createdById: existingTestCase.createdById },
         'Unauthorized delete attempt',
       );
-      throw new UnauthorizedException('Only the creator can delete this test case');
+      return {
+        isValid: false,
+        message: TEST_CASES_MESSAGES.UNAUTHORIZED_DELETE,
+        data: null,
+      };
     }
 
     await this.prismaService.testCase.delete({
@@ -179,6 +196,10 @@ export class TestCasesService {
 
     this.logger.info({ testCaseId: id, userId }, 'Test case deleted successfully');
 
-    return existingTestCase;
+    return {
+      isValid: true,
+      message: TEST_CASES_MESSAGES.TEST_CASE_DELETED,
+      data: existingTestCase,
+    };
   }
 }

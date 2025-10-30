@@ -8,6 +8,7 @@ import { Tag } from '../tags/models/tag.model';
 import { TagsService } from '../tags/tags.service';
 import { User } from '../users/models/user.model';
 import { CreateTestCaseInput } from './dto/create-test-case.input';
+import { TestCaseMutationResponse } from './dto/test-case-mutation.response';
 import { UpdateTestCaseInput } from './dto/update-test-case.input';
 import { TestCase } from './models/test-case.model';
 import { TestCasesService } from './test-cases.service';
@@ -29,14 +30,14 @@ export class TestCasesResolver {
    * テストケース作成ミューテーション
    * @param createTestCaseInput - 作成データ
    * @param user - 現在のユーザー
-   * @returns 作成されたテストケース
+   * @returns テストケースMutationレスポンス
    */
-  @Mutation(() => TestCase)
+  @Mutation(() => TestCaseMutationResponse)
   async createTestCase(
     @Args('createTestCaseInput', { type: () => CreateTestCaseInput })
     createTestCaseInput: CreateTestCaseInput,
     @CurrentUser() user: User,
-  ): Promise<TestCase> {
+  ): Promise<TestCaseMutationResponse> {
     return this.testCasesService.create(createTestCaseInput, user.id);
   }
 
@@ -52,10 +53,10 @@ export class TestCasesResolver {
   /**
    * テストケース取得クエリ
    * @param id - テストケースID
-   * @returns テストケース
+   * @returns テストケースまたはnull
    */
-  @Query(() => TestCase)
-  async testCase(@Args('id', { type: () => Int }) id: number): Promise<TestCase> {
+  @Query(() => TestCase, { nullable: true })
+  async testCase(@Args('id', { type: () => Int }) id: number): Promise<TestCase | null> {
     return this.testCasesService.findOne(id);
   }
 
@@ -63,14 +64,14 @@ export class TestCasesResolver {
    * テストケース更新ミューテーション
    * @param updateTestCaseInput - 更新データ
    * @param user - 現在のユーザー
-   * @returns 更新されたテストケース
+   * @returns テストケースMutationレスポンス
    */
-  @Mutation(() => TestCase)
+  @Mutation(() => TestCaseMutationResponse)
   async updateTestCase(
     @Args('updateTestCaseInput', { type: () => UpdateTestCaseInput })
     updateTestCaseInput: UpdateTestCaseInput,
     @CurrentUser() user: User,
-  ): Promise<TestCase> {
+  ): Promise<TestCaseMutationResponse> {
     return this.testCasesService.update(updateTestCaseInput, user.id);
   }
 
@@ -78,10 +79,13 @@ export class TestCasesResolver {
    * テストケース削除ミューテーション
    * @param id - テストケースID
    * @param user - 現在のユーザー
-   * @returns 削除されたテストケース
+   * @returns テストケースMutationレスポンス
    */
-  @Mutation(() => TestCase)
-  async deleteTestCase(@Args('id', { type: () => Int }) id: number, @CurrentUser() user: User): Promise<TestCase> {
+  @Mutation(() => TestCaseMutationResponse)
+  async deleteTestCase(
+    @Args('id', { type: () => Int }) id: number,
+    @CurrentUser() user: User,
+  ): Promise<TestCaseMutationResponse> {
     return this.testCasesService.remove(id, user.id);
   }
 

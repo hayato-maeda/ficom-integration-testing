@@ -3,6 +3,7 @@ import { Args, Int, Mutation, Query, Resolver } from '@nestjs/graphql';
 import { GqlAuthGuard } from '../auth/guards/gql-auth.guard';
 import { AssignTagInput } from './dto/assign-tag.input';
 import { CreateTagInput } from './dto/create-tag.input';
+import { TagAssignMutationResponse, TagMutationResponse } from './dto/tag-mutation.response';
 import { UpdateTagInput } from './dto/update-tag.input';
 import { Tag } from './models/tag.model';
 import { TagsService } from './tags.service';
@@ -19,13 +20,13 @@ export class TagsResolver {
   /**
    * タグ作成ミューテーション
    * @param createTagInput - 作成データ
-   * @returns 作成されたタグ
+   * @returns タグMutationレスポンス
    */
-  @Mutation(() => Tag)
+  @Mutation(() => TagMutationResponse)
   async createTag(
     @Args('createTagInput', { type: () => CreateTagInput })
     createTagInput: CreateTagInput,
-  ): Promise<Tag> {
+  ): Promise<TagMutationResponse> {
     return this.tagsService.create(createTagInput);
   }
 
@@ -41,46 +42,46 @@ export class TagsResolver {
   /**
    * タグ取得クエリ
    * @param id - タグID
-   * @returns タグ
+   * @returns タグまたはnull
    */
-  @Query(() => Tag)
-  async tag(@Args('id', { type: () => Int }) id: number): Promise<Tag> {
+  @Query(() => Tag, { nullable: true })
+  async tag(@Args('id', { type: () => Int }) id: number): Promise<Tag | null> {
     return this.tagsService.findOne(id);
   }
 
   /**
    * タグ更新ミューテーション
    * @param updateTagInput - 更新データ
-   * @returns 更新されたタグ
+   * @returns タグMutationレスポンス
    */
-  @Mutation(() => Tag)
+  @Mutation(() => TagMutationResponse)
   async updateTag(
     @Args('updateTagInput', { type: () => UpdateTagInput })
     updateTagInput: UpdateTagInput,
-  ): Promise<Tag> {
+  ): Promise<TagMutationResponse> {
     return this.tagsService.update(updateTagInput);
   }
 
   /**
    * タグ削除ミューテーション
    * @param id - タグID
-   * @returns 削除されたタグ
+   * @returns タグMutationレスポンス
    */
-  @Mutation(() => Tag)
-  async deleteTag(@Args('id', { type: () => Int }) id: number): Promise<Tag> {
+  @Mutation(() => TagMutationResponse)
+  async deleteTag(@Args('id', { type: () => Int }) id: number): Promise<TagMutationResponse> {
     return this.tagsService.remove(id);
   }
 
   /**
    * テストケースへのタグ割り当てミューテーション
    * @param assignTagInput - 割り当てデータ
-   * @returns true（成功時）
+   * @returns タグ割り当てMutationレスポンス
    */
-  @Mutation(() => Boolean)
+  @Mutation(() => TagAssignMutationResponse)
   async assignTag(
     @Args('assignTagInput', { type: () => AssignTagInput })
     assignTagInput: AssignTagInput,
-  ): Promise<boolean> {
+  ): Promise<TagAssignMutationResponse> {
     return this.tagsService.assignTag(assignTagInput);
   }
 
@@ -88,13 +89,13 @@ export class TagsResolver {
    * テストケースからのタグ削除ミューテーション
    * @param testCaseId - テストケースID
    * @param tagId - タグID
-   * @returns true（成功時）
+   * @returns タグ割り当てMutationレスポンス
    */
-  @Mutation(() => Boolean)
+  @Mutation(() => TagAssignMutationResponse)
   async unassignTag(
     @Args('testCaseId', { type: () => Int }) testCaseId: number,
     @Args('tagId', { type: () => Int }) tagId: number,
-  ): Promise<boolean> {
+  ): Promise<TagAssignMutationResponse> {
     return this.tagsService.unassignTag(testCaseId, tagId);
   }
 

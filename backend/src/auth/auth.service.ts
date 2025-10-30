@@ -1,11 +1,12 @@
 import { randomUUID } from 'node:crypto';
-import { ConflictException, Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { PinoLogger } from 'nestjs-pino';
+import { AUTH_MESSAGES } from '../common/messages/auth.messages';
 import { PrismaService } from '../prisma/prisma.service';
-import { AuthResponse } from './dto/auth.response';
+import { AuthMutationResponse } from './dto/auth-mutation.response';
 import { LoginInput } from './dto/login.input';
 import { SignUpInput } from './dto/signup.input';
 
@@ -27,10 +28,9 @@ export class AuthService {
   /**
    * 新規ユーザー登録
    * @param signUpInput - サインアップ入力データ
-   * @returns 認証レスポンス（JWT トークンとユーザー情報）
-   * @throws ConflictException - メールアドレスが既に登録されている場合
+   * @returns 認証Mutationレスポンス
    */
-  async signUp(signUpInput: SignUpInput): Promise<AuthResponse> {
+  async signUp(signUpInput: SignUpInput): Promise<AuthMutationResponse> {
     const { email, password, name } = signUpInput;
 
     this.logger.info({ email }, 'User registration started');
@@ -42,7 +42,21 @@ export class AuthService {
 
     if (existingUser) {
       this.logger.warn({ email }, 'Registration attempt with existing email');
-      throw new ConflictException('Email already exists');
+      return {
+        isValid: false,
+        message: AUTH_MESSAGES.EMAIL_ALREADY_EXISTS,
+        data: null,
+      };
+    }
+
+    // パスワードのバリデーション（8文字以上）
+    if (password.length < 8) {
+      this.logger.warn({ email }, 'Registration attempt with invalid password');
+      return {
+        isValid: false,
+        message: AUTH_MESSAGES.PASSWORD_TOO_SHORT,
+        data: null,
+      };
     }
 
     // パスワードをハッシュ化
@@ -70,19 +84,22 @@ export class AuthService {
     const refreshToken = await this.createRefreshToken(user.id);
 
     return {
-      accessToken,
-      refreshToken,
-      user,
+      isValid: true,
+      message: AUTH_MESSAGES.SIGNUP_SUCCESS,
+      data: {
+        accessToken,
+        refreshToken,
+        user,
+      },
     };
   }
 
   /**
    * ログイン
    * @param loginInput - ログイン入力データ
-   * @returns 認証レスポンス（JWT トークンとユーザー情報）
-   * @throws UnauthorizedException - 認証情報が無効な場合
+   * @returns 認証Mutationレスポンス
    */
-  async login(loginInput: LoginInput): Promise<AuthResponse> {
+  async login(loginInput: LoginInput): Promise<AuthMutationResponse> {
     const { email, password } = loginInput;
 
     this.logger.info({ email }, 'Login attempt');
@@ -94,7 +111,11 @@ export class AuthService {
 
     if (!user) {
       this.logger.warn({ email }, 'Login failed: user not found');
-      throw new UnauthorizedException('Invalid credentials');
+      return {
+        isValid: false,
+        message: AUTH_MESSAGES.INVALID_CREDENTIALS,
+        data: null,
+      };
     }
 
     // パスワードを検証
@@ -102,7 +123,11 @@ export class AuthService {
 
     if (!isPasswordValid) {
       this.logger.warn({ userId: user.id, email }, 'Login failed: invalid password');
-      throw new UnauthorizedException('Invalid credentials');
+      return {
+        isValid: false,
+        message: AUTH_MESSAGES.INVALID_CREDENTIALS,
+        data: null,
+      };
     }
 
     // トークン有効化タイムスタンプを現在時刻に更新（既存トークンをすべて無効化）
@@ -139,15 +164,23 @@ export class AuthService {
 
     if (!updatedUser) {
       this.logger.error({ userId: user.id }, 'User not found after update');
-      throw new UnauthorizedException('User not found after update');
+      return {
+        isValid: false,
+        message: AUTH_MESSAGES.USER_NOT_FOUND_AFTER_UPDATE,
+        data: null,
+      };
     }
 
     this.logger.info({ userId: user.id, email: user.email }, 'Login successful');
 
     return {
-      accessToken,
-      refreshToken,
-      user: updatedUser,
+      isValid: true,
+      message: AUTH_MESSAGES.LOGIN_SUCCESS,
+      data: {
+        accessToken,
+        refreshToken,
+        user: updatedUser,
+      },
     };
   }
 
@@ -155,10 +188,9 @@ export class AuthService {
    * リフレッシュトークンを使用してアクセストークンを更新
    * @param refreshToken - リフレッシュトークン
    * @param oldAccessToken - 古いアクセストークン（無効化するため）
-   * @returns 新しい認証レスポンス
-   * @throws UnauthorizedException - リフレッシュトークンが無効な場合
+   * @returns 認証Mutationレスポンス
    */
-  async refreshAccessToken(refreshToken: string, oldAccessToken: string): Promise<AuthResponse> {
+  async refreshAccessToken(refreshToken: string, oldAccessToken: string): Promise<AuthMutationResponse> {
     this.logger.debug('Token refresh attempt');
 
     // リフレッシュトークンを検証
@@ -169,17 +201,29 @@ export class AuthService {
 
     if (!storedToken) {
       this.logger.warn('Token refresh failed: invalid refresh token');
-      throw new UnauthorizedException('Invalid refresh token');
+      return {
+        isValid: false,
+        message: AUTH_MESSAGES.INVALID_REFRESH_TOKEN,
+        data: null,
+      };
     }
 
     if (storedToken.isRevoked) {
       this.logger.warn({ userId: storedToken.userId }, 'Token refresh failed: token revoked');
-      throw new UnauthorizedException('Refresh token has been revoked');
+      return {
+        isValid: false,
+        message: AUTH_MESSAGES.REFRESH_TOKEN_REVOKED,
+        data: null,
+      };
     }
 
     if (new Date() > storedToken.expiresAt) {
       this.logger.warn({ userId: storedToken.userId }, 'Token refresh failed: token expired');
-      throw new UnauthorizedException('Refresh token has expired');
+      return {
+        isValid: false,
+        message: AUTH_MESSAGES.REFRESH_TOKEN_EXPIRED,
+        data: null,
+      };
     }
 
     // 古いアクセストークンをブラックリストに追加（JWTの有効期限まで）
@@ -210,9 +254,13 @@ export class AuthService {
     this.logger.info({ userId: storedToken.userId }, 'Token refresh successful');
 
     return {
-      accessToken: newAccessToken,
-      refreshToken: newRefreshToken,
-      user: storedToken.user,
+      isValid: true,
+      message: AUTH_MESSAGES.TOKEN_REFRESH_SUCCESS,
+      data: {
+        accessToken: newAccessToken,
+        refreshToken: newRefreshToken,
+        user: storedToken.user,
+      },
     };
   }
 

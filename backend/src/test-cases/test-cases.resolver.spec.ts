@@ -6,9 +6,6 @@ import { TestCasesService } from './test-cases.service';
 
 describe('TestCasesResolver', () => {
   let resolver: TestCasesResolver;
-  let _testCasesService: TestCasesService;
-  let _tagsService: TagsService;
-  let _filesService: FilesService;
 
   const mockUser = {
     id: 1,
@@ -91,9 +88,6 @@ describe('TestCasesResolver', () => {
     }).compile();
 
     resolver = module.get<TestCasesResolver>(TestCasesResolver);
-    _testCasesService = module.get<TestCasesService>(TestCasesService);
-    _tagsService = module.get<TagsService>(TagsService);
-    _filesService = module.get<FilesService>(FilesService);
 
     jest.clearAllMocks();
   });

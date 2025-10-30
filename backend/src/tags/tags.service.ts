@@ -1,8 +1,10 @@
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { PinoLogger } from 'nestjs-pino';
+import { TAGS_MESSAGES } from '../common/messages/tags.messages';
 import { PrismaService } from '../prisma/prisma.service';
 import { AssignTagInput } from './dto/assign-tag.input';
 import { CreateTagInput } from './dto/create-tag.input';
+import { TagAssignMutationResponse, TagMutationResponse } from './dto/tag-mutation.response';
 import { UpdateTagInput } from './dto/update-tag.input';
 import { Tag } from './models/tag.model';
 
@@ -22,10 +24,9 @@ export class TagsService {
   /**
    * タグを作成
    * @param createTagInput - 作成データ
-   * @returns 作成されたタグ
-   * @throws ConflictException - タグ名が既に存在する場合
+   * @returns タグMutationレスポンス
    */
-  async create(createTagInput: CreateTagInput): Promise<Tag> {
+  async create(createTagInput: CreateTagInput): Promise<TagMutationResponse> {
     this.logger.info({ name: createTagInput.name }, 'Creating tag');
 
     // タグ名の重複チェック
@@ -35,7 +36,11 @@ export class TagsService {
 
     if (existingTag) {
       this.logger.warn({ name: createTagInput.name }, 'Tag name already exists');
-      throw new ConflictException(`Tag with name "${createTagInput.name}" already exists`);
+      return {
+        isValid: false,
+        message: TAGS_MESSAGES.TAG_NAME_EXISTS(createTagInput.name),
+        data: null,
+      };
     }
 
     const tag = await this.prismaService.tag.create({
@@ -47,7 +52,11 @@ export class TagsService {
 
     this.logger.info({ tagId: tag.id, name: tag.name }, 'Tag created successfully');
 
-    return tag;
+    return {
+      isValid: true,
+      message: TAGS_MESSAGES.TAG_CREATED,
+      data: tag,
+    };
   }
 
   /**
@@ -71,22 +80,14 @@ export class TagsService {
   /**
    * 特定のタグを取得
    * @param id - タグID
-   * @returns タグ
-   * @throws NotFoundException - タグが見つからない場合
+   * @returns タグまたはnull
    */
-  async findOne(id: number): Promise<Tag> {
+  async findOne(id: number): Promise<Tag | null> {
     this.logger.debug({ tagId: id }, 'Fetching tag');
 
     const tag = await this.prismaService.tag.findUnique({
       where: { id },
     });
-
-    if (!tag) {
-      this.logger.warn({ tagId: id }, 'Tag not found');
-      throw new NotFoundException(`Tag with ID ${id} not found`);
-    }
-
-    this.logger.debug({ tagId: id }, 'Tag fetched successfully');
 
     return tag;
   }
@@ -94,11 +95,9 @@ export class TagsService {
   /**
    * タグを更新
    * @param updateTagInput - 更新データ
-   * @returns 更新されたタグ
-   * @throws NotFoundException - タグが見つからない場合
-   * @throws ConflictException - タグ名が既に存在する場合
+   * @returns タグMutationレスポンス
    */
-  async update(updateTagInput: UpdateTagInput): Promise<Tag> {
+  async update(updateTagInput: UpdateTagInput): Promise<TagMutationResponse> {
     this.logger.info({ tagId: updateTagInput.id }, 'Updating tag');
 
     // タグの存在確認
@@ -108,7 +107,11 @@ export class TagsService {
 
     if (!existingTag) {
       this.logger.warn({ tagId: updateTagInput.id }, 'Tag not found for update');
-      throw new NotFoundException(`Tag with ID ${updateTagInput.id} not found`);
+      return {
+        isValid: false,
+        message: TAGS_MESSAGES.TAG_NOT_FOUND(updateTagInput.id),
+        data: null,
+      };
     }
 
     // タグ名の重複チェック（名前を変更する場合のみ）
@@ -119,7 +122,11 @@ export class TagsService {
 
       if (duplicateTag) {
         this.logger.warn({ name: updateTagInput.name }, 'Tag name already exists');
-        throw new ConflictException(`Tag with name "${updateTagInput.name}" already exists`);
+        return {
+          isValid: false,
+          message: TAGS_MESSAGES.TAG_NAME_EXISTS(updateTagInput.name),
+          data: null,
+        };
       }
     }
 
@@ -134,16 +141,19 @@ export class TagsService {
 
     this.logger.info({ tagId: tag.id }, 'Tag updated successfully');
 
-    return tag;
+    return {
+      isValid: true,
+      message: TAGS_MESSAGES.TAG_UPDATED,
+      data: tag,
+    };
   }
 
   /**
    * タグを削除
    * @param id - タグID
-   * @returns 削除されたタグ
-   * @throws NotFoundException - タグが見つからない場合
+   * @returns タグMutationレスポンス
    */
-  async remove(id: number): Promise<Tag> {
+  async remove(id: number): Promise<TagMutationResponse> {
     this.logger.info({ tagId: id }, 'Deleting tag');
 
     // タグの存在確認
@@ -153,7 +163,11 @@ export class TagsService {
 
     if (!existingTag) {
       this.logger.warn({ tagId: id }, 'Tag not found for deletion');
-      throw new NotFoundException(`Tag with ID ${id} not found`);
+      return {
+        isValid: false,
+        message: TAGS_MESSAGES.TAG_NOT_FOUND(id),
+        data: null,
+      };
     }
 
     await this.prismaService.tag.delete({
@@ -162,17 +176,19 @@ export class TagsService {
 
     this.logger.info({ tagId: id }, 'Tag deleted successfully');
 
-    return existingTag;
+    return {
+      isValid: true,
+      message: TAGS_MESSAGES.TAG_DELETED,
+      data: existingTag,
+    };
   }
 
   /**
    * テストケースにタグを割り当て
    * @param assignTagInput - 割り当てデータ
-   * @returns true（成功時）
-   * @throws NotFoundException - テストケースまたはタグが見つからない場合
-   * @throws ConflictException - 既に割り当て済みの場合
+   * @returns タグ割り当てMutationレスポンス
    */
-  async assignTag(assignTagInput: AssignTagInput): Promise<boolean> {
+  async assignTag(assignTagInput: AssignTagInput): Promise<TagAssignMutationResponse> {
     this.logger.info(
       { testCaseId: assignTagInput.testCaseId, tagId: assignTagInput.tagId },
       'Assigning tag to test case',
@@ -185,7 +201,11 @@ export class TagsService {
 
     if (!testCase) {
       this.logger.warn({ testCaseId: assignTagInput.testCaseId }, 'Test case not found');
-      throw new NotFoundException(`Test case with ID ${assignTagInput.testCaseId} not found`);
+      return {
+        isValid: false,
+        message: TAGS_MESSAGES.TEST_CASE_NOT_FOUND(assignTagInput.testCaseId),
+        data: null,
+      };
     }
 
     // タグの存在確認
@@ -195,7 +215,11 @@ export class TagsService {
 
     if (!tag) {
       this.logger.warn({ tagId: assignTagInput.tagId }, 'Tag not found');
-      throw new NotFoundException(`Tag with ID ${assignTagInput.tagId} not found`);
+      return {
+        isValid: false,
+        message: TAGS_MESSAGES.TAG_NOT_FOUND(assignTagInput.tagId),
+        data: null,
+      };
     }
 
     // 既に割り当て済みかチェック
@@ -213,7 +237,11 @@ export class TagsService {
         { testCaseId: assignTagInput.testCaseId, tagId: assignTagInput.tagId },
         'Tag already assigned to test case',
       );
-      throw new ConflictException('Tag is already assigned to this test case');
+      return {
+        isValid: false,
+        message: TAGS_MESSAGES.TAG_ALREADY_ASSIGNED,
+        data: null,
+      };
     }
 
     await this.prismaService.testCaseTag.create({
@@ -228,17 +256,20 @@ export class TagsService {
       'Tag assigned to test case successfully',
     );
 
-    return true;
+    return {
+      isValid: true,
+      message: TAGS_MESSAGES.TAG_ASSIGNED,
+      data: true,
+    };
   }
 
   /**
    * テストケースからタグを削除
    * @param testCaseId - テストケースID
    * @param tagId - タグID
-   * @returns true（成功時）
-   * @throws NotFoundException - 割り当てが見つからない場合
+   * @returns タグ割り当てMutationレスポンス
    */
-  async unassignTag(testCaseId: number, tagId: number): Promise<boolean> {
+  async unassignTag(testCaseId: number, tagId: number): Promise<TagAssignMutationResponse> {
     this.logger.info({ testCaseId, tagId }, 'Unassigning tag from test case');
 
     // 割り当ての存在確認
@@ -253,7 +284,11 @@ export class TagsService {
 
     if (!existing) {
       this.logger.warn({ testCaseId, tagId }, 'Tag assignment not found');
-      throw new NotFoundException('Tag is not assigned to this test case');
+      return {
+        isValid: false,
+        message: TAGS_MESSAGES.TAG_NOT_ASSIGNED,
+        data: null,
+      };
     }
 
     await this.prismaService.testCaseTag.delete({
@@ -267,7 +302,11 @@ export class TagsService {
 
     this.logger.info({ testCaseId, tagId }, 'Tag unassigned from test case successfully');
 
-    return true;
+    return {
+      isValid: true,
+      message: TAGS_MESSAGES.TAG_UNASSIGNED,
+      data: true,
+    };
   }
 
   /**

@@ -1,6 +1,15 @@
 'use client';
 
-import { ApolloClient, InMemoryCache, HttpLink, from, ApolloLink, Operation, FetchResult, Observable } from '@apollo/client';
+import {
+  ApolloClient,
+  InMemoryCache,
+  HttpLink,
+  from,
+  ApolloLink,
+  Operation,
+  FetchResult,
+  Observable,
+} from '@apollo/client';
 import { GraphQLFormattedError } from 'graphql';
 
 const httpLink = new HttpLink({

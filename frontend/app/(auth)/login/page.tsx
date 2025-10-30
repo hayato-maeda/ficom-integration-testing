@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -32,17 +32,6 @@ export default function LoginPage() {
   } = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
   });
-
-  useEffect(() => {
-    const accountRegistered = sessionStorage.getItem('accountRegistered');
-    if (accountRegistered === 'true') {
-      toast.success('アカウントが登録されました', {
-        id: 'registration-success',
-        style: { background: '#dcfce7', color: '#166534', border: '1px solid #bbf7d0' },
-      });
-      sessionStorage.removeItem('accountRegistered');
-    }
-  }, []);
 
   const onSubmit = async (data: LoginFormData) => {
     setIsLoading(true);

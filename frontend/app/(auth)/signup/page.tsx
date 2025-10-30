@@ -48,7 +48,10 @@ export default function SignupPage() {
 
     if (response.isValid) {
       toast.dismiss('signup-error');
-      sessionStorage.setItem('accountRegistered', 'true');
+      toast.success('アカウントが登録されました', {
+        id: 'registration-success',
+        style: { background: '#dcfce7', color: '#166534', border: '1px solid #bbf7d0' },
+      });
       router.push('/login');
     } else {
       toast.error(response.message, {

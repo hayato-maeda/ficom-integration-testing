@@ -33,21 +33,25 @@
 ```graphql
 mutation CreateTestCase($createTestCaseInput: CreateTestCaseInput!) {
   createTestCase(createTestCaseInput: $createTestCaseInput) {
-    id
-    title
-    description
-    steps
-    expectedResult
-    actualResult
-    status
-    createdById
-    createdBy {
+    isValid
+    message
+    data {
       id
-      email
-      name
+      title
+      description
+      steps
+      expectedResult
+      actualResult
+      status
+      createdById
+      createdBy {
+        id
+        email
+        name
+      }
+      createdAt
+      updatedAt
     }
-    createdAt
-    updatedAt
   }
 }
 ```
@@ -80,21 +84,25 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 {
   "data": {
     "createTestCase": {
-      "id": "1",
-      "title": "ログイン機能のテスト",
-      "description": "正常なログインフローの確認",
-      "steps": "1. ログインページにアクセス\n2. 有効なメールアドレスとパスワードを入力\n3. ログインボタンをクリック",
-      "expectedResult": "ダッシュボード画面に遷移し、ユーザー名が表示される",
-      "actualResult": null,
-      "status": "DRAFT",
-      "createdById": "1",
-      "createdBy": {
+      "isValid": true,
+      "message": "テストケースを作成しました",
+      "data": {
         "id": "1",
-        "email": "user@example.com",
-        "name": "山田太郎"
-      },
-      "createdAt": "2025-10-29T05:00:00.000Z",
-      "updatedAt": "2025-10-29T05:00:00.000Z"
+        "title": "ログイン機能のテスト",
+        "description": "正常なログインフローの確認",
+        "steps": "1. ログインページにアクセス\n2. 有効なメールアドレスとパスワードを入力\n3. ログインボタンをクリック",
+        "expectedResult": "ダッシュボード画面に遷移し、ユーザー名が表示される",
+        "actualResult": null,
+        "status": "DRAFT",
+        "createdById": "1",
+        "createdBy": {
+          "id": "1",
+          "email": "user@example.com",
+          "name": "山田太郎"
+        },
+        "createdAt": "2025-10-29T05:00:00.000Z",
+        "updatedAt": "2025-10-29T05:00:00.000Z"
+      }
     }
   }
 }
@@ -104,17 +112,20 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 
 | フィールド | 型 | 説明 |
 |-----------|-----|------|
-| `id` | Int | テストケースID |
-| `title` | String | タイトル |
-| `description` | String | 説明 |
-| `steps` | String | テスト手順 |
-| `expectedResult` | String | 期待結果 |
-| `actualResult` | String | 実績結果 |
-| `status` | String | ステータス（DRAFT/IN_REVIEW/APPROVED/REJECTED/ARCHIVED） |
-| `createdById` | Int | 作成者ID |
-| `createdBy` | User | 作成者情報 |
-| `createdAt` | DateTime | 作成日時 |
-| `updatedAt` | DateTime | 更新日時 |
+| `isValid` | Boolean | 処理が成功したかどうか |
+| `message` | String | サーバーからのメッセージ |
+| `data` | TestCase? | 成功時のテストケースデータ（失敗時はnull） |
+| `data.id` | Int | テストケースID |
+| `data.title` | String | タイトル |
+| `data.description` | String | 説明 |
+| `data.steps` | String | テスト手順 |
+| `data.expectedResult` | String | 期待結果 |
+| `data.actualResult` | String | 実績結果 |
+| `data.status` | String | ステータス（DRAFT/IN_REVIEW/APPROVED/REJECTED/ARCHIVED） |
+| `data.createdById` | Int | 作成者ID |
+| `data.createdBy` | User | 作成者情報 |
+| `data.createdAt` | DateTime | 作成日時 |
+| `data.updatedAt` | DateTime | 更新日時 |
 
 ## エラー
 
@@ -254,12 +265,12 @@ const response = await fetch('http://localhost:4000/graphql', {
   })
 });
 
-const { data, errors } = await response.json();
+const { data } = await response.json();
 
-if (errors) {
-  console.error('Error creating test case:', errors);
+if (data.createTestCase.isValid) {
+  console.log('Test case created:', data.createTestCase.data);
 } else {
-  console.log('Test case created:', data.createTestCase);
+  console.error('Error creating test case:', data.createTestCase.message);
 }
 ```
 
@@ -271,20 +282,24 @@ import { gql, useMutation } from '@apollo/client';
 const CREATE_TEST_CASE_MUTATION = gql`
   mutation CreateTestCase($createTestCaseInput: CreateTestCaseInput!) {
     createTestCase(createTestCaseInput: $createTestCaseInput) {
-      id
-      title
-      description
-      steps
-      expectedResult
-      actualResult
-      status
-      createdBy {
+      isValid
+      message
+      data {
         id
-        name
-        email
+        title
+        description
+        steps
+        expectedResult
+        actualResult
+        status
+        createdBy {
+          id
+          name
+          email
+        }
+        createdAt
+        updatedAt
       }
-      createdAt
-      updatedAt
     }
   }
 `;
@@ -296,23 +311,23 @@ function CreateTestCaseForm() {
     e.preventDefault();
     const formData = new FormData(e.target);
 
-    try {
-      const { data } = await createTestCase({
-        variables: {
-          createTestCaseInput: {
-            title: formData.get('title'),
-            description: formData.get('description'),
-            steps: formData.get('steps'),
-            expectedResult: formData.get('expectedResult'),
-            actualResult: formData.get('actualResult') || null,
-          }
+    const { data } = await createTestCase({
+      variables: {
+        createTestCaseInput: {
+          title: formData.get('title'),
+          description: formData.get('description'),
+          steps: formData.get('steps'),
+          expectedResult: formData.get('expectedResult'),
+          actualResult: formData.get('actualResult') || null,
         }
-      });
+      }
+    });
 
-      console.log('Test case created:', data.createTestCase);
+    if (data.createTestCase.isValid) {
+      console.log('Test case created:', data.createTestCase.data);
       // 成功時の処理（例: 一覧画面へリダイレクト）
-    } catch (err) {
-      console.error('Error:', err);
+    } else {
+      alert(data.createTestCase.message);
     }
   };
 
@@ -326,7 +341,6 @@ function CreateTestCaseForm() {
       <button type="submit" disabled={loading}>
         作成
       </button>
-      {error && <p>エラーが発生しました: {error.message}</p>}
     </form>
   );
 }

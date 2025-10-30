@@ -3,7 +3,7 @@ import { Args, Mutation, Query, Resolver } from '@nestjs/graphql';
 import { User } from '../users/models/user.model';
 import { AuthService } from './auth.service';
 import { CurrentUser } from './decorators/current-user.decorator';
-import { AuthResponse } from './dto/auth.response';
+import { AuthMutationResponse } from './dto/auth-mutation.response';
 import { LoginInput } from './dto/login.input';
 import { RefreshTokenInput } from './dto/refresh-token.input';
 import { SignUpInput } from './dto/signup.input';
@@ -21,10 +21,12 @@ export class AuthResolver {
    * サインアップミューテーション
    * 新規ユーザーを登録します。
    * @param signUpInput - サインアップ入力データ
-   * @returns 認証レスポンス（JWT トークンとユーザー情報）
+   * @returns 認証Mutationレスポンス
    */
-  @Mutation(() => AuthResponse)
-  async signUp(@Args('signUpInput', { type: () => SignUpInput }) signUpInput: SignUpInput): Promise<AuthResponse> {
+  @Mutation(() => AuthMutationResponse)
+  async signUp(
+    @Args('signUpInput', { type: () => SignUpInput }) signUpInput: SignUpInput,
+  ): Promise<AuthMutationResponse> {
     return this.authService.signUp(signUpInput);
   }
 
@@ -32,10 +34,10 @@ export class AuthResolver {
    * ログインミューテーション
    * ユーザーをログインさせます。
    * @param loginInput - ログイン入力データ
-   * @returns 認証レスポンス（JWT トークンとユーザー情報）
+   * @returns 認証Mutationレスポンス
    */
-  @Mutation(() => AuthResponse)
-  async login(@Args('loginInput', { type: () => LoginInput }) loginInput: LoginInput): Promise<AuthResponse> {
+  @Mutation(() => AuthMutationResponse)
+  async login(@Args('loginInput', { type: () => LoginInput }) loginInput: LoginInput): Promise<AuthMutationResponse> {
     return this.authService.login(loginInput);
   }
 
@@ -43,13 +45,13 @@ export class AuthResolver {
    * リフレッシュトークンミューテーション
    * リフレッシュトークンを使用して新しいアクセストークンを取得します。
    * @param refreshTokenInput - リフレッシュトークン入力データ
-   * @returns 新しい認証レスポンス（新しいトークンとユーザー情報）
+   * @returns 認証Mutationレスポンス
    */
-  @Mutation(() => AuthResponse)
+  @Mutation(() => AuthMutationResponse)
   async refreshToken(
     @Args('refreshTokenInput', { type: () => RefreshTokenInput })
     refreshTokenInput: RefreshTokenInput,
-  ): Promise<AuthResponse> {
+  ): Promise<AuthMutationResponse> {
     return this.authService.refreshAccessToken(refreshTokenInput.refreshToken, refreshTokenInput.oldAccessToken);
   }
 

@@ -30,14 +30,18 @@
 ```graphql
 mutation Login($loginInput: LoginInput!) {
   login(loginInput: $loginInput) {
-    accessToken
-    refreshToken
-    user {
-      id
-      email
-      name
-      createdAt
-      updatedAt
+    isValid
+    message
+    data {
+      accessToken
+      refreshToken
+      user {
+        id
+        email
+        name
+        createdAt
+        updatedAt
+      }
     }
   }
 }
@@ -62,14 +66,18 @@ mutation Login($loginInput: LoginInput!) {
 {
   "data": {
     "login": {
-      "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-      "refreshToken": "a1b2c3d4-e5f6-47g8-h9i0-j1k2l3m4n5o6",
-      "user": {
-        "id": 1,
-        "email": "user@example.com",
-        "name": "山田太郎",
-        "createdAt": "2025-10-29T05:00:00.000Z",
-        "updatedAt": "2025-10-29T05:30:00.000Z"
+      "isValid": true,
+      "message": "ログインに成功しました",
+      "data": {
+        "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+        "refreshToken": "a1b2c3d4-e5f6-47g8-h9i0-j1k2l3m4n5o6",
+        "user": {
+          "id": 1,
+          "email": "user@example.com",
+          "name": "山田太郎",
+          "createdAt": "2025-10-29T05:00:00.000Z",
+          "updatedAt": "2025-10-29T05:30:00.000Z"
+        }
       }
     }
   }
@@ -80,20 +88,23 @@ mutation Login($loginInput: LoginInput!) {
 
 | フィールド | 型 | 説明 |
 |-----------|-----|------|
-| `accessToken` | String | JWT アクセストークン（有効期限: 1時間） |
-| `refreshToken` | String | リフレッシュトークン（有効期限: 7日） |
-| `user` | User | ユーザー情報 |
-| `user.id` | Int | ユーザーID |
-| `user.email` | String | メールアドレス |
-| `user.name` | String | ユーザー名 |
-| `user.createdAt` | DateTime | アカウント作成日時 |
-| `user.updatedAt` | DateTime | 最終更新日時 |
+| `isValid` | Boolean | 処理が成功したかどうか |
+| `message` | String | サーバーからのメッセージ |
+| `data` | AuthResponse? | 成功時の認証データ（失敗時はnull） |
+| `data.accessToken` | String | JWT アクセストークン（有効期限: 1時間） |
+| `data.refreshToken` | String | リフレッシュトークン（有効期限: 7日） |
+| `data.user` | User | ユーザー情報 |
+| `data.user.id` | Int | ユーザーID |
+| `data.user.email` | String | メールアドレス |
+| `data.user.name` | String | ユーザー名 |
+| `data.user.createdAt` | DateTime | アカウント作成日時 |
+| `data.user.updatedAt` | DateTime | 最終更新日時 |
 
 ## エラー
 
 ### 1. 認証失敗エラー
 
-**ステータスコード**: 401 Unauthorized
+**ステータスコード**: 200 OK (GraphQL正常レスポンス)
 
 **条件**:
 - メールアドレスが存在しない
@@ -101,14 +112,13 @@ mutation Login($loginInput: LoginInput!) {
 
 ```json
 {
-  "errors": [
-    {
-      "message": "Invalid credentials",
-      "extensions": {
-        "code": "UNAUTHENTICATED"
-      }
+  "data": {
+    "login": {
+      "isValid": false,
+      "message": "メールアドレスまたはパスワードが正しくありません",
+      "data": null
     }
-  ]
+  }
 }
 ```
 
@@ -251,9 +261,15 @@ const response = await fetch('http://localhost:4000/graphql', {
 
 const { data } = await response.json();
 
-// トークンを保存
-localStorage.setItem('accessToken', data.login.accessToken);
-localStorage.setItem('refreshToken', data.login.refreshToken);
+// 成功チェック
+if (data.login.isValid) {
+  // トークンを保存
+  localStorage.setItem('accessToken', data.login.data.accessToken);
+  localStorage.setItem('refreshToken', data.login.data.refreshToken);
+  console.log('Success:', data.login.message);
+} else {
+  console.error('Error:', data.login.message);
+}
 ```
 
 ### React Hook の例
@@ -265,12 +281,16 @@ import { gql } from '@apollo/client';
 const LOGIN_MUTATION = gql`
   mutation Login($loginInput: LoginInput!) {
     login(loginInput: $loginInput) {
-      accessToken
-      refreshToken
-      user {
-        id
-        email
-        name
+      isValid
+      message
+      data {
+        accessToken
+        refreshToken
+        user {
+          id
+          email
+          name
+        }
       }
     }
   }
@@ -292,9 +312,14 @@ function LoginForm() {
       }
     });
 
-    // トークンを保存
-    localStorage.setItem('accessToken', data.login.accessToken);
-    localStorage.setItem('refreshToken', data.login.refreshToken);
+    // 成功チェック
+    if (data.login.isValid) {
+      // トークンを保存
+      localStorage.setItem('accessToken', data.login.data.accessToken);
+      localStorage.setItem('refreshToken', data.login.data.refreshToken);
+    } else {
+      alert(data.login.message);
+    }
   };
 
   return (
@@ -304,7 +329,6 @@ function LoginForm() {
       <button type="submit" disabled={loading}>
         ログイン
       </button>
-      {error && <p>ログインに失敗しました</p>}
     </form>
   );
 }

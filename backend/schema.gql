@@ -7,6 +7,12 @@ input AssignTagInput {
   testCaseId: Int!
 }
 
+type AuthMutationResponse {
+  data: AuthResponse
+  isValid: Boolean!
+  message: String!
+}
+
 type AuthResponse {
   accessToken: String!
   refreshToken: String!
@@ -50,17 +56,17 @@ input LoginInput {
 }
 
 type Mutation {
-  assignTag(assignTagInput: AssignTagInput!): Boolean!
-  createTag(createTagInput: CreateTagInput!): Tag!
-  createTestCase(createTestCaseInput: CreateTestCaseInput!): TestCase!
-  deleteTag(id: Int!): Tag!
-  deleteTestCase(id: Int!): TestCase!
-  login(loginInput: LoginInput!): AuthResponse!
-  refreshToken(refreshTokenInput: RefreshTokenInput!): AuthResponse!
-  signUp(signUpInput: SignUpInput!): AuthResponse!
-  unassignTag(tagId: Int!, testCaseId: Int!): Boolean!
-  updateTag(updateTagInput: UpdateTagInput!): Tag!
-  updateTestCase(updateTestCaseInput: UpdateTestCaseInput!): TestCase!
+  assignTag(assignTagInput: AssignTagInput!): TagAssignMutationResponse!
+  createTag(createTagInput: CreateTagInput!): TagMutationResponse!
+  createTestCase(createTestCaseInput: CreateTestCaseInput!): TestCaseMutationResponse!
+  deleteTag(id: Int!): TagMutationResponse!
+  deleteTestCase(id: Int!): TestCaseMutationResponse!
+  login(loginInput: LoginInput!): AuthMutationResponse!
+  refreshToken(refreshTokenInput: RefreshTokenInput!): AuthMutationResponse!
+  signUp(signUpInput: SignUpInput!): AuthMutationResponse!
+  unassignTag(tagId: Int!, testCaseId: Int!): TagAssignMutationResponse!
+  updateTag(updateTagInput: UpdateTagInput!): TagMutationResponse!
+  updateTestCase(updateTestCaseInput: UpdateTestCaseInput!): TestCaseMutationResponse!
 }
 
 type Query {
@@ -68,10 +74,10 @@ type Query {
   files: [File!]!
   filesByTestCase(testCaseId: Int!): [File!]!
   me: User!
-  tag(id: Int!): Tag!
+  tag(id: Int!): Tag
   tags: [Tag!]!
   tagsByTestCase(testCaseId: Int!): [Tag!]!
-  testCase(id: Int!): TestCase!
+  testCase(id: Int!): TestCase
   testCases: [TestCase!]!
 }
 
@@ -93,6 +99,18 @@ type Tag {
   name: String!
 }
 
+type TagAssignMutationResponse {
+  data: Boolean
+  isValid: Boolean!
+  message: String!
+}
+
+type TagMutationResponse {
+  data: Tag
+  isValid: Boolean!
+  message: String!
+}
+
 type TestCase {
   actualResult: String
   createdAt: DateTime!
@@ -107,6 +125,12 @@ type TestCase {
   tags: [Tag!]
   title: String!
   updatedAt: DateTime!
+}
+
+type TestCaseMutationResponse {
+  data: TestCase
+  isValid: Boolean!
+  message: String!
 }
 
 input UpdateTagInput {

@@ -1,4 +1,3 @@
-import { ConflictException, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { Test, TestingModule } from '@nestjs/testing';
@@ -118,7 +117,9 @@ describe('AuthService', () => {
         name: 'Test User',
       });
 
-      expect(result).toEqual({
+      expect(result.isValid).toBe(true);
+      expect(result.message).toBe('ユーザー登録が完了しました');
+      expect(result.data).toEqual({
         accessToken: 'accessToken',
         refreshToken: expect.any(String),
         user: mockUser,
@@ -131,23 +132,33 @@ describe('AuthService', () => {
       expect(mockLogger.info).toHaveBeenCalledTimes(2);
     });
 
-    it('should throw ConflictException when email already exists', async () => {
+    it('should return error when email already exists', async () => {
       mockPrismaService.user.findUnique.mockResolvedValue(mockUser);
 
-      await expect(
-        service.signUp({
-          email: 'test@example.com',
-          password: 'password123',
-          name: 'Test User',
-        }),
-      ).rejects.toThrow(ConflictException);
-      await expect(
-        service.signUp({
-          email: 'test@example.com',
-          password: 'password123',
-          name: 'Test User',
-        }),
-      ).rejects.toThrow('Email already exists');
+      const result = await service.signUp({
+        email: 'test@example.com',
+        password: 'password123',
+        name: 'Test User',
+      });
+
+      expect(result.isValid).toBe(false);
+      expect(result.message).toBe('このメールアドレスは既に登録されています');
+      expect(result.data).toBeNull();
+      expect(mockLogger.warn).toHaveBeenCalled();
+    });
+
+    it('should return error when password is less than 8 characters', async () => {
+      mockPrismaService.user.findUnique.mockResolvedValue(null);
+
+      const result = await service.signUp({
+        email: 'test@example.com',
+        password: 'short',
+        name: 'Test User',
+      });
+
+      expect(result.isValid).toBe(false);
+      expect(result.message).toBe('パスワードは8文字以上で入力してください');
+      expect(result.data).toBeNull();
       expect(mockLogger.warn).toHaveBeenCalled();
     });
   });
@@ -175,7 +186,9 @@ describe('AuthService', () => {
         password: 'password123',
       });
 
-      expect(result).toEqual({
+      expect(result.isValid).toBe(true);
+      expect(result.message).toBe('ログインに成功しました');
+      expect(result.data).toEqual({
         accessToken: 'accessToken',
         refreshToken: expect.any(String),
         user: mockUser,
@@ -188,40 +201,32 @@ describe('AuthService', () => {
       expect(mockLogger.info).toHaveBeenCalled();
     });
 
-    it('should throw UnauthorizedException when user not found', async () => {
+    it('should return error when user not found', async () => {
       mockPrismaService.user.findUnique.mockResolvedValue(null);
 
-      await expect(
-        service.login({
-          email: 'test@example.com',
-          password: 'password123',
-        }),
-      ).rejects.toThrow(UnauthorizedException);
-      await expect(
-        service.login({
-          email: 'test@example.com',
-          password: 'password123',
-        }),
-      ).rejects.toThrow('Invalid credentials');
+      const result = await service.login({
+        email: 'test@example.com',
+        password: 'password123',
+      });
+
+      expect(result.isValid).toBe(false);
+      expect(result.message).toBe('メールアドレスまたはパスワードが正しくありません');
+      expect(result.data).toBeNull();
       expect(mockLogger.warn).toHaveBeenCalled();
     });
 
-    it('should throw UnauthorizedException when password is invalid', async () => {
+    it('should return error when password is invalid', async () => {
       mockPrismaService.user.findUnique.mockResolvedValue(mockUser);
       (bcrypt.compare as jest.Mock).mockResolvedValue(false);
 
-      await expect(
-        service.login({
-          email: 'test@example.com',
-          password: 'wrongpassword',
-        }),
-      ).rejects.toThrow(UnauthorizedException);
-      await expect(
-        service.login({
-          email: 'test@example.com',
-          password: 'wrongpassword',
-        }),
-      ).rejects.toThrow('Invalid credentials');
+      const result = await service.login({
+        email: 'test@example.com',
+        password: 'wrongpassword',
+      });
+
+      expect(result.isValid).toBe(false);
+      expect(result.message).toBe('メールアドレスまたはパスワードが正しくありません');
+      expect(result.data).toBeNull();
       expect(mockLogger.warn).toHaveBeenCalled();
     });
   });
@@ -254,7 +259,9 @@ describe('AuthService', () => {
 
       const result = await service.refreshAccessToken('refreshToken', 'oldAccessToken');
 
-      expect(result).toEqual({
+      expect(result.isValid).toBe(true);
+      expect(result.message).toBe('トークンの更新に成功しました');
+      expect(result.data).toEqual({
         accessToken: 'newAccessToken',
         refreshToken: expect.any(String),
         user: mockUser,
@@ -268,39 +275,42 @@ describe('AuthService', () => {
       expect(mockLogger.info).toHaveBeenCalled();
     });
 
-    it('should throw UnauthorizedException when refresh token not found', async () => {
+    it('should return error when refresh token not found', async () => {
       mockPrismaService.refreshToken.findUnique.mockResolvedValue(null);
 
-      await expect(service.refreshAccessToken('invalidToken', 'oldAccessToken')).rejects.toThrow(UnauthorizedException);
-      await expect(service.refreshAccessToken('invalidToken', 'oldAccessToken')).rejects.toThrow(
-        'Invalid refresh token',
-      );
+      const result = await service.refreshAccessToken('invalidToken', 'oldAccessToken');
+
+      expect(result.isValid).toBe(false);
+      expect(result.message).toBe('無効なリフレッシュトークンです');
+      expect(result.data).toBeNull();
       expect(mockLogger.warn).toHaveBeenCalled();
     });
 
-    it('should throw UnauthorizedException when refresh token is revoked', async () => {
+    it('should return error when refresh token is revoked', async () => {
       mockPrismaService.refreshToken.findUnique.mockResolvedValue({
         ...mockRefreshToken,
         isRevoked: true,
       });
 
-      await expect(service.refreshAccessToken('refreshToken', 'oldAccessToken')).rejects.toThrow(UnauthorizedException);
-      await expect(service.refreshAccessToken('refreshToken', 'oldAccessToken')).rejects.toThrow(
-        'Refresh token has been revoked',
-      );
+      const result = await service.refreshAccessToken('refreshToken', 'oldAccessToken');
+
+      expect(result.isValid).toBe(false);
+      expect(result.message).toBe('リフレッシュトークンは無効化されています');
+      expect(result.data).toBeNull();
       expect(mockLogger.warn).toHaveBeenCalled();
     });
 
-    it('should throw UnauthorizedException when refresh token is expired', async () => {
+    it('should return error when refresh token is expired', async () => {
       mockPrismaService.refreshToken.findUnique.mockResolvedValue({
         ...mockRefreshToken,
         expiresAt: new Date(Date.now() - 1000),
       });
 
-      await expect(service.refreshAccessToken('refreshToken', 'oldAccessToken')).rejects.toThrow(UnauthorizedException);
-      await expect(service.refreshAccessToken('refreshToken', 'oldAccessToken')).rejects.toThrow(
-        'Refresh token has expired',
-      );
+      const result = await service.refreshAccessToken('refreshToken', 'oldAccessToken');
+
+      expect(result.isValid).toBe(false);
+      expect(result.message).toBe('リフレッシュトークンの有効期限が切れています');
+      expect(result.data).toBeNull();
       expect(mockLogger.warn).toHaveBeenCalled();
     });
   });

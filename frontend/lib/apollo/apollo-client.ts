@@ -1,15 +1,6 @@
 'use client';
 
-import {
-  ApolloClient,
-  InMemoryCache,
-  HttpLink,
-  from,
-  ApolloLink,
-  Operation,
-  FetchResult,
-  Observable,
-} from '@apollo/client';
+import { ApolloClient, InMemoryCache, HttpLink, ApolloLink, Observable } from '@apollo/client';
 import { GraphQLFormattedError } from 'graphql';
 
 const httpLink = new HttpLink({
@@ -17,7 +8,7 @@ const httpLink = new HttpLink({
 });
 
 // 認証トークンをヘッダーに追加するカスタムリンク
-const authLink = new ApolloLink((operation: Operation, forward) => {
+const authLink = new ApolloLink((operation, forward) => {
   const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
 
   operation.setContext(({ headers = {} }: { headers?: Record<string, string> }) => ({
@@ -31,10 +22,10 @@ const authLink = new ApolloLink((operation: Operation, forward) => {
 });
 
 // エラーハンドリングのカスタムリンク
-const errorLink = new ApolloLink((operation: Operation, forward) => {
+const errorLink = new ApolloLink((operation, forward) => {
   return new Observable((observer) => {
     const subscription = forward(operation).subscribe({
-      next: (result: FetchResult) => {
+      next: (result) => {
         if (result.errors) {
           result.errors.forEach((err: GraphQLFormattedError) => {
             // 認証エラー（401 Unauthorized）の場合
@@ -76,7 +67,7 @@ const errorLink = new ApolloLink((operation: Operation, forward) => {
 
 // Apollo Client インスタンスの作成
 export const apolloClient = new ApolloClient({
-  link: from([errorLink, authLink, httpLink]),
+  link: ApolloLink.from([errorLink, authLink, httpLink]),
   cache: new InMemoryCache(),
   defaultOptions: {
     watchQuery: {

@@ -17,6 +17,22 @@ export interface AuthContextType {
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+/**
+ * 認証機能を提供するContextプロバイダー
+ *
+ * アプリケーション全体で認証状態を管理し、ログイン・サインアップ・ログアウト・
+ * トークンリフレッシュなどの認証関連機能を提供します。
+ *
+ * @param props - プロパティ
+ * @param props.children - 子コンポーネント
+ *
+ * @example
+ * ```tsx
+ * <AuthProvider>
+ *   <App />
+ * </AuthProvider>
+ * ```
+ */
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const router = useRouter();

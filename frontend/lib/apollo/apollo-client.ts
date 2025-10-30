@@ -65,7 +65,25 @@ const errorLink = new ApolloLink((operation, forward) => {
   });
 });
 
-// Apollo Client インスタンスの作成
+/**
+ * Apollo Clientのインスタンス
+ *
+ * GraphQLクエリとミューテーションを実行するための設定済みApollo Clientインスタンス。
+ * 以下の機能が含まれます：
+ * - 認証トークンの自動付与（authLink）
+ * - エラーハンドリング（errorLink）
+ * - HTTPリクエスト（httpLink）
+ * - インメモリキャッシュ
+ *
+ * @example
+ * ```tsx
+ * import { apolloClient } from '@/lib/apollo/apollo-client';
+ *
+ * const { data } = await apolloClient.query({
+ *   query: GET_USER_QUERY,
+ * });
+ * ```
+ */
 export const apolloClient = new ApolloClient({
   link: ApolloLink.from([errorLink, authLink, httpLink]),
   cache: new InMemoryCache(),

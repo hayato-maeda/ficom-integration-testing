@@ -1,12 +1,12 @@
 'use client';
 
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useState } from 'react';
 import { useMutation } from '@apollo/client/react';
 import { useRouter } from 'next/navigation';
 import { LOGIN_MUTATION, SIGNUP_MUTATION, REFRESH_TOKEN_MUTATION } from '@/lib/graphql/auth';
 import type { User, LoginInput, SignupInput, MutationResponse, AuthResponse } from '@/types';
 
-interface AuthContextType {
+export interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
   login: (input: LoginInput) => Promise<MutationResponse<AuthResponse>>;
@@ -15,15 +15,7 @@ interface AuthContextType {
   refreshToken: () => Promise<void>;
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
-
-export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
-};
+export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);

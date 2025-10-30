@@ -88,6 +88,8 @@ export class TestCasesService {
       },
     });
 
+    this.logger.info({ fetchedTestCase: testCase }, 'Fetched test case');
+
     return testCase;
   }
 
@@ -120,6 +122,7 @@ export class TestCasesService {
         { testCaseId: updateTestCaseInput.id, userId, createdById: existingTestCase.createdById },
         'Unauthorized update attempt',
       );
+
       return {
         isValid: false,
         message: TEST_CASES_MESSAGES.UNAUTHORIZED_UPDATE,

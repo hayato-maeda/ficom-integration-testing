@@ -5,8 +5,6 @@ import { TestCasesService } from './test-cases.service';
 
 describe('TestCasesService', () => {
   let service: TestCasesService;
-  let _prismaService: PrismaService;
-  let _logger: PinoLogger;
 
   const mockPrismaService = {
     testCase: {
@@ -66,8 +64,6 @@ describe('TestCasesService', () => {
     }).compile();
 
     service = module.get<TestCasesService>(TestCasesService);
-    _prismaService = module.get<PrismaService>(PrismaService);
-    _logger = module.get<PinoLogger>(PinoLogger);
 
     jest.clearAllMocks();
   });

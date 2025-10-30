@@ -10,10 +10,6 @@ jest.mock('bcrypt');
 
 describe('AuthService', () => {
   let service: AuthService;
-  let _prismaService: PrismaService;
-  let _jwtService: JwtService;
-  let _configService: ConfigService;
-  let _logger: PinoLogger;
 
   const mockPrismaService = {
     user: {
@@ -82,10 +78,6 @@ describe('AuthService', () => {
     }).compile();
 
     service = module.get<AuthService>(AuthService);
-    _prismaService = module.get<PrismaService>(PrismaService);
-    _jwtService = module.get<JwtService>(JwtService);
-    _configService = module.get<ConfigService>(ConfigService);
-    _logger = module.get<PinoLogger>(PinoLogger);
 
     jest.clearAllMocks();
     mockConfigService.get.mockReturnValue('1h');

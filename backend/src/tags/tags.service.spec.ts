@@ -5,8 +5,6 @@ import { TagsService } from './tags.service';
 
 describe('TagsService', () => {
   let service: TagsService;
-  let _prismaService: PrismaService;
-  let _logger: PinoLogger;
 
   const mockPrismaService = {
     tag: {
@@ -71,8 +69,6 @@ describe('TagsService', () => {
     }).compile();
 
     service = module.get<TagsService>(TagsService);
-    _prismaService = module.get<PrismaService>(PrismaService);
-    _logger = module.get<PinoLogger>(PinoLogger);
 
     jest.clearAllMocks();
   });

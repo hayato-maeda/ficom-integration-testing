@@ -4,7 +4,6 @@ import { AuthService } from './auth.service';
 
 describe('AuthResolver', () => {
   let resolver: AuthResolver;
-  let _authService: AuthService;
 
   const mockUser = {
     id: 1,
@@ -40,7 +39,6 @@ describe('AuthResolver', () => {
     }).compile();
 
     resolver = module.get<AuthResolver>(AuthResolver);
-    _authService = module.get<AuthService>(AuthService);
 
     jest.clearAllMocks();
   });

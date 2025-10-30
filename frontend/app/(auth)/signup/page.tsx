@@ -6,6 +6,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import Link from 'next/link';
+import { toast } from 'sonner';
 import { useAuth } from '@/contexts/auth-context';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -30,7 +31,6 @@ export default function SignupPage() {
   const router = useRouter();
   const { signup } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
-  const [signupError, setSignupError] = useState<string>('');
 
   const {
     register,
@@ -42,15 +42,19 @@ export default function SignupPage() {
 
   const onSubmit = async (data: SignupFormData) => {
     setIsLoading(true);
-    setSignupError('');
 
-    const { confirmPassword: _, ...signupData } = data;
+    const { confirmPassword: _confirmPassword, ...signupData } = data;
     const response = await signup(signupData);
 
     if (response.isValid) {
-      router.push('/test-cases');
+      toast.dismiss('signup-error');
+      sessionStorage.setItem('accountRegistered', 'true');
+      router.push('/login');
     } else {
-      setSignupError(response.message);
+      toast.error(response.message, {
+        id: 'signup-error',
+        style: { background: '#fee2e2', color: '#991b1b', border: '1px solid #fecaca' },
+      });
       setIsLoading(false);
     }
   };
@@ -61,13 +65,6 @@ export default function SignupPage() {
         <CardHeader>
           <CardTitle className="text-2xl">新規登録</CardTitle>
           <CardDescription>アカウント情報を入力して新規登録してください</CardDescription>
-          {/* <div className="mt-3 rounded-md border border-transparent min-h-[52px]">
-            {signupError && (
-              <div className="rounded-md bg-red-50 p-3 border border-red-200">
-                <p className="text-sm text-red-600">{signupError}</p>
-              </div>
-            )}
-          </div> */}
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">

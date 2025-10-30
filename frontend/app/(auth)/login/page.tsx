@@ -1,11 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import Link from 'next/link';
+import { toast } from 'sonner';
 import { useAuth } from '@/contexts/auth-context';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -23,7 +24,6 @@ export default function LoginPage() {
   const router = useRouter();
   const { login } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
-  const [loginError, setLoginError] = useState<string>('');
 
   const {
     register,
@@ -33,29 +33,36 @@ export default function LoginPage() {
     resolver: zodResolver(loginSchema),
   });
 
+  useEffect(() => {
+    const accountRegistered = sessionStorage.getItem('accountRegistered');
+    if (accountRegistered === 'true') {
+      toast.success('アカウントが登録されました', {
+        id: 'registration-success',
+        style: { background: '#dcfce7', color: '#166534', border: '1px solid #bbf7d0' },
+      });
+      sessionStorage.removeItem('accountRegistered');
+    }
+  }, []);
+
   const onSubmit = async (data: LoginFormData) => {
     setIsLoading(true);
-    setLoginError('');
 
     const response = await login(data);
 
     if (response.isValid) {
+      toast.dismiss('login-error');
       router.push('/test-cases');
     } else {
-      setLoginError(response.message);
+      toast.error(response.message, {
+        id: 'login-error',
+        style: { background: '#fee2e2', color: '#991b1b', border: '1px solid #fecaca' },
+      });
       setIsLoading(false);
     }
   };
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4">
-      {/* <div className="mt-3 rounded-md border border-transparent min-h-[52px]">
-            {loginError && (
-              <div className="rounded-md bg-red-50 p-3 border border-red-200">
-                <p className="text-sm text-red-600">{loginError}</p>
-              </div>
-            )}
-          </div> */}
       <Card className="w-full max-w-md">
         <CardHeader>
           <CardTitle className="text-2xl">ログイン</CardTitle>

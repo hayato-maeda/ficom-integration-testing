@@ -88,12 +88,6 @@ export class TagsService {
       where: { id },
     });
 
-    if (tag) {
-      this.logger.debug({ tagId: id }, 'Tag fetched successfully');
-    } else {
-      this.logger.warn({ tagId: id }, 'Tag not found');
-    }
-
     return tag;
   }
 

@@ -8,7 +8,6 @@ export const GET_TAGS_QUERY = gql`
       name
       color
       createdAt
-      updatedAt
     }
   }
 `;
@@ -21,7 +20,6 @@ export const GET_TAG_QUERY = gql`
       name
       color
       createdAt
-      updatedAt
     }
   }
 `;
@@ -45,14 +43,14 @@ export const CREATE_TAG_MUTATION = gql`
 // タグ更新ミューテーション
 export const UPDATE_TAG_MUTATION = gql`
   mutation UpdateTag($id: Int!, $name: String, $color: String) {
-    updateTag(id: $id, updateTagInput: { name: $name, color: $color }) {
+    updateTag(updateTagInput: { id: $id, name: $name, color: $color }) {
       isValid
       message
       data {
         id
         name
         color
-        updatedAt
+        createdAt
       }
     }
   }
@@ -74,17 +72,10 @@ export const DELETE_TAG_MUTATION = gql`
 // タグ割り当てミューテーション
 export const ASSIGN_TAG_MUTATION = gql`
   mutation AssignTag($tagId: Int!, $testCaseId: Int!) {
-    assignTag(tagId: $tagId, testCaseId: $testCaseId) {
+    assignTag(assignTagInput: { tagId: $tagId, testCaseId: $testCaseId }) {
       isValid
       message
-      data {
-        id
-        tags {
-          id
-          name
-          color
-        }
-      }
+      data
     }
   }
 `;
@@ -95,14 +86,7 @@ export const UNASSIGN_TAG_MUTATION = gql`
     unassignTag(tagId: $tagId, testCaseId: $testCaseId) {
       isValid
       message
-      data {
-        id
-        tags {
-          id
-          name
-          color
-        }
-      }
+      data
     }
   }
 `;

@@ -1,109 +1,40 @@
-// ユーザー型
-export interface User {
-  id: number;
-  email: string;
-  name: string;
-  createdAt: string;
-  updatedAt: string;
-}
+/**
+ * 型定義のメインエクスポートファイル
+ *
+ * GraphQL Code Generator で自動生成された型と、
+ * プロジェクト固有の追加型定義をまとめてエクスポートします。
+ */
 
-// テストケースステータス
-export enum TestCaseStatus {
-  PENDING = 'PENDING',
-  PASSED = 'PASSED',
-  FAILED = 'FAILED',
-  SKIPPED = 'SKIPPED',
-}
+// GraphQL Code Generator で自動生成された型をすべてエクスポート
+export * from './generated';
 
-// テストケース優先度
-export enum TestCasePriority {
-  LOW = 'LOW',
-  MEDIUM = 'MEDIUM',
-  HIGH = 'HIGH',
-  CRITICAL = 'CRITICAL',
-}
+// プロジェクト固有の追加型定義
+// ※ 必要に応じて、バックエンドで enum として定義されていない
+//    補助的な型をここで定義できます
 
-// タグ型
-export interface Tag {
-  id: number;
-  name: string;
-  color?: string;
-  createdAt: string;
-  updatedAt: string;
-}
+/**
+ * テストケースステータスの定数
+ * ※ バックエンドでは String として定義されていますが、
+ *    フロントエンドでの型安全性のために定数として定義
+ */
+export const TEST_CASE_STATUS = {
+  PENDING: 'PENDING',
+  PASSED: 'PASSED',
+  FAILED: 'FAILED',
+  SKIPPED: 'SKIPPED',
+} as const;
 
-// テストケース型
-export interface TestCase {
-  id: number;
-  title: string;
-  description?: string;
-  steps?: string;
-  expectedResult?: string;
-  actualResult?: string;
-  status: TestCaseStatus;
-  priority: TestCasePriority;
-  createdBy: User;
-  tags: Tag[];
-  createdAt: string;
-  updatedAt: string;
-}
+export type TestCaseStatus = typeof TEST_CASE_STATUS[keyof typeof TEST_CASE_STATUS];
 
-// 認証レスポンス型
-export interface AuthResponse {
-  accessToken: string;
-  refreshToken: string;
-  user: User;
-}
+/**
+ * テストケース優先度の定数
+ * ※ 将来的にバックエンドで実装される場合に備えて定義
+ */
+export const TEST_CASE_PRIORITY = {
+  LOW: 'LOW',
+  MEDIUM: 'MEDIUM',
+  HIGH: 'HIGH',
+  CRITICAL: 'CRITICAL',
+} as const;
 
-// ミューテーションレスポンス型
-export interface MutationResponse<T> {
-  isValid: boolean;
-  message: string;
-  data: T | null;
-}
-
-// ログイン入力型
-export interface LoginInput {
-  email: string;
-  password: string;
-}
-
-// サインアップ入力型
-export interface SignupInput {
-  email: string;
-  password: string;
-  name: string;
-}
-
-// テストケース作成入力型
-export interface CreateTestCaseInput {
-  title: string;
-  description?: string;
-  steps?: string;
-  expectedResult?: string;
-  status?: TestCaseStatus;
-  priority?: TestCasePriority;
-}
-
-// テストケース更新入力型
-export interface UpdateTestCaseInput {
-  title?: string;
-  description?: string;
-  steps?: string;
-  expectedResult?: string;
-  actualResult?: string;
-  status?: TestCaseStatus;
-  priority?: TestCasePriority;
-}
-
-// タグ作成入力型
-export interface CreateTagInput {
-  name: string;
-  color?: string;
-}
-
-// タグ更新入力型
-export interface UpdateTagInput {
-  name?: string;
-  color?: string;
-}
+export type TestCasePriority = typeof TEST_CASE_PRIORITY[keyof typeof TEST_CASE_PRIORITY];

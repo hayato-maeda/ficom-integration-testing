@@ -11,7 +11,6 @@ export const GET_TEST_CASES_QUERY = gql`
       expectedResult
       actualResult
       status
-      priority
       createdBy {
         id
         name
@@ -39,7 +38,6 @@ export const GET_TEST_CASE_QUERY = gql`
       expectedResult
       actualResult
       status
-      priority
       createdBy {
         id
         name
@@ -61,10 +59,9 @@ export const CREATE_TEST_CASE_MUTATION = gql`
   mutation CreateTestCase(
     $title: String!
     $description: String
-    $steps: String
-    $expectedResult: String
-    $status: TestCaseStatus
-    $priority: TestCasePriority
+    $steps: String!
+    $expectedResult: String!
+    $actualResult: String
   ) {
     createTestCase(
       createTestCaseInput: {
@@ -72,8 +69,7 @@ export const CREATE_TEST_CASE_MUTATION = gql`
         description: $description
         steps: $steps
         expectedResult: $expectedResult
-        status: $status
-        priority: $priority
+        actualResult: $actualResult
       }
     ) {
       isValid
@@ -84,8 +80,8 @@ export const CREATE_TEST_CASE_MUTATION = gql`
         description
         steps
         expectedResult
+        actualResult
         status
-        priority
         createdAt
       }
     }
@@ -101,19 +97,17 @@ export const UPDATE_TEST_CASE_MUTATION = gql`
     $steps: String
     $expectedResult: String
     $actualResult: String
-    $status: TestCaseStatus
-    $priority: TestCasePriority
+    $status: String
   ) {
     updateTestCase(
-      id: $id
       updateTestCaseInput: {
+        id: $id
         title: $title
         description: $description
         steps: $steps
         expectedResult: $expectedResult
         actualResult: $actualResult
         status: $status
-        priority: $priority
       }
     ) {
       isValid
@@ -126,7 +120,6 @@ export const UPDATE_TEST_CASE_MUTATION = gql`
         expectedResult
         actualResult
         status
-        priority
         updatedAt
       }
     }

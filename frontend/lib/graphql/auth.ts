@@ -69,7 +69,7 @@ export const SIGNUP_MUTATION = gql`
  * @returns {MutationResponse<AuthResponse>} 認証レスポンス（新しいトークンとユーザー情報）
  */
 export const REFRESH_TOKEN_MUTATION = gql`
-  mutation RefreshToken($refreshToken: String!, $oldAccessToken: String) {
+  mutation RefreshToken($refreshToken: String!, $oldAccessToken: String!) {
     refreshToken(refreshTokenInput: { refreshToken: $refreshToken, oldAccessToken: $oldAccessToken }) {
       isValid
       message

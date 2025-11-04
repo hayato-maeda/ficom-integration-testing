@@ -62,7 +62,8 @@ type Mutation {
   deleteTag(id: Int!): TagMutationResponse!
   deleteTestCase(id: Int!): TestCaseMutationResponse!
   login(loginInput: LoginInput!): AuthMutationResponse!
-  refreshToken(refreshTokenInput: RefreshTokenInput!): AuthMutationResponse!
+  logout: AuthMutationResponse!
+  refreshToken: AuthMutationResponse!
   signUp(signUpInput: SignUpInput!): AuthMutationResponse!
   unassignTag(tagId: Int!, testCaseId: Int!): TagAssignMutationResponse!
   updateTag(updateTagInput: UpdateTagInput!): TagMutationResponse!
@@ -79,11 +80,6 @@ type Query {
   tagsByTestCase(testCaseId: Int!): [Tag!]!
   testCase(id: Int!): TestCase
   testCases: [TestCase!]!
-}
-
-input RefreshTokenInput {
-  oldAccessToken: String!
-  refreshToken: String!
 }
 
 input SignUpInput {
@@ -154,5 +150,6 @@ type User {
   email: String!
   id: Int!
   name: String!
+  role: String!
   updatedAt: DateTime!
 }

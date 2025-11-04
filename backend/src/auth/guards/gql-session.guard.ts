@@ -1,45 +1,22 @@
-import { CanActivate, ExecutionContext, Injectable, UnauthorizedException } from '@nestjs/common';
+import { ExecutionContext, Injectable } from '@nestjs/common';
 import { GqlExecutionContext } from '@nestjs/graphql';
-import { PrismaService } from '../../prisma/prisma.service';
+import { AuthGuard } from '@nestjs/passport';
 
 /**
  * GraphQL セッション認証ガード
- * iron-sessionからユーザー情報を取得して認証を行います。
- * JWTトークンの検証は行わず、セッションにユーザー情報があるかのみをチェックします。
+ * iron-sessionからJWTトークンを取得して検証を行います。
+ * JwtStrategyを経由してトークンの署名検証、ブラックリストチェック、
+ * tokenValidFromTimestampチェックなどを実行します。
  */
 @Injectable()
-export class GqlSessionGuard implements CanActivate {
-  constructor(private readonly prismaService: PrismaService) {}
-
+export class GqlSessionGuard extends AuthGuard('jwt') {
   /**
-   * セッションからユーザー情報を取得して認証
+   * GraphQL コンテキストからリクエストオブジェクトを取得
    * @param context - 実行コンテキスト
-   * @returns 認証成功の場合true
-   * @throws UnauthorizedException - セッションにユーザー情報がない場合
+   * @returns リクエストオブジェクト
    */
-  async canActivate(context: ExecutionContext): Promise<boolean> {
-    // GraphQLコンテキストからリクエストを取得
+  getRequest(context: ExecutionContext) {
     const ctx = GqlExecutionContext.create(context);
-    const request = ctx.getContext().req;
-
-    // セッションからユーザー情報を取得
-    const session = request.session;
-    if (!session || !session.user) {
-      throw new UnauthorizedException('セッションが見つかりません。ログインしてください。');
-    }
-
-    // セッションのユーザーIDを使用してデータベースから完全なユーザー情報を取得
-    const user = await this.prismaService.user.findUnique({
-      where: { id: session.user.id },
-    });
-
-    if (!user) {
-      throw new UnauthorizedException('ユーザーが見つかりません。');
-    }
-
-    // リクエストオブジェクトにユーザー情報を設定（CurrentUserデコレーターで使用）
-    request.user = user;
-
-    return true;
+    return ctx.getContext().req;
   }
 }

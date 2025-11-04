@@ -187,10 +187,9 @@ export class AuthService {
   /**
    * リフレッシュトークンを使用してアクセストークンを更新
    * @param refreshToken - リフレッシュトークン
-   * @param oldAccessToken - 古いアクセストークン（無効化するため）
    * @returns 認証Mutationレスポンス
    */
-  async refreshAccessToken(refreshToken: string, oldAccessToken: string): Promise<AuthMutationResponse> {
+  async refreshAccessToken(refreshToken: string): Promise<AuthMutationResponse> {
     this.logger.debug('Token refresh attempt');
 
     // リフレッシュトークンを検証
@@ -226,18 +225,14 @@ export class AuthService {
       };
     }
 
-    // 古いアクセストークンをブラックリストに追加（JWTの有効期限まで）
-    const jwtExpiresIn = this.configService.get<string>('JWT_EXPIRES_IN') || '1h';
-    const expiresInMs = this.parseTimeString(jwtExpiresIn);
-    const tokenExpiresAt = new Date(Date.now() + expiresInMs);
-
-    await this.prismaService.revokedToken.create({
-      data: {
-        token: oldAccessToken,
-        userId: storedToken.userId,
-        expiresAt: tokenExpiresAt,
-      },
-    });
+    // セッションCookieベースの実装では、古いアクセストークンをブラックリストに追加しない
+    // 理由：
+    // 1. セッションが更新されれば自動的に新しいトークンが使われる
+    // 2. refreshTokenは通常、トークンの有効期限が切れる前に呼ばれる
+    // 3. 古いトークンを即座に無効化すると、セッション更新の遅延で認証エラーが発生する
+    //
+    // 注意：もしAuthorizationヘッダーベースの実装に変更する場合は、
+    //      古いトークンをブラックリストに追加する必要があります。
 
     // 古いリフレッシュトークンを無効化（トークンローテーション）
     await this.prismaService.refreshToken.update({

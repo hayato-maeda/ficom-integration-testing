@@ -8,7 +8,6 @@ import { CurrentUser } from './decorators/current-user.decorator';
 import { Session } from './decorators/session.decorator';
 import { AuthMutationResponse } from './dto/auth-mutation.response';
 import { LoginInput } from './dto/login.input';
-import { RefreshTokenInput } from './dto/refresh-token.input';
 import { SignUpInput } from './dto/signup.input';
 import { GqlSessionGuard } from './guards/gql-session.guard';
 
@@ -84,18 +83,25 @@ export class AuthResolver {
 
   /**
    * リフレッシュトークンミューテーション
-   * リフレッシュトークンを使用して新しいアクセストークンを取得します。
-   * @param refreshTokenInput - リフレッシュトークン入力データ
+   * セッションCookieからリフレッシュトークンとアクセストークンを取得して、
+   * 新しいアクセストークンを発行します。
    * @param session - セッション
    * @returns 認証Mutationレスポンス
    */
   @Mutation(() => AuthMutationResponse)
-  async refreshToken(
-    @Args('refreshTokenInput', { type: () => RefreshTokenInput })
-    refreshTokenInput: RefreshTokenInput,
-    @Session() session: IronSession<SessionData>,
-  ): Promise<AuthMutationResponse> {
-    const result = await this.authService.refreshAccessToken(refreshTokenInput.refreshToken, refreshTokenInput.oldAccessToken);
+  async refreshToken(@Session() session: IronSession<SessionData>): Promise<AuthMutationResponse> {
+    // セッションからリフレッシュトークンを取得
+    const refreshToken = session.refreshToken;
+
+    if (!refreshToken) {
+      return {
+        isValid: false,
+        message: 'セッションにトークンが見つかりません。再度ログインしてください。',
+        data: null,
+      };
+    }
+
+    const result = await this.authService.refreshAccessToken(refreshToken);
 
     // トークンリフレッシュ成功時にセッションを更新
     if (result.isValid && result.data) {

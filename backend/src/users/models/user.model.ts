@@ -22,6 +22,10 @@ export class User {
   @Field(() => String)
   name: string;
 
+  /** 権限（USER, ADMIN） */
+  @Field(() => String)
+  role: string;
+
   /** 作成日時 */
   @Field(() => Date)
   createdAt: Date;

@@ -97,6 +97,20 @@ export interface UpdateTestCaseInput {
   priority?: TestCasePriority;
 }
 
+// 認証レスポンス型
+// セッションCookie方式のため、トークンはレスポンスに含まれません
+export interface AuthResponse {
+  user: User;
+  accessTokenExpiresAt: number; // アクセストークンの有効期限（UNIX timestamp）
+}
+
+// ミューテーションレスポンス型
+export interface MutationResponse<T> {
+  isValid: boolean;
+  message: string;
+  data: T | null;
+}
+
 // タグ作成入力型
 export interface CreateTagInput {
   name: string;

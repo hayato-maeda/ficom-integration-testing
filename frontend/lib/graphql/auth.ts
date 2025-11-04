@@ -3,11 +3,12 @@ import { gql } from '@apollo/client';
 /**
  * ログインミューテーション
  *
- * メールアドレスとパスワードでログインし、アクセストークンとリフレッシュトークンを取得します。
+ * メールアドレスとパスワードでログインします。
+ * トークンはセッションCookieで自動管理されます。
  *
  * @param {string} email - メールアドレス
  * @param {string} password - パスワード
- * @returns {MutationResponse<AuthResponse>} 認証レスポンス（トークンとユーザー情報）
+ * @returns {MutationResponse<AuthResponse>} 認証レスポンス（ユーザー情報と有効期限）
  */
 export const LOGIN_MUTATION = gql`
   mutation Login($email: String!, $password: String!) {
@@ -15,8 +16,6 @@ export const LOGIN_MUTATION = gql`
       isValid
       message
       data {
-        accessToken
-        refreshToken
         user {
           id
           email
@@ -25,6 +24,7 @@ export const LOGIN_MUTATION = gql`
           createdAt
           updatedAt
         }
+        accessTokenExpiresAt
       }
     }
   }
@@ -33,12 +33,13 @@ export const LOGIN_MUTATION = gql`
 /**
  * サインアップ（新規登録）ミューテーション
  *
- * 新しいユーザーを登録し、アクセストークンとリフレッシュトークンを取得します。
+ * 新しいユーザーを登録します。
+ * トークンはセッションCookieで自動管理されます。
  *
  * @param {string} email - メールアドレス
  * @param {string} password - パスワード
  * @param {string} name - ユーザー名
- * @returns {MutationResponse<AuthResponse>} 認証レスポンス（トークンとユーザー情報）
+ * @returns {MutationResponse<AuthResponse>} 認証レスポンス（ユーザー情報と有効期限）
  */
 export const SIGNUP_MUTATION = gql`
   mutation Signup($email: String!, $password: String!, $name: String!) {
@@ -46,8 +47,6 @@ export const SIGNUP_MUTATION = gql`
       isValid
       message
       data {
-        accessToken
-        refreshToken
         user {
           id
           email
@@ -56,6 +55,7 @@ export const SIGNUP_MUTATION = gql`
           createdAt
           updatedAt
         }
+        accessTokenExpiresAt
       }
     }
   }
@@ -64,7 +64,7 @@ export const SIGNUP_MUTATION = gql`
 /**
  * ログアウトミューテーション
  *
- * セッションを破棄してユーザーをログアウトします。
+ * セッションCookieを破棄してユーザーをログアウトします。
  *
  * @returns {MutationResponse<null>} ログアウト結果
  */
@@ -73,6 +73,34 @@ export const LOGOUT_MUTATION = gql`
     logout {
       isValid
       message
+    }
+  }
+`;
+
+/**
+ * リフレッシュトークンミューテーション
+ *
+ * セッションCookieからリフレッシュトークンを取得して、
+ * 新しいアクセストークンを発行します。
+ *
+ * @returns {MutationResponse<AuthResponse>} 認証レスポンス（ユーザー情報と有効期限）
+ */
+export const REFRESH_TOKEN_MUTATION = gql`
+  mutation RefreshToken {
+    refreshToken {
+      isValid
+      message
+      data {
+        user {
+          id
+          email
+          name
+          role
+          createdAt
+          updatedAt
+        }
+        accessTokenExpiresAt
+      }
     }
   }
 `;

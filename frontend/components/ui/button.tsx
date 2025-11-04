@@ -34,6 +34,15 @@ const buttonVariants = cva(
   },
 );
 
+/**
+ * ボタンコンポーネント
+ * クリック可能なボタン要素。様々なバリアントとサイズをサポート
+ * @param props - HTMLボタン要素の全てのprops
+ * @param props.className - 追加のCSSクラス名
+ * @param props.variant - ボタンのバリアント ('default' | 'destructive' | 'outline' | 'secondary' | 'ghost' | 'link')
+ * @param props.size - ボタンのサイズ ('default' | 'sm' | 'lg' | 'icon' | 'icon-sm' | 'icon-lg')
+ * @param props.asChild - 子要素としてレンダリングするかどうか
+ */
 function Button({
   className,
   variant,

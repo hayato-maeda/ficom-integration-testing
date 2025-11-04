@@ -2,6 +2,13 @@ import * as React from 'react';
 
 import { cn } from '@/lib/utils';
 
+/**
+ * インプットコンポーネント
+ * テキスト入力やその他の入力タイプをサポートする汎用的な入力フィールド
+ * @param props - HTMLinput要素の全てのprops
+ * @param props.className - 追加のCSSクラス名
+ * @param props.type - 入力タイプ (text, email, password, など)
+ */
 function Input({ className, type, ...props }: React.ComponentProps<'input'>) {
   return (
     <input

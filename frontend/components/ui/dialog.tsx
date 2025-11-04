@@ -6,22 +6,48 @@ import { XIcon } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
 
+/**
+ * ダイアログコンポーネントのルート要素
+ * モーダルダイアログのコンテキストと状態管理を提供します
+ * @param props - Radix UI Dialog.Rootの全てのprops
+ */
 function Dialog({ ...props }: React.ComponentProps<typeof DialogPrimitive.Root>) {
   return <DialogPrimitive.Root data-slot="dialog" {...props} />;
 }
 
+/**
+ * ダイアログを開くトリガー要素
+ * クリックでダイアログを表示します
+ * @param props - Radix UI Dialog.Triggerの全てのprops
+ */
 function DialogTrigger({ ...props }: React.ComponentProps<typeof DialogPrimitive.Trigger>) {
   return <DialogPrimitive.Trigger data-slot="dialog-trigger" {...props} />;
 }
 
+/**
+ * ダイアログコンテンツをレンダリングするためのポータル
+ * ダイアログコンテンツをDOMツリーの別の場所にレンダリングします
+ * @param props - Radix UI Dialog.Portalの全てのprops
+ */
 function DialogPortal({ ...props }: React.ComponentProps<typeof DialogPrimitive.Portal>) {
   return <DialogPrimitive.Portal data-slot="dialog-portal" {...props} />;
 }
 
+/**
+ * ダイアログを閉じるボタン要素
+ * クリックでダイアログを閉じます
+ * @param props - Radix UI Dialog.Closeの全てのprops
+ */
 function DialogClose({ ...props }: React.ComponentProps<typeof DialogPrimitive.Close>) {
   return <DialogPrimitive.Close data-slot="dialog-close" {...props} />;
 }
 
+/**
+ * ダイアログのオーバーレイ（背景）
+ * ダイアログの背後に表示される半透明の背景
+ * @param props - Radix UI Dialog.Overlayの全てのprops
+ * @param props.className - 追加のCSSクラス名
+ */
 function DialogOverlay({ className, ...props }: React.ComponentProps<typeof DialogPrimitive.Overlay>) {
   return (
     <DialogPrimitive.Overlay
@@ -35,6 +61,14 @@ function DialogOverlay({ className, ...props }: React.ComponentProps<typeof Dial
   );
 }
 
+/**
+ * ダイアログのコンテンツコンテナ
+ * ダイアログのメインコンテンツを含むモーダルウィンドウ
+ * @param props - Radix UI Dialog.Contentの全てのprops
+ * @param props.className - 追加のCSSクラス名
+ * @param props.children - 子要素
+ * @param props.showCloseButton - 閉じるボタンを表示するかどうか (デフォルト: true)
+ */
 function DialogContent({
   className,
   children,
@@ -69,6 +103,12 @@ function DialogContent({
   );
 }
 
+/**
+ * ダイアログヘッダーコンポーネント
+ * ダイアログのタイトルと説明を含むヘッダー部分
+ * @param props - HTMLdiv要素の全てのprops
+ * @param props.className - 追加のCSSクラス名
+ */
 function DialogHeader({ className, ...props }: React.ComponentProps<'div'>) {
   return (
     <div
@@ -79,6 +119,12 @@ function DialogHeader({ className, ...props }: React.ComponentProps<'div'>) {
   );
 }
 
+/**
+ * ダイアログフッターコンポーネント
+ * ダイアログのアクションボタンなどを配置するフッター部分
+ * @param props - HTMLdiv要素の全てのprops
+ * @param props.className - 追加のCSSクラス名
+ */
 function DialogFooter({ className, ...props }: React.ComponentProps<'div'>) {
   return (
     <div
@@ -89,6 +135,12 @@ function DialogFooter({ className, ...props }: React.ComponentProps<'div'>) {
   );
 }
 
+/**
+ * ダイアログタイトルコンポーネント
+ * ダイアログの見出しを表示します
+ * @param props - Radix UI Dialog.Titleの全てのprops
+ * @param props.className - 追加のCSSクラス名
+ */
 function DialogTitle({ className, ...props }: React.ComponentProps<typeof DialogPrimitive.Title>) {
   return (
     <DialogPrimitive.Title
@@ -99,6 +151,12 @@ function DialogTitle({ className, ...props }: React.ComponentProps<typeof Dialog
   );
 }
 
+/**
+ * ダイアログ説明コンポーネント
+ * ダイアログの補足説明を表示します
+ * @param props - Radix UI Dialog.Descriptionの全てのprops
+ * @param props.className - 追加のCSSクラス名
+ */
 function DialogDescription({ className, ...props }: React.ComponentProps<typeof DialogPrimitive.Description>) {
   return (
     <DialogPrimitive.Description

@@ -4,6 +4,12 @@ import * as React from 'react';
 
 import { cn } from '@/lib/utils';
 
+/**
+ * テーブルコンポーネント
+ * データを表形式で表示するためのテーブルコンテナ。横スクロールをサポート
+ * @param props - HTMLtable要素の全てのprops
+ * @param props.className - 追加のCSSクラス名
+ */
 function Table({ className, ...props }: React.ComponentProps<'table'>) {
   return (
     <div data-slot="table-container" className="relative w-full overflow-x-auto">
@@ -12,14 +18,32 @@ function Table({ className, ...props }: React.ComponentProps<'table'>) {
   );
 }
 
+/**
+ * テーブルヘッダーコンポーネント
+ * テーブルの列見出しを含むヘッダーセクション
+ * @param props - HTMLthead要素の全てのprops
+ * @param props.className - 追加のCSSクラス名
+ */
 function TableHeader({ className, ...props }: React.ComponentProps<'thead'>) {
   return <thead data-slot="table-header" className={cn('[&_tr]:border-b', className)} {...props} />;
 }
 
+/**
+ * テーブルボディコンポーネント
+ * テーブルのデータ行を含む本体セクション
+ * @param props - HTMLtbody要素の全てのprops
+ * @param props.className - 追加のCSSクラス名
+ */
 function TableBody({ className, ...props }: React.ComponentProps<'tbody'>) {
   return <tbody data-slot="table-body" className={cn('[&_tr:last-child]:border-0', className)} {...props} />;
 }
 
+/**
+ * テーブルフッターコンポーネント
+ * テーブルの集計情報などを表示するフッターセクション
+ * @param props - HTMLtfoot要素の全てのprops
+ * @param props.className - 追加のCSSクラス名
+ */
 function TableFooter({ className, ...props }: React.ComponentProps<'tfoot'>) {
   return (
     <tfoot
@@ -30,6 +54,12 @@ function TableFooter({ className, ...props }: React.ComponentProps<'tfoot'>) {
   );
 }
 
+/**
+ * テーブル行コンポーネント
+ * テーブルの1行を表します。ホバーと選択状態をサポート
+ * @param props - HTMLtr要素の全てのprops
+ * @param props.className - 追加のCSSクラス名
+ */
 function TableRow({ className, ...props }: React.ComponentProps<'tr'>) {
   return (
     <tr
@@ -40,6 +70,12 @@ function TableRow({ className, ...props }: React.ComponentProps<'tr'>) {
   );
 }
 
+/**
+ * テーブルヘッドセルコンポーネント
+ * テーブルの列見出しセル
+ * @param props - HTMLth要素の全てのprops
+ * @param props.className - 追加のCSSクラス名
+ */
 function TableHead({ className, ...props }: React.ComponentProps<'th'>) {
   return (
     <th
@@ -53,6 +89,12 @@ function TableHead({ className, ...props }: React.ComponentProps<'th'>) {
   );
 }
 
+/**
+ * テーブルセルコンポーネント
+ * テーブルのデータセル
+ * @param props - HTMLtd要素の全てのprops
+ * @param props.className - 追加のCSSクラス名
+ */
 function TableCell({ className, ...props }: React.ComponentProps<'td'>) {
   return (
     <td
@@ -66,6 +108,12 @@ function TableCell({ className, ...props }: React.ComponentProps<'td'>) {
   );
 }
 
+/**
+ * テーブルキャプションコンポーネント
+ * テーブルのタイトルや説明を表示します
+ * @param props - HTMLcaption要素の全てのprops
+ * @param props.className - 追加のCSSクラス名
+ */
 function TableCaption({ className, ...props }: React.ComponentProps<'caption'>) {
   return (
     <caption data-slot="table-caption" className={cn('text-muted-foreground mt-4 text-sm', className)} {...props} />

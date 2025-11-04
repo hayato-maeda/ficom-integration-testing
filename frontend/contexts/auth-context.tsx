@@ -43,30 +43,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // トークンリフレッシュ
   const refreshToken = async () => {
-    const storedRefreshToken = localStorage.getItem('refreshToken');
-    if (!storedRefreshToken) return;
+    try {
+      const result = await refreshTokenMutation();
 
-    await refreshTokenMutation({
-      variables: { refreshToken: storedRefreshToken },
-      onCompleted: (data) => {
-        if (data?.refreshToken?.isValid && data.refreshToken.data) {
-          const { accessToken, refreshToken: newRefreshToken, user: userData } = data.refreshToken.data;
-          localStorage.setItem('accessToken', accessToken);
-          localStorage.setItem('refreshToken', newRefreshToken);
-          setUser(userData);
-        } else {
-          localStorage.removeItem('accessToken');
-          localStorage.removeItem('refreshToken');
-          setUser(null);
-        }
-      },
-      onError: (error) => {
-        console.error('Token refresh failed:', error);
-        localStorage.removeItem('accessToken');
-        localStorage.removeItem('refreshToken');
+      if (result.data?.refreshToken?.isValid && result.data.refreshToken.data) {
+        const { user: userData } = result.data.refreshToken.data;
+        setUser(userData);
+      } else {
         setUser(null);
-      },
-    });
+      }
+    } catch (error) {
+      console.error('Token refresh failed:', error);
+      setUser(null);
+    }
   };
 
   // ログイン
@@ -75,9 +64,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const result = await loginMutation({ variables: input });
 
       if (result.data?.login?.isValid && result.data.login.data) {
-        const { accessToken, refreshToken } = result.data.login.data;
-        localStorage.setItem('accessToken', accessToken);
-        localStorage.setItem('refreshToken', refreshToken);
+        const { user: userData } = result.data.login.data;
+        setUser(userData);
       }
 
       return result.data?.login || { isValid: false, message: 'ログインに失敗しました', data: null };
@@ -93,9 +81,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const result = await signupMutation({ variables: input });
 
       if (result.data?.signUp?.isValid && result.data.signUp.data) {
-        const { accessToken, refreshToken } = result.data.signUp.data;
-        localStorage.setItem('accessToken', accessToken);
-        localStorage.setItem('refreshToken', refreshToken);
+        const { user: userData } = result.data.signUp.data;
+        setUser(userData);
       }
 
       return result.data?.signUp || { isValid: false, message: 'ユーザー登録に失敗しました', data: null };
@@ -107,8 +94,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // ログアウト
   const logout = () => {
-    localStorage.removeItem('accessToken');
-    localStorage.removeItem('refreshToken');
     setUser(null);
     router.push('/login');
   };

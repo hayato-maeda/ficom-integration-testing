@@ -52,7 +52,7 @@ export default function SignupPage() {
         id: 'registration-success',
         style: { background: '#dcfce7', color: '#166534', border: '1px solid #bbf7d0' },
       });
-      router.push('/login');
+      router.push('/test-cases');
     } else {
       toast.error(response.message, {
         id: 'signup-error',

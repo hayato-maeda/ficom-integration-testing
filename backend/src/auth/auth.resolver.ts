@@ -38,12 +38,6 @@ export class AuthResolver {
       session.accessToken = result.data.accessToken;
       session.refreshToken = result.data.refreshToken;
       session.accessTokenExpiresAt = Date.now() + 60 * 60 * 1000; // 1時間後
-      session.user = {
-        id: result.data.user.id,
-        email: result.data.user.email,
-        name: result.data.user.name,
-        role: result.data.user.role,
-      };
       await session.save();
 
       // クライアントにはトークンを返さない（セッションCookieで管理）
@@ -85,12 +79,6 @@ export class AuthResolver {
       session.accessToken = result.data.accessToken;
       session.refreshToken = result.data.refreshToken;
       session.accessTokenExpiresAt = Date.now() + 60 * 60 * 1000; // 1時間後
-      session.user = {
-        id: result.data.user.id,
-        email: result.data.user.email,
-        name: result.data.user.name,
-        role: result.data.user.role,
-      };
       await session.save();
 
       // クライアントにはトークンを返さない（セッションCookieで管理）
@@ -140,12 +128,6 @@ export class AuthResolver {
       session.accessToken = result.data.accessToken;
       session.refreshToken = result.data.refreshToken;
       session.accessTokenExpiresAt = Date.now() + 60 * 60 * 1000; // 1時間後
-      session.user = {
-        id: result.data.user.id,
-        email: result.data.user.email,
-        name: result.data.user.name,
-        role: result.data.user.role,
-      };
       await session.save();
 
       // クライアントにはトークンを返さない（セッションCookieで管理）

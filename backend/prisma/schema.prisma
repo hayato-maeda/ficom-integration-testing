@@ -14,22 +14,20 @@ datasource db {
 /// システムを利用するユーザーの情報を管理します。
 /// 認証情報（email, password）とプロフィール（name）を持ちます。
 model User {
-  id                       Int       @id @default(autoincrement())
-  email                    String    @unique
-  password                 String
-  name                     String
-  role                     String    @default("USER") // ユーザーの権限: USER, ADMIN
-  tokenValidFromTimestamp  DateTime? // この時刻以降に発行されたトークンのみ有効
-  createdAt                DateTime  @default(now())
-  updatedAt                DateTime  @updatedAt
+  id                      Int       @id @default(autoincrement())
+  email                   String    @unique
+  password                String
+  name                    String
+  role                    String    @default("USER") // ユーザーの権限: USER, ADMIN
+  tokenValidFromTimestamp DateTime? // この時刻以降に発行されたトークンのみ有効
+  createdAt               DateTime  @default(now())
+  updatedAt               DateTime  @updatedAt
 
   // リレーション
-  createdTestCases TestCase[]      @relation("TestCaseCreator")
+  createdTestCases TestCase[] @relation("TestCaseCreator")
   approvals        Approval[]
   uploadedFiles    File[]
   comments         Comment[]
-  refreshTokens    RefreshToken[]
-  revokedTokens    RevokedToken[]
 
   @@map("users")
 }
@@ -51,7 +49,7 @@ model TestCase {
   updatedAt      DateTime @updatedAt
 
   // リレーション
-  createdBy User         @relation("TestCaseCreator", fields: [createdById], references: [id])
+  createdBy User          @relation("TestCaseCreator", fields: [createdById], references: [id])
   tags      TestCaseTag[]
   files     File[]
   approvals Approval[]
@@ -147,41 +145,4 @@ model Comment {
   user     User     @relation(fields: [userId], references: [id])
 
   @@map("comments")
-}
-
-/// リフレッシュトークン
-/// JWT トークンの更新に使用するリフレッシュトークンを管理します。
-/// トークンローテーション機能により、セキュリティを強化します。
-model RefreshToken {
-  id        Int      @id @default(autoincrement())
-  token     String   @unique
-  userId    Int
-  expiresAt DateTime
-  createdAt DateTime @default(now())
-  isRevoked Boolean  @default(false)
-
-  // リレーション
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId])
-  @@index([token])
-  @@map("refresh_tokens")
-}
-
-/// 無効化されたアクセストークン
-/// リフレッシュ後の古いアクセストークンをブラックリストとして管理します。
-/// トークン更新後、古いトークンでの認証を防ぎます。
-model RevokedToken {
-  id        Int      @id @default(autoincrement())
-  token     String   @unique
-  userId    Int
-  expiresAt DateTime
-  createdAt DateTime @default(now())
-
-  // リレーション
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([token])
-  @@index([expiresAt])
-  @@map("revoked_tokens")
 }

@@ -1,5 +1,4 @@
-import { randomUUID } from 'node:crypto';
-import { Injectable } from '@nestjs/common';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
@@ -80,8 +79,8 @@ export class AuthService {
     // JWT アクセストークンを生成
     const accessToken = this.generateToken(user.id, user.email);
 
-    // リフレッシュトークンを生成
-    const refreshToken = await this.createRefreshToken(user.id);
+    // リフレッシュトークンを生成（JWT形式）
+    const refreshToken = this.generateRefreshToken(user.id, user.email);
 
     return {
       isValid: true,
@@ -133,43 +132,18 @@ export class AuthService {
     // トークン有効化タイムスタンプを現在時刻に更新（既存トークンをすべて無効化）
     // JWT の iat は秒単位なので、ミリ秒を0にして精度を合わせる
     const tokenValidFrom = new Date(Math.floor(Date.now() / 1000) * 1000);
-    await this.prismaService.user.update({
+    const updatedUser = await this.prismaService.user.update({
       where: { id: user.id },
       data: { tokenValidFromTimestamp: tokenValidFrom },
     });
 
-    // 既存のリフレッシュトークンをすべて無効化（セッション無効化）
-    const revokedResult = await this.prismaService.refreshToken.updateMany({
-      where: {
-        userId: user.id,
-        isRevoked: false,
-      },
-      data: {
-        isRevoked: true,
-      },
-    });
-
-    this.logger.debug({ userId: user.id, revokedTokensCount: revokedResult.count }, 'Previous sessions invalidated');
+    this.logger.debug({ userId: user.id }, 'Previous sessions invalidated via tokenValidFromTimestamp');
 
     // JWT アクセストークンを生成
     const accessToken = this.generateToken(user.id, user.email);
 
-    // リフレッシュトークンを生成
-    const refreshToken = await this.createRefreshToken(user.id);
-
-    // 更新されたユーザー情報を取得
-    const updatedUser = await this.prismaService.user.findUnique({
-      where: { id: user.id },
-    });
-
-    if (!updatedUser) {
-      this.logger.error({ userId: user.id }, 'User not found after update');
-      return {
-        isValid: false,
-        message: AUTH_MESSAGES.USER_NOT_FOUND_AFTER_UPDATE,
-        data: null,
-      };
-    }
+    // リフレッシュトークンを生成（JWT形式）
+    const refreshToken = this.generateRefreshToken(user.id, user.email);
 
     this.logger.info({ userId: user.id, email: user.email }, 'Login successful');
 
@@ -186,81 +160,70 @@ export class AuthService {
 
   /**
    * リフレッシュトークンを使用してアクセストークンを更新
-   * @param refreshToken - リフレッシュトークン
+   * @param refreshToken - リフレッシュトークン（JWT）
    * @returns 認証Mutationレスポンス（内部用、トークン含む）
    */
   async refreshAccessToken(refreshToken: string): Promise<AuthMutationResponseInternal> {
     this.logger.debug('Token refresh attempt');
 
-    // リフレッシュトークンを検証
-    const storedToken = await this.prismaService.refreshToken.findUnique({
-      where: { token: refreshToken },
-      include: { user: true },
-    });
+    try {
+      // リフレッシュトークンをJWTとして検証（有効期限・署名チェック）
+      const payload = this.jwtService.verify(refreshToken, {
+        secret: this.configService.get<string>('JWT_SECRET'),
+      });
 
-    if (!storedToken) {
-      this.logger.warn('Token refresh failed: invalid refresh token');
+      // ユーザーを取得してtokenValidFromTimestampをチェック
+      const user = await this.prismaService.user.findUnique({
+        where: { id: payload.sub },
+      });
+
+      if (!user) {
+        this.logger.warn({ userId: payload.sub }, 'Token refresh failed: user not found');
+        return {
+          isValid: false,
+          message: AUTH_MESSAGES.INVALID_REFRESH_TOKEN,
+          data: null,
+        };
+      }
+
+      // トークンの発行時刻が tokenValidFromTimestamp より前の場合は無効
+      if (user.tokenValidFromTimestamp && payload.iat) {
+        const tokenIssuedAt = new Date(payload.iat * 1000);
+        if (tokenIssuedAt < user.tokenValidFromTimestamp) {
+          this.logger.warn({ userId: user.id }, 'Token refresh failed: token invalidated by re-login');
+          return {
+            isValid: false,
+            message: AUTH_MESSAGES.REFRESH_TOKEN_REVOKED,
+            data: null,
+          };
+        }
+      }
+
+      this.logger.debug({ userId: user.id }, 'Issuing new tokens');
+
+      // 新しいアクセストークンとリフレッシュトークンを生成
+      const newAccessToken = this.generateToken(user.id, user.email);
+      const newRefreshToken = this.generateRefreshToken(user.id, user.email);
+
+      this.logger.info({ userId: user.id }, 'Token refresh successful');
+
       return {
-        isValid: false,
-        message: AUTH_MESSAGES.INVALID_REFRESH_TOKEN,
-        data: null,
+        isValid: true,
+        message: AUTH_MESSAGES.TOKEN_REFRESH_SUCCESS,
+        data: {
+          accessToken: newAccessToken,
+          refreshToken: newRefreshToken,
+          user,
+        },
       };
+    } catch (error) {
+      this.logger.warn({ error: error.message }, 'Token refresh failed: invalid token');
+      throw new UnauthorizedException(AUTH_MESSAGES.INVALID_REFRESH_TOKEN);
     }
-
-    if (storedToken.isRevoked) {
-      this.logger.warn({ userId: storedToken.userId }, 'Token refresh failed: token revoked');
-      return {
-        isValid: false,
-        message: AUTH_MESSAGES.REFRESH_TOKEN_REVOKED,
-        data: null,
-      };
-    }
-
-    if (new Date() > storedToken.expiresAt) {
-      this.logger.warn({ userId: storedToken.userId }, 'Token refresh failed: token expired');
-      return {
-        isValid: false,
-        message: AUTH_MESSAGES.REFRESH_TOKEN_EXPIRED,
-        data: null,
-      };
-    }
-
-    // セッションCookieベースの実装では、古いアクセストークンをブラックリストに追加しない
-    // 理由：
-    // 1. セッションが更新されれば自動的に新しいトークンが使われる
-    // 2. refreshTokenは通常、トークンの有効期限が切れる前に呼ばれる
-    // 3. 古いトークンを即座に無効化すると、セッション更新の遅延で認証エラーが発生する
-    //
-    // 注意：もしAuthorizationヘッダーベースの実装に変更する場合は、
-    //      古いトークンをブラックリストに追加する必要があります。
-
-    // 古いリフレッシュトークンを無効化（トークンローテーション）
-    await this.prismaService.refreshToken.update({
-      where: { id: storedToken.id },
-      data: { isRevoked: true },
-    });
-
-    this.logger.debug({ userId: storedToken.userId }, 'Old tokens revoked, issuing new tokens');
-
-    // 新しいアクセストークンとリフレッシュトークンを生成
-    const newAccessToken = this.generateToken(storedToken.userId, storedToken.user.email);
-    const newRefreshToken = await this.createRefreshToken(storedToken.userId);
-
-    this.logger.info({ userId: storedToken.userId }, 'Token refresh successful');
-
-    return {
-      isValid: true,
-      message: AUTH_MESSAGES.TOKEN_REFRESH_SUCCESS,
-      data: {
-        accessToken: newAccessToken,
-        refreshToken: newRefreshToken,
-        user: storedToken.user,
-      },
-    };
   }
 
   /**
-   * JWT トークンを生成
+   * JWT アクセストークンを生成
    * @param userId - ユーザーID
    * @param email - メールアドレス
    * @returns JWT トークン
@@ -272,56 +235,51 @@ export class AuthService {
   }
 
   /**
-   * リフレッシュトークンを生成してデータベースに保存
+   * JWT リフレッシュトークンを生成
+   * アクセストークンよりも長い有効期限を持つJWTトークンを生成します。
    * @param userId - ユーザーID
-   * @returns リフレッシュトークン文字列
+   * @param email - メールアドレス
+   * @returns JWT リフレッシュトークン
    * @private
    */
-  private async createRefreshToken(userId: number): Promise<string> {
-    // ランダムなトークンを生成
-    const token = randomUUID();
-
-    // 有効期限を計算
-    const expiresIn = this.configService.get<string>('REFRESH_TOKEN_EXPIRES_IN') || '7d';
-    const expiresInMs = this.parseTimeString(expiresIn);
-    const expiresAt = new Date(Date.now() + expiresInMs);
-
-    // データベースに保存
-    await this.prismaService.refreshToken.create({
-      data: {
-        token,
-        userId,
-        expiresAt,
-      },
-    });
-
-    return token;
+  private generateRefreshToken(userId: number, email: string): string {
+    const payload = { sub: userId, email };
+    // リフレッシュトークンの有効期限（文字列形式: '7d'）
+    const refreshExpiresIn = this.configService.get<string>('REFRESH_TOKEN_EXPIRES_IN') || '7d';
+    // 秒数に変換
+    const expiresInSeconds = this.parseTimeToSeconds(refreshExpiresIn);
+    // JwtModuleで設定されたsecretを使用し、有効期限のみオーバーライド
+    return this.jwtService.sign(payload, { expiresIn: expiresInSeconds });
   }
 
   /**
-   * 時間文字列をミリ秒に変換
-   * @param timeString - 時間文字列（例: "1h", "7d", "30m", "60s"）
-   * @returns ミリ秒
+   * 時間文字列を秒数に変換
+   * @param timeString - 時間文字列（例: '7d', '1h', '30m', '60s'）
+   * @returns 秒数
    * @private
    */
-  private parseTimeString(timeString: string): number {
-    const regex = /^(\d+)([smhd])$/;
-    const match = timeString.match(regex);
-
-    if (!match) {
-      throw new Error(`Invalid time format: ${timeString}`);
-    }
-
-    const value = Number.parseInt(match[1], 10);
-    const unit = match[2];
-
-    const multipliers: Record<string, number> = {
-      s: 1000, // seconds
-      m: 60 * 1000, // minutes
-      h: 60 * 60 * 1000, // hours
-      d: 24 * 60 * 60 * 1000, // days
+  private parseTimeToSeconds(timeString: string): number {
+    const timeUnits: Record<string, number> = {
+      s: 1,
+      m: 60,
+      h: 3600,
+      d: 86400,
     };
 
-    return value * multipliers[unit];
+    const match = timeString.match(/^(\d+)([smhd])$/);
+    if (match) {
+      const value = Number.parseInt(match[1], 10);
+      const unit = match[2];
+      return value * (timeUnits[unit] || 1);
+    }
+
+    // 数値のみの場合は秒として扱う
+    const seconds = Number.parseInt(timeString, 10);
+    if (!Number.isNaN(seconds)) {
+      return seconds;
+    }
+
+    // デフォルトは7日
+    return 604800;
   }
 }

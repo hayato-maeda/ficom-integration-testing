@@ -5,19 +5,12 @@ import { SessionOptions } from 'iron-session';
  * iron-sessionで管理するセッション情報を定義します。
  */
 export interface SessionData {
-  /** アクセストークン（JWT） */
+  /** アクセストークン(JWT) */
   accessToken?: string;
   /** リフレッシュトークン */
   refreshToken?: string;
   /** アクセストークンの有効期限（UNIX timestamp） */
   accessTokenExpiresAt?: number;
-  /** ユーザー情報 */
-  user?: {
-    id: number;
-    email: string;
-    name: string;
-    role: string;
-  };
 }
 
 /**

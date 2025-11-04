@@ -17,19 +17,11 @@ describe('AuthService', () => {
       findUnique: jest.fn(),
       update: jest.fn(),
     },
-    refreshToken: {
-      create: jest.fn(),
-      findUnique: jest.fn(),
-      updateMany: jest.fn(),
-      update: jest.fn(),
-    },
-    revokedToken: {
-      create: jest.fn(),
-    },
   };
 
   const mockJwtService = {
     sign: jest.fn(),
+    verify: jest.fn(),
   };
 
   const mockConfigService = {
@@ -93,14 +85,6 @@ describe('AuthService', () => {
       (bcrypt.hash as jest.Mock).mockResolvedValue('hashedPassword');
       mockPrismaService.user.create.mockResolvedValue(mockUser);
       mockJwtService.sign.mockReturnValue('accessToken');
-      mockPrismaService.refreshToken.create.mockResolvedValue({
-        id: 1,
-        token: 'refreshToken',
-        userId: 1,
-        expiresAt: new Date(),
-        isRevoked: false,
-        createdAt: new Date(),
-      });
       mockConfigService.get.mockReturnValue('7d');
 
       const result = await service.signUp({
@@ -160,17 +144,7 @@ describe('AuthService', () => {
       mockPrismaService.user.findUnique.mockResolvedValueOnce(mockUser);
       (bcrypt.compare as jest.Mock).mockResolvedValue(true);
       mockPrismaService.user.update.mockResolvedValue(mockUser);
-      mockPrismaService.refreshToken.updateMany.mockResolvedValue({ count: 1 });
       mockJwtService.sign.mockReturnValue('accessToken');
-      mockPrismaService.refreshToken.create.mockResolvedValue({
-        id: 1,
-        token: 'refreshToken',
-        userId: 1,
-        expiresAt: new Date(),
-        isRevoked: false,
-        createdAt: new Date(),
-      });
-      mockPrismaService.user.findUnique.mockResolvedValueOnce(mockUser);
       mockConfigService.get.mockReturnValue('7d');
 
       const result = await service.login({
@@ -189,7 +163,6 @@ describe('AuthService', () => {
         where: { email: 'test@example.com' },
       });
       expect(bcrypt.compare).toHaveBeenCalledWith('password123', 'hashedPassword');
-      expect(mockPrismaService.refreshToken.updateMany).toHaveBeenCalled();
       expect(mockLogger.info).toHaveBeenCalled();
     });
 
@@ -224,32 +197,19 @@ describe('AuthService', () => {
   });
 
   describe('refreshAccessToken', () => {
-    const mockRefreshToken = {
-      id: 1,
-      token: 'refreshToken',
-      userId: 1,
-      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-      isRevoked: false,
-      createdAt: new Date(),
-      user: mockUser,
+    const mockRefreshTokenPayload = {
+      sub: 1,
+      email: 'test@example.com',
+      iat: Math.floor(Date.now() / 1000),
     };
 
-    it('should refresh access token', async () => {
-      mockPrismaService.refreshToken.findUnique.mockResolvedValue(mockRefreshToken);
-      mockPrismaService.revokedToken.create.mockResolvedValue({});
-      mockPrismaService.refreshToken.update.mockResolvedValue({});
+    it('should refresh access token with valid JWT refresh token', async () => {
+      mockJwtService.verify.mockReturnValue(mockRefreshTokenPayload);
+      mockPrismaService.user.findUnique.mockResolvedValue(mockUser);
       mockJwtService.sign.mockReturnValue('newAccessToken');
-      mockPrismaService.refreshToken.create.mockResolvedValue({
-        id: 2,
-        token: 'newRefreshToken',
-        userId: 1,
-        expiresAt: new Date(),
-        isRevoked: false,
-        createdAt: new Date(),
-      });
       mockConfigService.get.mockReturnValue('7d');
 
-      const result = await service.refreshAccessToken('refreshToken', 'oldAccessToken');
+      const result = await service.refreshAccessToken('validRefreshToken');
 
       expect(result.isValid).toBe(true);
       expect(result.message).toBe('トークンの更新に成功しました');
@@ -258,19 +218,27 @@ describe('AuthService', () => {
         refreshToken: expect.any(String),
         user: mockUser,
       });
-      expect(mockPrismaService.refreshToken.findUnique).toHaveBeenCalledWith({
-        where: { token: 'refreshToken' },
-        include: { user: true },
+      expect(mockJwtService.verify).toHaveBeenCalled();
+      expect(mockPrismaService.user.findUnique).toHaveBeenCalledWith({
+        where: { id: 1 },
       });
-      expect(mockPrismaService.revokedToken.create).toHaveBeenCalled();
-      expect(mockPrismaService.refreshToken.update).toHaveBeenCalled();
       expect(mockLogger.info).toHaveBeenCalled();
     });
 
-    it('should return error when refresh token not found', async () => {
-      mockPrismaService.refreshToken.findUnique.mockResolvedValue(null);
+    it('should throw error when refresh token is invalid', async () => {
+      mockJwtService.verify.mockImplementation(() => {
+        throw new Error('Invalid token');
+      });
 
-      const result = await service.refreshAccessToken('invalidToken', 'oldAccessToken');
+      await expect(service.refreshAccessToken('invalidToken')).rejects.toThrow();
+      expect(mockLogger.warn).toHaveBeenCalled();
+    });
+
+    it('should return error when user not found', async () => {
+      mockJwtService.verify.mockReturnValue(mockRefreshTokenPayload);
+      mockPrismaService.user.findUnique.mockResolvedValue(null);
+
+      const result = await service.refreshAccessToken('validRefreshToken');
 
       expect(result.isValid).toBe(false);
       expect(result.message).toBe('無効なリフレッシュトークンです');
@@ -278,30 +246,23 @@ describe('AuthService', () => {
       expect(mockLogger.warn).toHaveBeenCalled();
     });
 
-    it('should return error when refresh token is revoked', async () => {
-      mockPrismaService.refreshToken.findUnique.mockResolvedValue({
-        ...mockRefreshToken,
-        isRevoked: true,
-      });
+    it('should return error when token was issued before tokenValidFromTimestamp', async () => {
+      const oldTokenPayload = {
+        ...mockRefreshTokenPayload,
+        iat: Math.floor(Date.now() / 1000) - 86400, // 1日前
+      };
+      const userWithTimestamp = {
+        ...mockUser,
+        tokenValidFromTimestamp: new Date(), // 現在時刻
+      };
 
-      const result = await service.refreshAccessToken('refreshToken', 'oldAccessToken');
+      mockJwtService.verify.mockReturnValue(oldTokenPayload);
+      mockPrismaService.user.findUnique.mockResolvedValue(userWithTimestamp);
+
+      const result = await service.refreshAccessToken('oldRefreshToken');
 
       expect(result.isValid).toBe(false);
       expect(result.message).toBe('リフレッシュトークンは無効化されています');
-      expect(result.data).toBeNull();
-      expect(mockLogger.warn).toHaveBeenCalled();
-    });
-
-    it('should return error when refresh token is expired', async () => {
-      mockPrismaService.refreshToken.findUnique.mockResolvedValue({
-        ...mockRefreshToken,
-        expiresAt: new Date(Date.now() - 1000),
-      });
-
-      const result = await service.refreshAccessToken('refreshToken', 'oldAccessToken');
-
-      expect(result.isValid).toBe(false);
-      expect(result.message).toBe('リフレッシュトークンの有効期限が切れています');
       expect(result.data).toBeNull();
       expect(mockLogger.warn).toHaveBeenCalled();
     });

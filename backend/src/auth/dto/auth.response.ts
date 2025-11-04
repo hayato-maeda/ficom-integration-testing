@@ -2,20 +2,49 @@ import { Field, ObjectType } from '@nestjs/graphql';
 import { User } from '../../users/models/user.model';
 
 /**
- * 認証レスポンス
- * サインアップ・ログイン時に返却される情報
+ * 認証レスポンス（クライアント向け）
+ * GraphQLレスポンスとして返却される情報
+ *
+ * 注意: accessTokenとrefreshTokenはセッションCookieで管理されるため、
+ *      GraphQLレスポンスには含めません。
  */
 @ObjectType()
 export class AuthResponse {
-  /** アクセストークン（JWT） */
-  @Field(() => String)
+  /** ユーザー情報 */
+  @Field(() => User)
+  user: User;
+
+  /** アクセストークンの有効期限（UNIX timestamp ミリ秒） */
+  @Field(() => Number)
+  accessTokenExpiresAt: number;
+}
+
+/**
+ * Meクエリレスポンス
+ * 現在のユーザー情報とトークン有効期限を返す
+ */
+@ObjectType()
+export class MeResponse {
+  /** ユーザー情報 */
+  @Field(() => User)
+  user: User;
+
+  /** アクセストークンの有効期限（UNIX timestamp ミリ秒） */
+  @Field(() => Number)
+  accessTokenExpiresAt: number;
+}
+
+/**
+ * 認証レスポンス（内部用）
+ * サービス層で使用され、トークン情報を含む
+ */
+export interface AuthResponseInternal {
+  /** アクセストークン（JWT） - セッションに保存用 */
   accessToken: string;
 
-  /** リフレッシュトークン */
-  @Field(() => String)
+  /** リフレッシュトークン - セッションに保存用 */
   refreshToken: string;
 
   /** ユーザー情報 */
-  @Field(() => User)
   user: User;
 }

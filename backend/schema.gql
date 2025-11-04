@@ -14,8 +14,7 @@ type AuthMutationResponse {
 }
 
 type AuthResponse {
-  accessToken: String!
-  refreshToken: String!
+  accessTokenExpiresAt: Float!
   user: User!
 }
 
@@ -55,6 +54,11 @@ input LoginInput {
   password: String!
 }
 
+type MeResponse {
+  accessTokenExpiresAt: Float!
+  user: User!
+}
+
 type Mutation {
   assignTag(assignTagInput: AssignTagInput!): TagAssignMutationResponse!
   createTag(createTagInput: CreateTagInput!): TagMutationResponse!
@@ -62,7 +66,8 @@ type Mutation {
   deleteTag(id: Int!): TagMutationResponse!
   deleteTestCase(id: Int!): TestCaseMutationResponse!
   login(loginInput: LoginInput!): AuthMutationResponse!
-  refreshToken(refreshTokenInput: RefreshTokenInput!): AuthMutationResponse!
+  logout: AuthMutationResponse!
+  refreshToken: AuthMutationResponse!
   signUp(signUpInput: SignUpInput!): AuthMutationResponse!
   unassignTag(tagId: Int!, testCaseId: Int!): TagAssignMutationResponse!
   updateTag(updateTagInput: UpdateTagInput!): TagMutationResponse!
@@ -73,17 +78,12 @@ type Query {
   file(id: Int!): File!
   files: [File!]!
   filesByTestCase(testCaseId: Int!): [File!]!
-  me: User!
+  me: MeResponse!
   tag(id: Int!): Tag
   tags: [Tag!]!
   tagsByTestCase(testCaseId: Int!): [Tag!]!
   testCase(id: Int!): TestCase
   testCases: [TestCase!]!
-}
-
-input RefreshTokenInput {
-  oldAccessToken: String!
-  refreshToken: String!
 }
 
 input SignUpInput {
@@ -154,5 +154,6 @@ type User {
   email: String!
   id: Int!
   name: String!
+  role: String!
   updatedAt: DateTime!
 }

@@ -1,7 +1,7 @@
 import { UseGuards } from '@nestjs/common';
 import { Args, Int, Mutation, Parent, Query, ResolveField, Resolver } from '@nestjs/graphql';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
-import { GqlAuthGuard } from '../auth/guards/gql-auth.guard';
+import { GqlSessionGuard } from '../auth/guards/gql-session.guard';
 import { FilesService } from '../files/files.service';
 import { File } from '../files/models/file.model';
 import { Tag } from '../tags/models/tag.model';
@@ -18,7 +18,7 @@ import { TestCasesService } from './test-cases.service';
  * GraphQL のテストケース関連のクエリとミューテーションを処理します。
  */
 @Resolver(() => TestCase)
-@UseGuards(GqlAuthGuard)
+@UseGuards(GqlSessionGuard)
 export class TestCasesResolver {
   constructor(
     private readonly testCasesService: TestCasesService,

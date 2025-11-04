@@ -6,7 +6,7 @@ import { AuthContext } from '@/contexts/auth-context';
 /**
  * 認証コンテキストを使用するためのカスタムフック
  *
- * @returns 認証コンテキストの値（user, login, signup, logout, refreshToken）
+ * @returns 認証コンテキストの値（user, isAuthenticated, login, signup, logout）
  * @throws AuthProvider外で使用された場合にエラーをスロー
  *
  * @example

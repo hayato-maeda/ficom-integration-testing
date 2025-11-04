@@ -49,10 +49,10 @@ export interface TestCase {
 }
 
 // 認証レスポンス型
+// トークンはhttpOnly Cookieで管理されるため、レスポンスには含まれません
 export interface AuthResponse {
-  accessToken: string;
-  refreshToken: string;
   user: User;
+  accessTokenExpiresAt: number;
 }
 
 // ミューテーションレスポンス型

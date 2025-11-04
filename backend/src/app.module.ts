@@ -4,13 +4,14 @@ import {
   ApolloServerPluginLandingPageProductionDefault,
 } from '@apollo/server/plugin/landingPage/default';
 import { ApolloDriver, type ApolloDriverConfig } from '@nestjs/apollo';
-import { Module } from '@nestjs/common';
+import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { GraphQLModule } from '@nestjs/graphql';
 import { LoggerModule } from 'nestjs-pino';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
+import { SessionMiddleware } from './auth/middleware/session.middleware';
 import { pinoLoggerConfig } from './common/logger/pino-logger.config';
 // import { LoggerModule } from './common/logger/logger.module';
 import { FilesModule } from './files/files.module';
@@ -49,4 +50,9 @@ const isNotProduction = !isProduction;
   controllers: [AppController],
   providers: [AppService],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    // すべてのルートにセッションミドルウェアを適用
+    consumer.apply(SessionMiddleware).forRoutes('*');
+  }
+}

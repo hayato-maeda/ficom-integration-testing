@@ -1,6 +1,6 @@
 import { UseGuards } from '@nestjs/common';
 import { Args, Int, Query, Resolver } from '@nestjs/graphql';
-import { GqlAuthGuard } from '../auth/guards/gql-auth.guard';
+import { GqlSessionGuard } from '../auth/guards/gql-session.guard';
 import { FilesService } from './files.service';
 import { File } from './models/file.model';
 
@@ -9,7 +9,7 @@ import { File } from './models/file.model';
  * GraphQL のファイル関連のクエリを処理します。
  */
 @Resolver(() => File)
-@UseGuards(GqlAuthGuard)
+@UseGuards(GqlSessionGuard)
 export class FilesResolver {
   constructor(private readonly filesService: FilesService) {}
 

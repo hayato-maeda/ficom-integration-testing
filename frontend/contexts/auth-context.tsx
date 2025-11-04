@@ -3,7 +3,7 @@
 import React, { createContext, useState } from 'react';
 import { useMutation } from '@apollo/client/react';
 import { useRouter } from 'next/navigation';
-import { LOGIN_MUTATION, SIGNUP_MUTATION, REFRESH_TOKEN_MUTATION } from '@/lib/graphql/auth';
+import { LOGIN_MUTATION, SIGNUP_MUTATION } from '@/lib/graphql/auth';
 import type { User, LoginInput, SignupInput, MutationResponse, AuthResponse } from '@/types';
 
 export interface AuthContextType {
@@ -12,7 +12,6 @@ export interface AuthContextType {
   login: (input: LoginInput) => Promise<MutationResponse<AuthResponse>>;
   signup: (input: SignupInput) => Promise<MutationResponse<AuthResponse>>;
   logout: () => void;
-  refreshToken: () => Promise<void>;
 }
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -20,8 +19,9 @@ export const AuthContext = createContext<AuthContextType | undefined>(undefined)
 /**
  * 認証機能を提供するContextプロバイダー
  *
- * アプリケーション全体で認証状態を管理し、ログイン・サインアップ・ログアウト・
- * トークンリフレッシュなどの認証関連機能を提供します。
+ * アプリケーション全体で認証状態を管理し、ログイン・サインアップ・ログアウト
+ * などの認証関連機能を提供します。
+ * トークンリフレッシュは Apollo Client の authRetryLink が自動的に処理します。
  *
  * @param props - プロパティ
  * @param props.children - 子コンポーネント
@@ -39,24 +39,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const [loginMutation] = useMutation<{ login: MutationResponse<AuthResponse> }>(LOGIN_MUTATION);
   const [signupMutation] = useMutation<{ signUp: MutationResponse<AuthResponse> }>(SIGNUP_MUTATION);
-  const [refreshTokenMutation] = useMutation<{ refreshToken: MutationResponse<AuthResponse> }>(REFRESH_TOKEN_MUTATION);
-
-  // トークンリフレッシュ
-  const refreshToken = async () => {
-    try {
-      const result = await refreshTokenMutation();
-
-      if (result.data?.refreshToken?.isValid && result.data.refreshToken.data) {
-        const { user: userData } = result.data.refreshToken.data;
-        setUser(userData);
-      } else {
-        setUser(null);
-      }
-    } catch (error) {
-      console.error('Token refresh failed:', error);
-      setUser(null);
-    }
-  };
 
   // ログイン
   const login = async (input: LoginInput): Promise<MutationResponse<AuthResponse>> => {
@@ -104,7 +86,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     login,
     signup,
     logout,
-    refreshToken,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

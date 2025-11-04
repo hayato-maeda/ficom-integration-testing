@@ -68,7 +68,7 @@ const errorLink = new ApolloLink((operation, forward) => {
 /**
  * Apollo Clientのインスタンス
  *
- * GraphQLクエリとミューテーションを実行するための設定済みApollo Clientインスタンス。
+ * GraphQLクエリとミューテーションを実行するための設定済みApollo Clientインスタンス
  * 以下の機能が含まれます：
  * - 認証トークンの自動付与（authLink）
  * - エラーハンドリング（errorLink）

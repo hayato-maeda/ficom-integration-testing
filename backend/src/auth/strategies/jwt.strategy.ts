@@ -2,7 +2,7 @@ import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PassportStrategy } from '@nestjs/passport';
 import type { Request } from 'express';
-import { ExtractJwt, Strategy } from 'passport-jwt';
+import { Strategy } from 'passport-jwt';
 import { PrismaService } from '../../prisma/prisma.service';
 
 /**
@@ -19,8 +19,21 @@ export interface JwtPayload {
 }
 
 /**
+ * セッションCookieからJWTトークンを抽出する関数
+ * @param req - Express リクエストオブジェクト
+ * @returns JWT トークン or null
+ */
+const extractJwtFromSession = (req: Request): string | null => {
+  if (req.session && req.session.accessToken) {
+    return req.session.accessToken;
+  }
+  return null;
+};
+
+/**
  * JWT 認証ストラテジー
  * Passport を使用した JWT トークンの検証を行います。
+ * セッションCookieからトークンを取得します。
  */
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
@@ -33,7 +46,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       throw new Error('JWT_SECRET is not defined in environment variables');
     }
     super({
-      jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
+      jwtFromRequest: extractJwtFromSession,
       ignoreExpiration: false,
       secretOrKey: secret,
       passReqToCallback: true,
@@ -48,11 +61,11 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
    * @throws UnauthorizedException - ユーザーが見つからない、またはトークンが無効化されている場合
    */
   async validate(req: Request, payload: JwtPayload) {
-    // リクエストからトークンを取得
-    const token = ExtractJwt.fromAuthHeaderAsBearerToken()(req);
+    // セッションからトークンを取得
+    const token = extractJwtFromSession(req);
 
     if (!token) {
-      throw new UnauthorizedException('Token not found');
+      throw new UnauthorizedException('Token not found in session');
     }
 
     // トークンがブラックリストに登録されているかチェック

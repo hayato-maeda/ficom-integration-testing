@@ -21,6 +21,7 @@ export const LOGIN_MUTATION = gql`
           id
           email
           name
+          role
           createdAt
           updatedAt
         }
@@ -51,6 +52,7 @@ export const SIGNUP_MUTATION = gql`
           id
           email
           name
+          role
           createdAt
           updatedAt
         }
@@ -60,30 +62,17 @@ export const SIGNUP_MUTATION = gql`
 `;
 
 /**
- * トークンリフレッシュミューテーション
+ * ログアウトミューテーション
  *
- * リフレッシュトークンを使用して、新しいアクセストークンとリフレッシュトークンを取得します。
+ * セッションを破棄してユーザーをログアウトします。
  *
- * @param {string} refreshToken - リフレッシュトークン
- * @param {string} [oldAccessToken] - 古いアクセストークン（オプション）
- * @returns {MutationResponse<AuthResponse>} 認証レスポンス（新しいトークンとユーザー情報）
+ * @returns {MutationResponse<null>} ログアウト結果
  */
-export const REFRESH_TOKEN_MUTATION = gql`
-  mutation RefreshToken($refreshToken: String!, $oldAccessToken: String) {
-    refreshToken(refreshTokenInput: { refreshToken: $refreshToken, oldAccessToken: $oldAccessToken }) {
+export const LOGOUT_MUTATION = gql`
+  mutation Logout {
+    logout {
       isValid
       message
-      data {
-        accessToken
-        refreshToken
-        user {
-          id
-          email
-          name
-          createdAt
-          updatedAt
-        }
-      }
     }
   }
 `;

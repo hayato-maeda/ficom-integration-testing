@@ -36,8 +36,8 @@ export function DashboardHeader({ onMenuClick }: DashboardHeaderProps) {
   const { user, logout } = useAuth();
 
   // ログアウトハンドラー
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    await logout(); // バックエンドのセッションを破棄してCookieを削除
     router.push('/login');
   };
 

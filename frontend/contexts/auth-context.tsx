@@ -2,16 +2,17 @@
 
 import React, { createContext, useState, useEffect, useRef } from 'react';
 import { useMutation, useLazyQuery } from '@apollo/client/react';
-import { LOGIN_MUTATION, SIGNUP_MUTATION, ME_QUERY } from '@/lib/graphql/auth';
+import { LOGIN_MUTATION, SIGNUP_MUTATION, LOGOUT_MUTATION, ME_QUERY } from '@/lib/graphql/auth';
 import type { User, LoginInput, SignupInput, MutationResponse, AuthResponse } from '@/types';
+import { fi } from 'zod/v4/locales';
 
 export interface AuthContextType {
   user: User | null;
-  isAuthenticated: boolean;
-  isLoading: boolean;
+  isAuthenticated: boolean; // ログイン状態
+  isLoading: boolean; // 認証状態の初期化中フラグ
   login: (input: LoginInput) => Promise<MutationResponse<AuthResponse>>;
   signup: (input: SignupInput) => Promise<MutationResponse<AuthResponse>>;
-  logout: () => void;
+  logout: () => Promise<void>;
 }
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -41,6 +42,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const [loginMutation] = useMutation<{ login: MutationResponse<AuthResponse> }>(LOGIN_MUTATION);
   const [signupMutation] = useMutation<{ signUp: MutationResponse<AuthResponse> }>(SIGNUP_MUTATION);
+  const [logoutMutation] = useMutation<{ logout: MutationResponse<null> }>(LOGOUT_MUTATION);
   const [fetchMe] = useLazyQuery<{ me: { user: User } }>(ME_QUERY, {
     fetchPolicy: 'network-only',
   });
@@ -108,9 +110,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // ログアウト（リダイレクトは呼び出し側で行う）
-  const logout = () => {
-    setUser(null);
+  // ログアウト（バックエンドのセッションを破棄してCookieを削除）
+  const logout = async () => {
+    try {
+      await logoutMutation();
+    } catch (error) {
+      console.error('[AuthProvider] Logout error:', error);
+    } finally {
+      setUser(null);
+    }
   };
 
   const value = {

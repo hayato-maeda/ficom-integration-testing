@@ -87,6 +87,23 @@ export const REFRESH_TOKEN_MUTATION = gql`
 `;
 
 /**
+ * ログアウトミューテーション
+ *
+ * セッションを破棄してログアウトします。
+ * httpOnly Cookieのトークンがクリアされます。
+ *
+ * @returns {MutationResponse} ログアウト結果
+ */
+export const LOGOUT_MUTATION = gql`
+  mutation Logout {
+    logout {
+      isValid
+      message
+    }
+  }
+`;
+
+/**
  * 現在のユーザー情報取得クエリ
  *
  * JWTアクセストークンから現在ログイン中のユーザー情報を取得します。

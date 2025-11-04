@@ -22,13 +22,14 @@ import { useAuth } from '@/hooks/use-auth';
  */
 export function AuthGuard({ children }: { children: React.ReactNode }) {
   const router = useRouter();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, isLoading } = useAuth();
 
   useEffect(() => {
-    if (!isAuthenticated) {
+    // ローディング中はリダイレクトしない
+    if (!isLoading && !isAuthenticated) {
       router.push('/login');
     }
-  }, [isAuthenticated, router]);
+  }, [isAuthenticated, isLoading, router]);
 
   // 認証されていない場合は何も表示しない（リダイレクト中）
   if (!isAuthenticated) {

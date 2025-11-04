@@ -85,3 +85,26 @@ export const REFRESH_TOKEN_MUTATION = gql`
     }
   }
 `;
+
+/**
+ * 現在のユーザー情報取得クエリ
+ *
+ * JWTアクセストークンから現在ログイン中のユーザー情報を取得します。
+ * リロード時の認証状態確認やトークン検証に使用します。
+ *
+ * @returns {User} 現在のユーザー情報
+ */
+export const ME_QUERY = gql`
+  query Me {
+    me {
+      user {
+        createdAt
+        email
+        id
+        name
+        role
+        updatedAt
+      }
+    }
+  }
+`;

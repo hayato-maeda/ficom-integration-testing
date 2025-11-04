@@ -1,6 +1,7 @@
 'use client';
 
-import { Menu, LogOut, User } from 'lucide-react';
+import { Menu, LogOut } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/use-auth';
 import { Button } from '@/components/ui/button';
 import {
@@ -31,7 +32,14 @@ interface DashboardHeaderProps {
  * ```
  */
 export function DashboardHeader({ onMenuClick }: DashboardHeaderProps) {
+  const router = useRouter();
   const { user, logout } = useAuth();
+
+  // ログアウトハンドラー
+  const handleLogout = () => {
+    logout();
+    router.push('/login');
+  };
 
   // ユーザー名のイニシャルを取得
   const getUserInitials = (name: string) => {
@@ -47,13 +55,7 @@ export function DashboardHeader({ onMenuClick }: DashboardHeaderProps) {
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="flex h-16 items-center px-4 gap-4">
         {/* モバイルメニューボタン */}
-        <Button
-          variant="ghost"
-          size="icon"
-          className="md:hidden"
-          onClick={onMenuClick}
-          aria-label="メニューを開く"
-        >
+        <Button variant="ghost" size="icon" className="md:hidden" onClick={onMenuClick} aria-label="メニューを開く">
           <Menu className="h-5 w-5" />
         </Button>
 
@@ -83,7 +85,7 @@ export function DashboardHeader({ onMenuClick }: DashboardHeaderProps) {
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={logout} className="cursor-pointer">
+            <DropdownMenuItem onClick={handleLogout} className="cursor-pointer">
               <LogOut className="mr-2 h-4 w-4" />
               <span>ログアウト</span>
             </DropdownMenuItem>

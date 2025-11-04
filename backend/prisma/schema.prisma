@@ -18,6 +18,7 @@ model User {
   email                    String    @unique
   password                 String
   name                     String
+  role                     String    @default("USER") // ユーザーの権限: USER, ADMIN
   tokenValidFromTimestamp  DateTime? // この時刻以降に発行されたトークンのみ有効
   createdAt                DateTime  @default(now())
   updatedAt                DateTime  @updatedAt

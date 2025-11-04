@@ -13,6 +13,10 @@ export class AuthResponse {
   /** ユーザー情報 */
   @Field(() => User)
   user: User;
+
+  /** アクセストークンの有効期限（UNIX timestamp ミリ秒） */
+  @Field(() => Number)
+  accessTokenExpiresAt: number;
 }
 
 /**

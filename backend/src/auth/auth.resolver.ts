@@ -47,16 +47,23 @@ export class AuthResolver {
       await session.save();
 
       // クライアントにはトークンを返さない（セッションCookieで管理）
+      // ただし、有効期限はクライアント側で事前チェックできるように返す
       return {
         isValid: result.isValid,
         message: result.message,
         data: {
           user: result.data.user,
+          accessTokenExpiresAt: session.accessTokenExpiresAt,
         },
       };
     }
 
-    return result;
+    // 失敗時
+    return {
+      isValid: result.isValid,
+      message: result.message,
+      data: null,
+    };
   }
 
   /**
@@ -87,16 +94,23 @@ export class AuthResolver {
       await session.save();
 
       // クライアントにはトークンを返さない（セッションCookieで管理）
+      // ただし、有効期限はクライアント側で事前チェックできるように返す
       return {
         isValid: result.isValid,
         message: result.message,
         data: {
           user: result.data.user,
+          accessTokenExpiresAt: session.accessTokenExpiresAt,
         },
       };
     }
 
-    return result;
+    // 失敗時
+    return {
+      isValid: result.isValid,
+      message: result.message,
+      data: null,
+    };
   }
 
   /**
@@ -135,16 +149,23 @@ export class AuthResolver {
       await session.save();
 
       // クライアントにはトークンを返さない（セッションCookieで管理）
+      // ただし、有効期限はクライアント側で事前チェックできるように返す
       return {
         isValid: result.isValid,
         message: result.message,
         data: {
           user: result.data.user,
+          accessTokenExpiresAt: session.accessTokenExpiresAt,
         },
       };
     }
 
-    return result;
+    // 失敗時
+    return {
+      isValid: result.isValid,
+      message: result.message,
+      data: null,
+    };
   }
 
   /**

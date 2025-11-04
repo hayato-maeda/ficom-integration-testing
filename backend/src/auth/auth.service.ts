@@ -6,7 +6,7 @@ import * as bcrypt from 'bcrypt';
 import { PinoLogger } from 'nestjs-pino';
 import { AUTH_MESSAGES } from '../common/messages/auth.messages';
 import { PrismaService } from '../prisma/prisma.service';
-import { AuthMutationResponse } from './dto/auth-mutation.response';
+import { AuthMutationResponseInternal } from './dto/auth-mutation.response';
 import { LoginInput } from './dto/login.input';
 import { SignUpInput } from './dto/signup.input';
 
@@ -28,9 +28,9 @@ export class AuthService {
   /**
    * 新規ユーザー登録
    * @param signUpInput - サインアップ入力データ
-   * @returns 認証Mutationレスポンス
+   * @returns 認証Mutationレスポンス（内部用、トークン含む）
    */
-  async signUp(signUpInput: SignUpInput): Promise<AuthMutationResponse> {
+  async signUp(signUpInput: SignUpInput): Promise<AuthMutationResponseInternal> {
     const { email, password, name } = signUpInput;
 
     this.logger.info({ email }, 'User registration started');
@@ -97,9 +97,9 @@ export class AuthService {
   /**
    * ログイン
    * @param loginInput - ログイン入力データ
-   * @returns 認証Mutationレスポンス
+   * @returns 認証Mutationレスポンス（内部用、トークン含む）
    */
-  async login(loginInput: LoginInput): Promise<AuthMutationResponse> {
+  async login(loginInput: LoginInput): Promise<AuthMutationResponseInternal> {
     const { email, password } = loginInput;
 
     this.logger.info({ email }, 'Login attempt');
@@ -187,9 +187,9 @@ export class AuthService {
   /**
    * リフレッシュトークンを使用してアクセストークンを更新
    * @param refreshToken - リフレッシュトークン
-   * @returns 認証Mutationレスポンス
+   * @returns 認証Mutationレスポンス（内部用、トークン含む）
    */
-  async refreshAccessToken(refreshToken: string): Promise<AuthMutationResponse> {
+  async refreshAccessToken(refreshToken: string): Promise<AuthMutationResponseInternal> {
     this.logger.debug('Token refresh attempt');
 
     // リフレッシュトークンを検証

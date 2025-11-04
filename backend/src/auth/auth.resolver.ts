@@ -45,6 +45,15 @@ export class AuthResolver {
         role: result.data.user.role,
       };
       await session.save();
+
+      // クライアントにはトークンを返さない（セッションCookieで管理）
+      return {
+        isValid: result.isValid,
+        message: result.message,
+        data: {
+          user: result.data.user,
+        },
+      };
     }
 
     return result;
@@ -76,6 +85,15 @@ export class AuthResolver {
         role: result.data.user.role,
       };
       await session.save();
+
+      // クライアントにはトークンを返さない（セッションCookieで管理）
+      return {
+        isValid: result.isValid,
+        message: result.message,
+        data: {
+          user: result.data.user,
+        },
+      };
     }
 
     return result;
@@ -115,6 +133,15 @@ export class AuthResolver {
         role: result.data.user.role,
       };
       await session.save();
+
+      // クライアントにはトークンを返さない（セッションCookieで管理）
+      return {
+        isValid: result.isValid,
+        message: result.message,
+        data: {
+          user: result.data.user,
+        },
+      };
     }
 
     return result;

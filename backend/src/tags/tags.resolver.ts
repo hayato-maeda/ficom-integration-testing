@@ -1,6 +1,6 @@
 import { UseGuards } from '@nestjs/common';
 import { Args, Int, Mutation, Query, Resolver } from '@nestjs/graphql';
-import { GqlAuthGuard } from '../auth/guards/gql-auth.guard';
+import { GqlSessionGuard } from '../auth/guards/gql-session.guard';
 import { AssignTagInput } from './dto/assign-tag.input';
 import { CreateTagInput } from './dto/create-tag.input';
 import { TagAssignMutationResponse, TagMutationResponse } from './dto/tag-mutation.response';
@@ -13,7 +13,7 @@ import { TagsService } from './tags.service';
  * GraphQL のタグ関連のクエリとミューテーションを処理します。
  */
 @Resolver(() => Tag)
-@UseGuards(GqlAuthGuard)
+@UseGuards(GqlSessionGuard)
 export class TagsResolver {
   constructor(private readonly tagsService: TagsService) {}
 

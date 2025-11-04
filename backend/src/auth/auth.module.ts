@@ -4,6 +4,7 @@ import { JwtModule, JwtModuleOptions } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { AuthResolver } from './auth.resolver';
 import { AuthService } from './auth.service';
+import { GqlSessionGuard } from './guards/gql-session.guard';
 import { JwtStrategy } from './strategies/jwt.strategy';
 
 /**
@@ -62,7 +63,7 @@ function parseTimeToSeconds(timeStr: string): number {
       },
     }),
   ],
-  providers: [AuthService, AuthResolver, JwtStrategy],
-  exports: [AuthService, JwtStrategy, PassportModule],
+  providers: [AuthService, AuthResolver, JwtStrategy, GqlSessionGuard],
+  exports: [AuthService, JwtStrategy, PassportModule, GqlSessionGuard],
 })
 export class AuthModule {}

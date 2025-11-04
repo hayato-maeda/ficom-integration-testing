@@ -10,7 +10,7 @@ import { AuthMutationResponse } from './dto/auth-mutation.response';
 import { LoginInput } from './dto/login.input';
 import { RefreshTokenInput } from './dto/refresh-token.input';
 import { SignUpInput } from './dto/signup.input';
-import { GqlAuthGuard } from './guards/gql-auth.guard';
+import { GqlSessionGuard } from './guards/gql-session.guard';
 
 /**
  * 認証リゾルバー
@@ -134,12 +134,12 @@ export class AuthResolver {
 
   /**
    * 現在のユーザー取得クエリ
-   * JWT トークンから現在ログイン中のユーザー情報を取得します。
-   * @param user - 認証済みユーザー（デコレーターから自動注入）
+   * セッションから現在ログイン中のユーザー情報を取得します。
+   * @param user - 認証済みユーザー（セッションから自動注入）
    * @returns ユーザー情報
    */
   @Query(() => User)
-  @UseGuards(GqlAuthGuard)
+  @UseGuards(GqlSessionGuard)
   async me(@CurrentUser() user: User): Promise<User> {
     return user;
   }

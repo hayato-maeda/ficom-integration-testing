@@ -37,3 +37,6 @@ logs/
 prisma/dev.db
 prisma/dev.db-journal
 prisma/migrations/dev.db
+
+# Claude
+.claude/settings.local.json

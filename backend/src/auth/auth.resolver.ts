@@ -7,6 +7,7 @@ import type { SessionData } from './config/session.config';
 import { CurrentUser } from './decorators/current-user.decorator';
 import { Session } from './decorators/session.decorator';
 import { AuthMutationResponse } from './dto/auth-mutation.response';
+import { MeResponse } from './dto/auth.response';
 import { LoginInput } from './dto/login.input';
 import { SignUpInput } from './dto/signup.input';
 import { GqlSessionGuard } from './guards/gql-session.guard';
@@ -170,13 +171,17 @@ export class AuthResolver {
 
   /**
    * 現在のユーザー取得クエリ
-   * セッションから現在ログイン中のユーザー情報を取得します。
+   * セッションから現在ログイン中のユーザー情報とトークン有効期限を取得します。
    * @param user - 認証済みユーザー（セッションから自動注入）
-   * @returns ユーザー情報
+   * @param session - セッション
+   * @returns ユーザー情報とトークン有効期限
    */
-  @Query(() => User)
+  @Query(() => MeResponse)
   @UseGuards(GqlSessionGuard)
-  async me(@CurrentUser() user: User): Promise<User> {
-    return user;
+  async me(@CurrentUser() user: User, @Session() session: IronSession<SessionData>): Promise<MeResponse> {
+    return {
+      user,
+      accessTokenExpiresAt: session.accessTokenExpiresAt || Date.now() + 60 * 60 * 1000,
+    };
   }
 }

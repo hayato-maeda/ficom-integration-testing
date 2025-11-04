@@ -1,15 +1,28 @@
 import { gql } from '@apollo/client';
 
 /**
- * ログインミューテーション
+ * 現在のユーザー情報取得クエリ
  *
- * メールアドレスとパスワードでログインします。
- * トークンはセッションCookieで自動管理されます。
+ * セッションから現在ログイン中のユーザー情報とトークン有効期限を取得します。
  *
- * @param {string} email - メールアドレス
- * @param {string} password - パスワード
- * @returns {MutationResponse<AuthResponse>} 認証レスポンス（ユーザー情報と有効期限）
+ * @returns {MeResponse} ユーザー情報とトークン有効期限
  */
+export const ME_QUERY = gql`
+  query Me {
+    me {
+      user {
+        id
+        email
+        name
+        role
+        createdAt
+        updatedAt
+      }
+      accessTokenExpiresAt
+    }
+  }
+`;
+
 export const LOGIN_MUTATION = gql`
   mutation Login($email: String!, $password: String!) {
     login(loginInput: { email: $email, password: $password }) {
@@ -31,7 +44,7 @@ export const LOGIN_MUTATION = gql`
 `;
 
 /**
- * サインアップ（新規登録）ミューテーション
+ * サインアップ（新規登録）
  *
  * 新しいユーザーを登録します。
  * トークンはセッションCookieで自動管理されます。
@@ -62,7 +75,7 @@ export const SIGNUP_MUTATION = gql`
 `;
 
 /**
- * ログアウトミューテーション
+ * ログアウト
  *
  * セッションCookieを破棄してユーザーをログアウトします。
  *
@@ -78,7 +91,7 @@ export const LOGOUT_MUTATION = gql`
 `;
 
 /**
- * リフレッシュトークンミューテーション
+ * リフレッシュトークン
  *
  * セッションCookieからリフレッシュトークンを取得して、
  * 新しいアクセストークンを発行します。

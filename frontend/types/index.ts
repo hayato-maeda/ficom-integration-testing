@@ -49,13 +49,6 @@ export interface TestCase {
   updatedAt: string;
 }
 
-// 認証レスポンス型
-export interface AuthResponse {
-  accessToken: string;
-  refreshToken: string;
-  user: User;
-}
-
 // ミューテーションレスポンス型
 export interface MutationResponse<T> {
   isValid: boolean;
@@ -102,13 +95,6 @@ export interface UpdateTestCaseInput {
 export interface AuthResponse {
   user: User;
   accessTokenExpiresAt: number; // アクセストークンの有効期限（UNIX timestamp）
-}
-
-// ミューテーションレスポンス型
-export interface MutationResponse<T> {
-  isValid: boolean;
-  message: string;
-  data: T | null;
 }
 
 // タグ作成入力型

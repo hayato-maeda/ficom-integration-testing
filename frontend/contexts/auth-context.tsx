@@ -1,9 +1,9 @@
 'use client';
 
 import React, { createContext, useState, useEffect, useRef } from 'react';
-import { useMutation } from '@apollo/client/react';
+import { useMutation, useLazyQuery } from '@apollo/client/react';
 import { useRouter } from 'next/navigation';
-import { LOGIN_MUTATION, SIGNUP_MUTATION, LOGOUT_MUTATION, REFRESH_TOKEN_MUTATION } from '@/lib/graphql/auth';
+import { ME_QUERY, LOGIN_MUTATION, SIGNUP_MUTATION, LOGOUT_MUTATION, REFRESH_TOKEN_MUTATION } from '@/lib/graphql/auth';
 import type { User, LoginInput, SignupInput, MutationResponse, AuthResponse } from '@/types';
 
 export interface AuthContextType {
@@ -35,9 +35,11 @@ export const AuthContext = createContext<AuthContextType | undefined>(undefined)
  */
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
+  const [isInitialized, setIsInitialized] = useState(false);
   const router = useRouter();
   const refreshTimerRef = useRef<NodeJS.Timeout | null>(null);
 
+  const [meQuery] = useLazyQuery<{ me: { user: User; accessTokenExpiresAt: number } }>(ME_QUERY);
   const [loginMutation] = useMutation<{ login: MutationResponse<AuthResponse> }>(LOGIN_MUTATION);
   const [signupMutation] = useMutation<{ signUp: MutationResponse<AuthResponse> }>(SIGNUP_MUTATION);
   const [logoutMutation] = useMutation<{ logout: MutationResponse<null> }>(LOGOUT_MUTATION);
@@ -136,6 +138,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  // 初回マウント時にセッションからユーザー情報を復元
+  useEffect(() => {
+    const initAuth = async () => {
+      try {
+        const result = await meQuery();
+        if (result.data?.me) {
+          setUser(result.data.me.user);
+          // トークン有効期限も取得できるため、自動リフレッシュをスケジュール
+          scheduleTokenRefresh(result.data.me.accessTokenExpiresAt);
+        }
+      } catch {
+        // セッションが無効な場合はログアウト状態のまま
+        console.info('No active session');
+      } finally {
+        setIsInitialized(true);
+      }
+    };
+    initAuth();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // コンポーネントアンマウント時にタイマーをクリア
   useEffect(() => {
     return () => {
@@ -153,6 +176,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     logout,
     refreshToken,
   };
+
+  // 初期化が完了するまでローディング状態
+  if (!isInitialized) {
+    return null; // または <LoadingSpinner /> などのローディングコンポーネント
+  }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };

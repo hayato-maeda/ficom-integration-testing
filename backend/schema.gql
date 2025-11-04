@@ -14,7 +14,6 @@ type AuthMutationResponse {
 }
 
 type AuthResponse {
-  accessTokenExpiresAt: Float!
   user: User!
 }
 
@@ -54,11 +53,6 @@ input LoginInput {
   password: String!
 }
 
-type MeResponse {
-  accessTokenExpiresAt: Float!
-  user: User!
-}
-
 type Mutation {
   assignTag(assignTagInput: AssignTagInput!): TagAssignMutationResponse!
   createTag(createTagInput: CreateTagInput!): TagMutationResponse!
@@ -78,7 +72,7 @@ type Query {
   file(id: Int!): File!
   files: [File!]!
   filesByTestCase(testCaseId: Int!): [File!]!
-  me: MeResponse!
+  me: User!
   tag(id: Int!): Tag
   tags: [Tag!]!
   tagsByTestCase(testCaseId: Int!): [Tag!]!

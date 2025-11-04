@@ -4,7 +4,6 @@ import React, { createContext, useState, useEffect, useRef } from 'react';
 import { useMutation, useLazyQuery } from '@apollo/client/react';
 import { LOGIN_MUTATION, SIGNUP_MUTATION, LOGOUT_MUTATION, ME_QUERY } from '@/lib/graphql/auth';
 import type { User, LoginInput, SignupInput, MutationResponse, AuthResponse } from '@/types';
-import { fi } from 'zod/v4/locales';
 
 export interface AuthContextType {
   user: User | null;
@@ -43,7 +42,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loginMutation] = useMutation<{ login: MutationResponse<AuthResponse> }>(LOGIN_MUTATION);
   const [signupMutation] = useMutation<{ signUp: MutationResponse<AuthResponse> }>(SIGNUP_MUTATION);
   const [logoutMutation] = useMutation<{ logout: MutationResponse<null> }>(LOGOUT_MUTATION);
-  const [fetchMe] = useLazyQuery<{ me: { user: User } }>(ME_QUERY, {
+  const [fetchMe] = useLazyQuery<{ me: User }>(ME_QUERY, {
     fetchPolicy: 'network-only',
   });
 
@@ -59,7 +58,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       try {
         const { data } = await fetchMe();
         if (data?.me) {
-          setUser(data.me.user);
+          setUser(data.me);
         } else {
           console.log('[AuthProvider] No user data');
         }

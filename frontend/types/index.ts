@@ -52,7 +52,6 @@ export interface TestCase {
 // トークンはhttpOnly Cookieで管理されるため、レスポンスには含まれません
 export interface AuthResponse {
   user: User;
-  accessTokenExpiresAt: number;
 }
 
 // ミューテーションレスポンス型

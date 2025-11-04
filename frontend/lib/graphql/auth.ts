@@ -8,7 +8,7 @@ import { gql } from '@apollo/client';
  *
  * @param {string} email - メールアドレス
  * @param {string} password - パスワード
- * @returns {MutationResponse<AuthResponse>} 認証レスポンス（ユーザー情報とトークン有効期限）
+ * @returns {MutationResponse<AuthResponse>} 認証レスポンス（ユーザー情報）
  */
 export const LOGIN_MUTATION = gql`
   mutation Login($email: String!, $password: String!) {
@@ -23,7 +23,6 @@ export const LOGIN_MUTATION = gql`
           createdAt
           updatedAt
         }
-        accessTokenExpiresAt
       }
     }
   }
@@ -38,7 +37,7 @@ export const LOGIN_MUTATION = gql`
  * @param {string} email - メールアドレス
  * @param {string} password - パスワード
  * @param {string} name - ユーザー名
- * @returns {MutationResponse<AuthResponse>} 認証レスポンス（ユーザー情報とトークン有効期限）
+ * @returns {MutationResponse<AuthResponse>} 認証レスポンス（ユーザー情報）
  */
 export const SIGNUP_MUTATION = gql`
   mutation Signup($email: String!, $password: String!, $name: String!) {
@@ -53,7 +52,6 @@ export const SIGNUP_MUTATION = gql`
           createdAt
           updatedAt
         }
-        accessTokenExpiresAt
       }
     }
   }
@@ -65,7 +63,7 @@ export const SIGNUP_MUTATION = gql`
  * セッションCookieからリフレッシュトークンを使用して、新しいアクセストークンを取得します。
  * トークンはhttpOnly Cookieで管理されるため、引数やレスポンスには含まれません。
  *
- * @returns {MutationResponse<AuthResponse>} 認証レスポンス（ユーザー情報とトークン有効期限）
+ * @returns {MutationResponse<AuthResponse>} 認証レスポンス（ユーザー情報）
  */
 export const REFRESH_TOKEN_MUTATION = gql`
   mutation RefreshToken {
@@ -80,7 +78,6 @@ export const REFRESH_TOKEN_MUTATION = gql`
           createdAt
           updatedAt
         }
-        accessTokenExpiresAt
       }
     }
   }
@@ -114,14 +111,12 @@ export const LOGOUT_MUTATION = gql`
 export const ME_QUERY = gql`
   query Me {
     me {
-      user {
-        createdAt
-        email
-        id
-        name
-        role
-        updatedAt
-      }
+      createdAt
+      email
+      id
+      name
+      role
+      updatedAt
     }
   }
 `;

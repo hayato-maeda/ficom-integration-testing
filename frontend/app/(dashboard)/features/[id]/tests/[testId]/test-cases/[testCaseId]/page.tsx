@@ -16,11 +16,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import {
-  GET_TEST_CASE_QUERY,
-  GET_TEST_CASES_QUERY,
-  DELETE_TEST_CASE_MUTATION,
-} from '@/lib/graphql/test-cases';
+import { GET_TEST_CASE_QUERY, DELETE_TEST_CASE_MUTATION } from '@/lib/graphql/test-cases';
 import { MutationResponse, TestCase, TestCaseStatus } from '@/types';
 import { ArrowLeft, Loader2, Pencil, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
@@ -75,26 +71,26 @@ const getStatusLabel = (status: string) => {
 export default function TestCaseDetailPage() {
   const params = useParams();
   const router = useRouter();
-  const id = parseInt(params.id as string, 10);
+  const featureId = parseInt(params.id as string, 10);
+  const testId = parseInt(params.testId as string, 10);
+  const testCaseId = parseInt(params.testCaseId as string, 10);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
   const { data, loading, error } = useQuery<{ testCase: TestCase | null }>(GET_TEST_CASE_QUERY, {
-    variables: { id },
-    skip: isNaN(id),
+    variables: { id: testCaseId },
+    skip: isNaN(testCaseId),
   });
 
   const [deleteTestCase, { loading: deleteLoading }] = useMutation<{
     deleteTestCase: MutationResponse<TestCase>;
-  }>(DELETE_TEST_CASE_MUTATION, {
-    refetchQueries: [{ query: GET_TEST_CASES_QUERY }],
-  });
+  }>(DELETE_TEST_CASE_MUTATION);
 
   const testCase = data?.testCase;
 
   const handleDelete = async () => {
     try {
       const result = await deleteTestCase({
-        variables: { id },
+        variables: { id: testCaseId },
       });
 
       if (result.data?.deleteTestCase.isValid) {
@@ -102,7 +98,7 @@ export default function TestCaseDetailPage() {
           id: 'delete-success',
           style: { background: '#dcfce7', color: '#166534', border: '1px solid #bbf7d0' },
         });
-        router.push('/test-cases');
+        router.push(`/features/${featureId}/tests/${testId}/test-cases`);
       } else {
         toast.error(result.data?.deleteTestCase.message || '削除に失敗しました', {
           id: 'delete-error',
@@ -119,16 +115,16 @@ export default function TestCaseDetailPage() {
     }
   };
 
-  if (isNaN(id)) {
+  if (isNaN(featureId) || isNaN(testId) || isNaN(testCaseId)) {
     return (
       <div className="space-y-6">
-        <Button variant="ghost" onClick={() => router.push('/features')}>
+        <Button variant="ghost" onClick={() => router.push(`/features/${featureId}/tests/${testId}/test-cases`)}>
           <ArrowLeft className="mr-2 h-4 w-4" />
-          機能一覧に戻る
+          テストケース一覧に戻る
         </Button>
         <Card>
           <CardContent className="flex items-center justify-center py-12">
-            <p className="text-destructive">無効なテストケースIDです</p>
+            <p className="text-destructive">無効なIDです</p>
           </CardContent>
         </Card>
       </div>
@@ -139,13 +135,19 @@ export default function TestCaseDetailPage() {
     <div className="space-y-6">
       {/* ヘッダー */}
       <div className="flex items-center justify-between">
-        <Button variant="ghost" onClick={() => router.push('/features')}>
+        <Button variant="ghost" onClick={() => router.push(`/features/${featureId}/tests/${testId}/test-cases`)}>
           <ArrowLeft className="mr-2 h-4 w-4" />
-          機能一覧に戻る
+          テストケース一覧に戻る
         </Button>
         {testCase && (
           <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={() => router.push(`/test-cases/${id}/edit`)}>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() =>
+                router.push(`/features/${featureId}/tests/${testId}/test-cases/${testCaseId}/edit`)
+              }
+            >
               <Pencil className="mr-2 h-4 w-4" />
               編集
             </Button>
@@ -318,7 +320,11 @@ export default function TestCaseDetailPage() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={deleteLoading}>キャンセル</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} disabled={deleteLoading}>
+            <AlertDialogAction
+              onClick={handleDelete}
+              disabled={deleteLoading}
+              className="bg-destructive hover:bg-destructive/90"
+            >
               {deleteLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               削除
             </AlertDialogAction>

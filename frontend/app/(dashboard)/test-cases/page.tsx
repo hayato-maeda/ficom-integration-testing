@@ -1,6 +1,7 @@
 'use client';
 
 import { useQuery } from '@apollo/client/react';
+import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -56,6 +57,7 @@ const getStatusLabel = (status: string) => {
  * テストケースの一覧を表示し、検索・フィルタリング・作成機能を提供します。
  */
 export default function TestCasesPage() {
+  const router = useRouter();
   const { data, loading, error } = useQuery<{ testCases: TestCase[] }>(GET_TEST_CASES_QUERY);
 
   return (
@@ -112,7 +114,11 @@ export default function TestCasesPage() {
                 </TableHeader>
                 <TableBody>
                   {data.testCases.map((testCase) => (
-                    <TableRow key={testCase.id}>
+                    <TableRow
+                      key={testCase.id}
+                      className="cursor-pointer hover:bg-muted/50"
+                      onClick={() => router.push(`/test-cases/${testCase.id}`)}
+                    >
                       <TableCell className="font-medium">{testCase.id}</TableCell>
                       <TableCell>
                         <div>

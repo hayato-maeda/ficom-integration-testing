@@ -31,13 +31,17 @@ export type TestCaseStatusType = (typeof TestCaseStatus)[keyof typeof TestCaseSt
  */
 @ObjectType()
 export class TestCase {
+  /** 機能ID (テストが属する機能のID) */
+  @Field(() => Int)
+  testFeatureId: number;
+
+  /** テストID */
+  @Field(() => Int)
+  testId: number;
+
   /** テストケースID */
   @Field(() => Int)
   id: number;
-
-  /** テストID */
-  @Field(() => Int, { nullable: true })
-  testId?: number | null;
 
   /** タイトル */
   @Field(() => String)

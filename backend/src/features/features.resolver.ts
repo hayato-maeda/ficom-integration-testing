@@ -107,12 +107,18 @@ export class FeaturesResolver {
 
   /**
    * テストケースに割り当てられている機能取得クエリ
+   * @param testCaseFeatureId - 機能ID
+   * @param testCaseTestId - テストID
    * @param testCaseId - テストケースID
    * @returns 機能の一覧
    */
   @Query(() => [Feature])
-  async featuresByTestCase(@Args('testCaseId', { type: () => Int }) testCaseId: number): Promise<Feature[]> {
-    return this.featuresService.getFeaturesByTestCase(testCaseId);
+  async featuresByTestCase(
+    @Args('testCaseFeatureId', { type: () => Int }) testCaseFeatureId: number,
+    @Args('testCaseTestId', { type: () => Int }) testCaseTestId: number,
+    @Args('testCaseId', { type: () => Int }) testCaseId: number,
+  ): Promise<Feature[]> {
+    return this.featuresService.getFeaturesByTestCase(testCaseFeatureId, testCaseTestId, testCaseId);
   }
 
   /**

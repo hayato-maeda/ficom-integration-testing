@@ -2,6 +2,7 @@ import { Field, Int, ObjectType } from '@nestjs/graphql';
 import { File } from '../../files/models/file.model';
 import { Tag } from '../../tags/models/tag.model';
 import { User } from '../../users/models/user.model';
+import { Feature } from '../../features/models/feature.model';
 
 /**
  * テストケースステータス定数
@@ -73,6 +74,10 @@ export class TestCase {
   /** ファイル */
   @Field(() => [File], { nullable: true })
   files?: File[];
+
+  /** 機能 */
+  @Field(() => [Feature], { nullable: true })
+  features?: Feature[];
 
   /** 作成日時 */
   @Field(() => Date)

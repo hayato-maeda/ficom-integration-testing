@@ -2,6 +2,11 @@
 # THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
 # ------------------------------------------------------
 
+input AssignFeatureInput {
+  featureId: Int!
+  testCaseId: Int!
+}
+
 input AssignTagInput {
   tagId: Int!
   testCaseId: Int!
@@ -15,6 +20,12 @@ type AuthMutationResponse {
 
 type AuthResponse {
   user: User!
+}
+
+input CreateFeatureInput {
+  color: String
+  description: String
+  name: String!
 }
 
 input CreateTagInput {
@@ -35,6 +46,28 @@ A date-time string at UTC, such as 2019-12-03T09:54:33Z, compliant with the date
 """
 scalar DateTime
 
+type Feature {
+  color: String
+  createdAt: DateTime!
+  description: String
+  id: Int!
+  name: String!
+  status: String!
+  updatedAt: DateTime!
+}
+
+type FeatureAssignMutationResponse {
+  data: TestCase
+  isValid: Boolean!
+  message: String!
+}
+
+type FeatureMutationResponse {
+  data: Feature
+  isValid: Boolean!
+  message: String!
+}
+
 type File {
   createdAt: DateTime!
   filename: String!
@@ -54,21 +87,29 @@ input LoginInput {
 }
 
 type Mutation {
+  assignFeature(assignFeatureInput: AssignFeatureInput!): FeatureAssignMutationResponse!
   assignTag(assignTagInput: AssignTagInput!): TagAssignMutationResponse!
+  createFeature(createFeatureInput: CreateFeatureInput!): FeatureMutationResponse!
   createTag(createTagInput: CreateTagInput!): TagMutationResponse!
   createTestCase(createTestCaseInput: CreateTestCaseInput!): TestCaseMutationResponse!
+  deleteFeature(id: Int!): FeatureMutationResponse!
   deleteTag(id: Int!): TagMutationResponse!
   deleteTestCase(id: Int!): TestCaseMutationResponse!
   login(loginInput: LoginInput!): AuthMutationResponse!
   logout: AuthMutationResponse!
   refreshToken: AuthMutationResponse!
   signUp(signUpInput: SignUpInput!): AuthMutationResponse!
+  unassignFeature(featureId: Int!, testCaseId: Int!): FeatureAssignMutationResponse!
   unassignTag(tagId: Int!, testCaseId: Int!): TagAssignMutationResponse!
+  updateFeature(updateFeatureInput: UpdateFeatureInput!): FeatureMutationResponse!
   updateTag(updateTagInput: UpdateTagInput!): TagMutationResponse!
   updateTestCase(updateTestCaseInput: UpdateTestCaseInput!): TestCaseMutationResponse!
 }
 
 type Query {
+  feature(id: Int!): Feature
+  features: [Feature!]!
+  featuresByTestCase(testCaseId: Int!): [Feature!]!
   file(id: Int!): File!
   files: [File!]!
   filesByTestCase(testCaseId: Int!): [File!]!
@@ -112,6 +153,7 @@ type TestCase {
   createdById: Int!
   description: String
   expectedResult: String!
+  features: [Feature!]
   files: [File!]
   id: Int!
   status: String!
@@ -125,6 +167,14 @@ type TestCaseMutationResponse {
   data: TestCase
   isValid: Boolean!
   message: String!
+}
+
+input UpdateFeatureInput {
+  color: String
+  description: String
+  id: Int!
+  name: String
+  status: String
 }
 
 input UpdateTagInput {

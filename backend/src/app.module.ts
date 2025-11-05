@@ -14,6 +14,7 @@ import { AuthModule } from './auth/auth.module';
 import { SessionMiddleware } from './auth/middleware/session.middleware';
 import { pinoLoggerConfig } from './common/logger/pino-logger.config';
 // import { LoggerModule } from './common/logger/logger.module';
+import { FeaturesModule } from './features/features.module';
 import { FilesModule } from './files/files.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { TagsModule } from './tags/tags.module';
@@ -45,6 +46,7 @@ const isNotProduction = !isProduction;
     AuthModule,
     TestCasesModule,
     TagsModule,
+    FeaturesModule,
     FilesModule,
   ],
   controllers: [AppController],

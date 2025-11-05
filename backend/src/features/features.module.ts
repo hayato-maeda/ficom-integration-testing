@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { PrismaModule } from '../prisma/prisma.module';
+import { TestsModule } from '../tests/tests.module';
 import { FeaturesResolver } from './features.resolver';
 import { FeaturesService } from './features.service';
 
@@ -8,7 +9,7 @@ import { FeaturesService } from './features.service';
  * 機能管理に関するサービスとリゾルバーを提供します。
  */
 @Module({
-  imports: [PrismaModule],
+  imports: [PrismaModule, TestsModule],
   providers: [FeaturesService, FeaturesResolver],
   exports: [FeaturesService],
 })

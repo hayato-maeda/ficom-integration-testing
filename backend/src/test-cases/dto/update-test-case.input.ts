@@ -13,6 +13,12 @@ export class UpdateTestCaseInput {
   @IsInt({ message: 'id must be an integer' })
   id: number;
 
+  /** テストID */
+  @Field(() => Int, { nullable: true })
+  @IsOptional()
+  @IsInt({ message: 'testId must be an integer' })
+  testId?: number;
+
   /** タイトル */
   @Field(() => String, { nullable: true })
   @IsOptional()

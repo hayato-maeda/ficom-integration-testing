@@ -35,6 +35,7 @@ export interface Tag {
 // テストケース型
 export interface TestCase {
   id: number;
+  testId?: number;
   title: string;
   description?: string;
   steps: string;
@@ -76,6 +77,7 @@ export interface SignupInput {
 
 // テストケース作成入力型
 export interface CreateTestCaseInput {
+  testId?: number;
   title: string;
   description?: string;
   steps: string;
@@ -86,6 +88,7 @@ export interface CreateTestCaseInput {
 // テストケース更新入力型
 export interface UpdateTestCaseInput {
   id: number;
+  testId?: number;
   title?: string;
   description?: string;
   steps?: string;
@@ -148,4 +151,28 @@ export interface UpdateFeatureInput {
   description?: string;
   color?: string;
   status?: string;
+}
+
+// テスト型
+export interface Test {
+  id: number;
+  featureId: number;
+  title: string;
+  description?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// テスト作成入力型
+export interface CreateTestInput {
+  featureId: number;
+  title: string;
+  description?: string;
+}
+
+// テスト更新入力型
+export interface UpdateTestInput {
+  id: number;
+  title?: string;
+  description?: string;
 }

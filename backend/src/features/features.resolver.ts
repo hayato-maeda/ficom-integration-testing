@@ -2,6 +2,8 @@ import { UseGuards } from '@nestjs/common';
 import { Args, Int, Mutation, Query, Resolver } from '@nestjs/graphql';
 import { GqlSessionGuard } from '../auth/guards/gql-session.guard';
 import { TestCase } from '../test-cases/models/test-case.model';
+import { Test } from '../tests/models/test.model';
+import { TestsService } from '../tests/tests.service';
 import { AssignFeatureInput } from './dto/assign-feature.input';
 import { CreateFeatureInput } from './dto/create-feature.input';
 import { FeatureAssignMutationResponse, FeatureMutationResponse } from './dto/feature-mutation.response';
@@ -16,7 +18,10 @@ import { Feature } from './models/feature.model';
 @Resolver(() => Feature)
 @UseGuards(GqlSessionGuard)
 export class FeaturesResolver {
-  constructor(private readonly featuresService: FeaturesService) {}
+  constructor(
+    private readonly featuresService: FeaturesService,
+    private readonly testsService: TestsService,
+  ) {}
 
   /**
    * 機能作成ミューテーション
@@ -118,5 +123,15 @@ export class FeaturesResolver {
   @Query(() => [TestCase])
   async testCasesByFeature(@Args('featureId', { type: () => Int }) featureId: number): Promise<TestCase[]> {
     return this.featuresService.getTestCasesByFeature(featureId);
+  }
+
+  /**
+   * 機能に紐づくテスト取得クエリ
+   * @param featureId - 機能ID
+   * @returns テストの一覧
+   */
+  @Query(() => [Test])
+  async testsByFeature(@Args('featureId', { type: () => Int }) featureId: number): Promise<Test[]> {
+    return this.testsService.getTestsByFeature(featureId);
   }
 }

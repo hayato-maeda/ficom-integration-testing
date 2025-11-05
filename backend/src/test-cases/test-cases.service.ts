@@ -31,6 +31,7 @@ export class TestCasesService {
 
     const testCase = await this.prismaService.testCase.create({
       data: {
+        testId: createTestCaseInput.testId,
         title: createTestCaseInput.title,
         description: createTestCaseInput.description,
         steps: createTestCaseInput.steps,

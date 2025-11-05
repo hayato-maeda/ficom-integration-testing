@@ -38,6 +38,7 @@ model User {
 /// ステータス: DRAFT（下書き）, IN_REVIEW（レビュー中）, APPROVED（承認済み）, REJECTED（却下）, ARCHIVED（アーカイブ）
 model TestCase {
   id             Int      @id @default(autoincrement())
+  testId         Int?
   title          String
   description    String?
   steps          String   @db.Text
@@ -49,6 +50,7 @@ model TestCase {
   updatedAt      DateTime @updatedAt
 
   // リレーション
+  test      Test?             @relation(fields: [testId], references: [id], onDelete: Cascade)
   createdBy User              @relation("TestCaseCreator", fields: [createdById], references: [id])
   tags      TestCaseTag[]
   features  TestCaseFeature[]
@@ -162,9 +164,28 @@ model Feature {
   updatedAt   DateTime @updatedAt
 
   // リレーション
+  tests     Test[]
   testCases TestCaseFeature[]
 
   @@map("features")
+}
+
+/// テスト
+/// Feature配下のテストを管理します。
+/// 各Testには複数のTestCaseが紐づきます。
+model Test {
+  id          Int      @id @default(autoincrement())
+  featureId   Int
+  title       String
+  description String?  @db.Text
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // リレーション
+  feature   Feature    @relation(fields: [featureId], references: [id], onDelete: Cascade)
+  testCases TestCase[]
+
+  @@map("tests")
 }
 
 /// テストケース機能中間テーブル

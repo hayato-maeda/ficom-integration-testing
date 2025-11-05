@@ -1,11 +1,17 @@
-import { Field, InputType } from '@nestjs/graphql';
-import { IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import { Field, InputType, Int } from '@nestjs/graphql';
+import { IsInt, IsNotEmpty, IsOptional, IsString } from 'class-validator';
 
 /**
  * テストケース作成用の入力データ
  */
 @InputType()
 export class CreateTestCaseInput {
+  /** テストID */
+  @Field(() => Int, { nullable: true })
+  @IsOptional()
+  @IsInt({ message: 'testId must be an integer' })
+  testId?: number;
+
   /** タイトル */
   @Field(() => String)
   @IsNotEmpty({ message: 'title should not be empty' })

@@ -35,6 +35,10 @@ export class TestCase {
   @Field(() => Int)
   id: number;
 
+  /** テストID */
+  @Field(() => Int, { nullable: true })
+  testId?: number | null;
+
   /** タイトル */
   @Field(() => String)
   title: string;

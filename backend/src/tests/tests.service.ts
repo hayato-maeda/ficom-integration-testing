@@ -63,8 +63,17 @@ export class TestsService {
       };
     }
 
+    // 機能内での次のIDを生成（連番）
+    const maxTest = await this.prismaService.test.findFirst({
+      where: { featureId: createTestInput.featureId },
+      orderBy: { id: 'desc' },
+      select: { id: true },
+    });
+    const nextId = maxTest ? maxTest.id + 1 : 1;
+
     const test = await this.prismaService.test.create({
       data: {
+        id: nextId,
         featureId: createTestInput.featureId,
         name: createTestInput.name,
         description: createTestInput.description,
@@ -110,14 +119,20 @@ export class TestsService {
 
   /**
    * 特定のテストを取得
-   * @param id - テストID
+   * @param featureId - 機能ID
+   * @param id - テストID（機能内での連番）
    * @returns テストまたはnull
    */
-  async findOne(id: number): Promise<Test | null> {
-    this.logger.debug({ testId: id }, 'Fetching test');
+  async findOne(featureId: number, id: number): Promise<Test | null> {
+    this.logger.debug({ featureId, testId: id }, 'Fetching test');
 
     const test = await this.prismaService.test.findUnique({
-      where: { id },
+      where: {
+        featureId_id: {
+          featureId,
+          id,
+        },
+      },
       include: {
         feature: true,
         createdBy: true,
@@ -157,18 +172,23 @@ export class TestsService {
    * @returns テストMutationレスポンス
    */
   async update(updateTestInput: UpdateTestInput): Promise<TestMutationResponse> {
-    this.logger.info({ testId: updateTestInput.id }, 'Updating test');
+    this.logger.info({ featureId: updateTestInput.featureId, testId: updateTestInput.id }, 'Updating test');
 
     // テストの存在確認
     const existingTest = await this.prismaService.test.findUnique({
-      where: { id: updateTestInput.id },
+      where: {
+        featureId_id: {
+          featureId: updateTestInput.featureId,
+          id: updateTestInput.id,
+        },
+      },
       include: {
         feature: true,
       },
     });
 
     if (!existingTest) {
-      this.logger.warn({ testId: updateTestInput.id }, 'Test not found for update');
+      this.logger.warn({ featureId: updateTestInput.featureId, testId: updateTestInput.id }, 'Test not found for update');
       return {
         isValid: false,
         message: TESTS_MESSAGES.TEST_NOT_FOUND(updateTestInput.id),
@@ -180,31 +200,38 @@ export class TestsService {
     if (updateTestInput.name && updateTestInput.name !== existingTest.name) {
       const duplicateTest = await this.prismaService.test.findFirst({
         where: {
-          featureId: existingTest.featureId,
+          featureId: updateTestInput.featureId,
           name: updateTestInput.name,
-          id: { not: updateTestInput.id },
+          NOT: {
+            id: updateTestInput.id,
+          },
         },
       });
 
       if (duplicateTest) {
         this.logger.warn(
-          { name: updateTestInput.name, featureId: existingTest.featureId },
+          { name: updateTestInput.name, featureId: updateTestInput.featureId },
           'Test name already exists in this feature',
         );
         return {
           isValid: false,
-          message: TESTS_MESSAGES.TEST_NAME_EXISTS_IN_FEATURE(updateTestInput.name, existingTest.featureId),
+          message: TESTS_MESSAGES.TEST_NAME_EXISTS_IN_FEATURE(updateTestInput.name, updateTestInput.featureId),
           data: null,
         };
       }
     }
 
-    // 更新データの準備
-    const { id: _, ...updateFields } = updateTestInput;
+    // 更新データの準備（id, featureIdを除外し、undefinedのフィールドは除外）
+    const { id: _, featureId: __, ...updateFields } = updateTestInput;
     const updateData = Object.fromEntries(Object.entries(updateFields).filter(([, value]) => value !== undefined));
 
     const test = await this.prismaService.test.update({
-      where: { id: updateTestInput.id },
+      where: {
+        featureId_id: {
+          featureId: updateTestInput.featureId,
+          id: updateTestInput.id,
+        },
+      },
       data: updateData,
       include: {
         feature: true,
@@ -212,7 +239,7 @@ export class TestsService {
       },
     });
 
-    this.logger.info({ testId: test.id }, 'Test updated successfully');
+    this.logger.info({ featureId: test.featureId, testId: test.id }, 'Test updated successfully');
 
     return {
       isValid: true,
@@ -223,15 +250,21 @@ export class TestsService {
 
   /**
    * テストを削除
-   * @param id - テストID
+   * @param featureId - 機能ID
+   * @param id - テストID（機能内での連番）
    * @returns テストMutationレスポンス
    */
-  async remove(id: number): Promise<TestMutationResponse> {
-    this.logger.info({ testId: id }, 'Deleting test');
+  async remove(featureId: number, id: number): Promise<TestMutationResponse> {
+    this.logger.info({ featureId, testId: id }, 'Deleting test');
 
     // テストの存在確認
     const existingTest = await this.prismaService.test.findUnique({
-      where: { id },
+      where: {
+        featureId_id: {
+          featureId,
+          id,
+        },
+      },
       include: {
         feature: true,
         createdBy: true,
@@ -239,7 +272,7 @@ export class TestsService {
     });
 
     if (!existingTest) {
-      this.logger.warn({ testId: id }, 'Test not found for deletion');
+      this.logger.warn({ featureId, testId: id }, 'Test not found for deletion');
       return {
         isValid: false,
         message: TESTS_MESSAGES.TEST_NOT_FOUND(id),
@@ -248,10 +281,15 @@ export class TestsService {
     }
 
     await this.prismaService.test.delete({
-      where: { id },
+      where: {
+        featureId_id: {
+          featureId,
+          id,
+        },
+      },
     });
 
-    this.logger.info({ testId: id }, 'Test deleted successfully');
+    this.logger.info({ featureId, testId: id }, 'Test deleted successfully');
 
     return {
       isValid: true,

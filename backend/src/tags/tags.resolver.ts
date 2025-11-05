@@ -87,25 +87,35 @@ export class TagsResolver {
 
   /**
    * テストケースからのタグ削除ミューテーション
-   * @param testCaseId - テストケースID
+   * @param featureId - 機能ID
+   * @param testId - テストID（機能内での連番）
+   * @param testCaseId - テストケースID（テスト内での連番）
    * @param tagId - タグID
    * @returns タグ割り当てMutationレスポンス
    */
   @Mutation(() => TagAssignMutationResponse)
   async unassignTag(
+    @Args('featureId', { type: () => Int }) featureId: number,
+    @Args('testId', { type: () => Int }) testId: number,
     @Args('testCaseId', { type: () => Int }) testCaseId: number,
     @Args('tagId', { type: () => Int }) tagId: number,
   ): Promise<TagAssignMutationResponse> {
-    return this.tagsService.unassignTag(testCaseId, tagId);
+    return this.tagsService.unassignTag(featureId, testId, testCaseId, tagId);
   }
 
   /**
    * テストケースに割り当てられているタグ取得クエリ
-   * @param testCaseId - テストケースID
+   * @param featureId - 機能ID
+   * @param testId - テストID（機能内での連番）
+   * @param testCaseId - テストケースID（テスト内での連番）
    * @returns タグの一覧
    */
   @Query(() => [Tag])
-  async tagsByTestCase(@Args('testCaseId', { type: () => Int }) testCaseId: number): Promise<Tag[]> {
-    return this.tagsService.getTagsByTestCase(testCaseId);
+  async tagsByTestCase(
+    @Args('featureId', { type: () => Int }) featureId: number,
+    @Args('testId', { type: () => Int }) testId: number,
+    @Args('testCaseId', { type: () => Int }) testCaseId: number,
+  ): Promise<Tag[]> {
+    return this.tagsService.getTagsByTestCase(featureId, testId, testCaseId);
   }
 }

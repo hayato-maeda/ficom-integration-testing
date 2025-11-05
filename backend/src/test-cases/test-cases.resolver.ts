@@ -52,22 +52,32 @@ export class TestCasesResolver {
 
   /**
    * テストケース取得クエリ
-   * @param id - テストケースID
+   * @param featureId - 機能ID
+   * @param testId - テストID（機能内での連番）
+   * @param id - テストケースID（テスト内での連番）
    * @returns テストケースまたはnull
    */
   @Query(() => TestCase, { nullable: true })
-  async testCase(@Args('id', { type: () => Int }) id: number): Promise<TestCase | null> {
-    return this.testCasesService.findOne(id);
+  async testCase(
+    @Args('featureId', { type: () => Int }) featureId: number,
+    @Args('testId', { type: () => Int }) testId: number,
+    @Args('id', { type: () => Int }) id: number,
+  ): Promise<TestCase | null> {
+    return this.testCasesService.findOne(featureId, testId, id);
   }
 
   /**
    * テストに属するテストケース取得クエリ
-   * @param testId - テストID
+   * @param featureId - 機能ID
+   * @param testId - テストID（機能内での連番）
    * @returns テストケースの一覧
    */
   @Query(() => [TestCase])
-  async testCasesByTest(@Args('testId', { type: () => Int }) testId: number): Promise<TestCase[]> {
-    return this.testCasesService.findByTest(testId);
+  async testCasesByTest(
+    @Args('featureId', { type: () => Int }) featureId: number,
+    @Args('testId', { type: () => Int }) testId: number,
+  ): Promise<TestCase[]> {
+    return this.testCasesService.findByTest(featureId, testId);
   }
 
   /**
@@ -87,16 +97,20 @@ export class TestCasesResolver {
 
   /**
    * テストケース削除ミューテーション
-   * @param id - テストケースID
+   * @param featureId - 機能ID
+   * @param testId - テストID（機能内での連番）
+   * @param id - テストケースID（テスト内での連番）
    * @param user - 現在のユーザー
    * @returns テストケースMutationレスポンス
    */
   @Mutation(() => TestCaseMutationResponse)
   async deleteTestCase(
+    @Args('featureId', { type: () => Int }) featureId: number,
+    @Args('testId', { type: () => Int }) testId: number,
     @Args('id', { type: () => Int }) id: number,
     @CurrentUser() user: User,
   ): Promise<TestCaseMutationResponse> {
-    return this.testCasesService.remove(id, user.id);
+    return this.testCasesService.remove(featureId, testId, id, user.id);
   }
 
   /**
@@ -106,7 +120,7 @@ export class TestCasesResolver {
    */
   @ResolveField(() => [Tag])
   async tags(@Parent() testCase: TestCase): Promise<Tag[]> {
-    return this.tagsService.getTagsByTestCase(testCase.id);
+    return this.tagsService.getTagsByTestCase(testCase.featureId, testCase.testId, testCase.id);
   }
 
   /**
@@ -116,6 +130,6 @@ export class TestCasesResolver {
    */
   @ResolveField(() => [File])
   async files(@Parent() testCase: TestCase): Promise<File[]> {
-    return this.filesService.findByTestCase(testCase.id);
+    return this.filesService.findByTestCase(testCase.featureId, testCase.testId, testCase.id);
   }
 }

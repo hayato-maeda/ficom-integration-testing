@@ -6,7 +6,19 @@ import { IsInt, IsNotEmpty } from 'class-validator';
  */
 @InputType()
 export class AssignTagInput {
-  /** テストケースID */
+  /** 機能ID */
+  @Field(() => Int)
+  @IsNotEmpty({ message: 'featureId should not be empty' })
+  @IsInt({ message: 'featureId must be an integer' })
+  featureId: number;
+
+  /** テストID（機能内での連番） */
+  @Field(() => Int)
+  @IsNotEmpty({ message: 'testId should not be empty' })
+  @IsInt({ message: 'testId must be an integer' })
+  testId: number;
+
+  /** テストケースID（テスト内での連番） */
   @Field(() => Int)
   @IsNotEmpty({ message: 'testCaseId should not be empty' })
   @IsInt({ message: 'testCaseId must be an integer' })

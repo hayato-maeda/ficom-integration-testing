@@ -24,7 +24,9 @@ export class FilesService {
    * @param path - ファイルパス
    * @param mimeType - MIMEタイプ
    * @param size - ファイルサイズ
-   * @param testCaseId - テストケースID
+   * @param featureId - 機能ID
+   * @param testId - テストID（機能内での連番）
+   * @param testCaseId - テストケースID（テスト内での連番）
    * @param uploadedBy - アップロードユーザーID
    * @returns 保存されたファイル情報
    */
@@ -33,6 +35,8 @@ export class FilesService {
     path: string,
     mimeType: string,
     size: number,
+    featureId: number,
+    testId: number,
     testCaseId: number,
     uploadedBy: number,
   ): Promise<File> {
@@ -42,6 +46,8 @@ export class FilesService {
         path,
         mimeType,
         size,
+        featureId,
+        testId,
         testCaseId,
         uploadedBy,
       },
@@ -54,6 +60,8 @@ export class FilesService {
         path,
         mimeType,
         size,
+        featureId,
+        testId,
         testCaseId,
         uploadedBy,
       },
@@ -125,14 +133,20 @@ export class FilesService {
 
   /**
    * テストケースに紐づくファイル一覧取得
-   * @param testCaseId - テストケースID
+   * @param featureId - 機能ID
+   * @param testId - テストID（機能内での連番）
+   * @param testCaseId - テストケースID（テスト内での連番）
    * @returns ファイルの一覧
    */
-  async findByTestCase(testCaseId: number): Promise<File[]> {
-    this.logger.info({ testCaseId }, 'Fetching files for test case');
+  async findByTestCase(featureId: number, testId: number, testCaseId: number): Promise<File[]> {
+    this.logger.info({ featureId, testId, testCaseId }, 'Fetching files for test case');
 
     return this.prismaService.file.findMany({
-      where: { testCaseId },
+      where: {
+        featureId,
+        testId,
+        testCaseId,
+      },
       include: {
         testCase: {
           include: {

@@ -31,11 +31,15 @@ export type TestCaseStatusType = (typeof TestCaseStatus)[keyof typeof TestCaseSt
  */
 @ObjectType()
 export class TestCase {
-  /** テストケースID */
+  /** テストケースID（テスト内での連番） */
   @Field(() => Int)
   id: number;
 
-  /** テストID */
+  /** 機能ID */
+  @Field(() => Int)
+  featureId: number;
+
+  /** テストID（機能内での連番） */
   @Field(() => Int)
   testId: number;
 

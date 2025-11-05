@@ -38,8 +38,8 @@ export const CREATE_TEST_MUTATION = gql`
  * テスト更新ミューテーション
  */
 export const UPDATE_TEST_MUTATION = gql`
-  mutation UpdateTest($id: Int!, $name: String, $description: String, $status: String) {
-    updateTest(updateTestInput: { id: $id, name: $name, description: $description, status: $status }) {
+  mutation UpdateTest($featureId: Int!, $id: Int!, $name: String, $description: String, $status: String) {
+    updateTest(updateTestInput: { featureId: $featureId, id: $id, name: $name, description: $description, status: $status }) {
       isValid
       message
       data {
@@ -70,8 +70,8 @@ export const UPDATE_TEST_MUTATION = gql`
  * テスト削除ミューテーション
  */
 export const DELETE_TEST_MUTATION = gql`
-  mutation DeleteTest($id: Int!) {
-    deleteTest(id: $id) {
+  mutation DeleteTest($featureId: Int!, $id: Int!) {
+    deleteTest(featureId: $featureId, id: $id) {
       isValid
       message
       data {
@@ -115,8 +115,8 @@ export const GET_TESTS_QUERY = gql`
  * 特定のテスト取得クエリ
  */
 export const GET_TEST_QUERY = gql`
-  query GetTest($id: Int!) {
-    test(id: $id) {
+  query GetTest($featureId: Int!, $id: Int!) {
+    test(featureId: $featureId, id: $id) {
       id
       featureId
       name

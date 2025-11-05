@@ -77,6 +77,7 @@ export interface Test {
 // テストケース型
 export interface TestCase {
   id: number;
+  featureId: number;
   testId: number;
   test?: Test;
   title: string;

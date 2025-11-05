@@ -36,9 +36,10 @@ model User {
 /// テスト
 /// 機能（Feature）に属するテストを管理します。
 /// 各テストは複数のテストケースを持ちます。
+/// idはfeatureId内での連番（1, 2, 3...）になります。
 /// ステータス: DRAFT（下書き）, IN_REVIEW（レビュー中）, APPROVED（承認済み）, REJECTED（却下）, ARCHIVED（アーカイブ）
 model Test {
-  id        Int      @id @default(autoincrement())
+  id        Int      // featureId内での連番
   featureId Int
   name      String
   description String?  @db.Text
@@ -52,15 +53,18 @@ model Test {
   createdBy User       @relation("TestCreator", fields: [createdById], references: [id])
   testCases TestCase[]
 
+  @@id([featureId, id])
   @@map("tests")
 }
 
 /// テストケース
 /// テスト（Test）に属する個別のテストケースを管理します。
 /// タイトル、説明、手順、期待結果、実績、ステータスなどの情報を持ちます。
+/// idはtestId内での連番（1, 2, 3...）になります。
 /// ステータス: DRAFT（下書き）, IN_REVIEW（レビュー中）, APPROVED（承認済み）, REJECTED（却下）, ARCHIVED（アーカイブ）
 model TestCase {
-  id             Int      @id @default(autoincrement())
+  id             Int      // testId内での連番
+  featureId      Int      // 階層構造を明示するために追加
   testId         Int
   title          String
   description    String?
@@ -73,13 +77,14 @@ model TestCase {
   updatedAt      DateTime @updatedAt
 
   // リレーション
-  test      Test           @relation(fields: [testId], references: [id], onDelete: Cascade)
+  test      Test           @relation(fields: [featureId, testId], references: [featureId, id], onDelete: Cascade)
   createdBy User           @relation("TestCaseCreator", fields: [createdById], references: [id])
   tags      TestCaseTag[]
   files     File[]
   approvals Approval[]
   comments  Comment[]
 
+  @@id([featureId, testId, id])
   @@map("test_cases")
 }
 
@@ -101,15 +106,17 @@ model Tag {
 /// テストケースタグ中間テーブル
 /// テストケースとタグの多対多リレーションを管理します。
 model TestCaseTag {
+  featureId  Int
+  testId     Int
   testCaseId Int
   tagId      Int
   assignedAt DateTime @default(now())
 
   // リレーション
-  testCase TestCase @relation(fields: [testCaseId], references: [id], onDelete: Cascade)
+  testCase TestCase @relation(fields: [featureId, testId, testCaseId], references: [featureId, testId, id], onDelete: Cascade)
   tag      Tag      @relation(fields: [tagId], references: [id], onDelete: Cascade)
 
-  @@id([testCaseId, tagId])
+  @@id([featureId, testId, testCaseId, tagId])
   @@map("test_case_tags")
 }
 
@@ -122,12 +129,14 @@ model File {
   path       String
   mimeType   String
   size       Int
+  featureId  Int
+  testId     Int
   testCaseId Int
   uploadedBy Int
   createdAt  DateTime @default(now())
 
   // リレーション
-  testCase TestCase @relation(fields: [testCaseId], references: [id], onDelete: Cascade)
+  testCase TestCase @relation(fields: [featureId, testId, testCaseId], references: [featureId, testId, id], onDelete: Cascade)
   uploader User     @relation(fields: [uploadedBy], references: [id])
 
   @@map("files")
@@ -139,6 +148,8 @@ model File {
 /// ステータス: PENDING（承認待ち）, APPROVED（承認）, REJECTED（却下）
 model Approval {
   id         Int      @id @default(autoincrement())
+  featureId  Int
+  testId     Int
   testCaseId Int
   userId     Int
   status     String   @default("PENDING")
@@ -147,10 +158,10 @@ model Approval {
   updatedAt  DateTime @updatedAt
 
   // リレーション
-  testCase TestCase @relation(fields: [testCaseId], references: [id], onDelete: Cascade)
+  testCase TestCase @relation(fields: [featureId, testId, testCaseId], references: [featureId, testId, id], onDelete: Cascade)
   user     User     @relation(fields: [userId], references: [id])
 
-  @@unique([testCaseId, userId])
+  @@unique([featureId, testId, testCaseId, userId])
   @@map("approvals")
 }
 
@@ -160,13 +171,15 @@ model Approval {
 model Comment {
   id         Int      @id @default(autoincrement())
   content    String   @db.Text
+  featureId  Int
+  testId     Int
   testCaseId Int
   userId     Int
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
   // リレーション
-  testCase TestCase @relation(fields: [testCaseId], references: [id], onDelete: Cascade)
+  testCase TestCase @relation(fields: [featureId, testId, testCaseId], references: [featureId, testId, id], onDelete: Cascade)
   user     User     @relation(fields: [userId], references: [id])
 
   @@map("comments")

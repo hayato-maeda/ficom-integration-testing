@@ -9,9 +9,10 @@ export async function createTestCases(prisma: PrismaClient, users: User[], featu
     throw new Error('ユーザー認証機能のFeatureが見つかりません');
   }
 
-  // Test 1-1: ログインテスト
+  // Test 1-1: ログインテスト (ID: 1)
   const loginTest = await prisma.test.create({
     data: {
+      id: 1, // featureId内での連番
       featureId: authFeature.id,
       name: 'ログインテスト',
       description: 'ログイン機能の正常系・異常系テスト',
@@ -20,9 +21,11 @@ export async function createTestCases(prisma: PrismaClient, users: User[], featu
     },
   });
 
-  // TestCase 1-1-1: 正常ログイン
+  // TestCase 1-1-1: 正常ログイン (ID: 1)
   await prisma.testCase.create({
     data: {
+      id: 1, // testId内での連番
+      featureId: authFeature.id,
       testId: loginTest.id,
       title: '正常ログイン',
       description: '有効な認証情報でログインできることを確認',
@@ -36,9 +39,11 @@ export async function createTestCases(prisma: PrismaClient, users: User[], featu
     },
   });
 
-  // TestCase 1-1-2: パスワード誤り
+  // TestCase 1-1-2: パスワード誤り (ID: 2)
   await prisma.testCase.create({
     data: {
+      id: 2, // testId内での連番
+      featureId: authFeature.id,
       testId: loginTest.id,
       title: 'パスワード誤り',
       description: '誤ったパスワードでログインできないことを確認',
@@ -52,9 +57,11 @@ export async function createTestCases(prisma: PrismaClient, users: User[], featu
     },
   });
 
-  // TestCase 1-1-3: 存在しないユーザー
+  // TestCase 1-1-3: 存在しないユーザー (ID: 3)
   await prisma.testCase.create({
     data: {
+      id: 3, // testId内での連番
+      featureId: authFeature.id,
       testId: loginTest.id,
       title: '存在しないユーザー',
       description: '登録されていないユーザーでログインできないことを確認',
@@ -68,9 +75,10 @@ export async function createTestCases(prisma: PrismaClient, users: User[], featu
     },
   });
 
-  // Test 1-2: パスワードリセットテスト
+  // Test 1-2: パスワードリセットテスト (ID: 2)
   const resetTest = await prisma.test.create({
     data: {
+      id: 2, // featureId内での連番
       featureId: authFeature.id,
       name: 'パスワードリセットテスト',
       description: 'パスワードリセット機能のテスト',
@@ -79,9 +87,11 @@ export async function createTestCases(prisma: PrismaClient, users: User[], featu
     },
   });
 
-  // TestCase 1-2-1: メール送信確認
+  // TestCase 1-2-1: メール送信確認 (ID: 1)
   await prisma.testCase.create({
     data: {
+      id: 1, // testId内での連番
+      featureId: authFeature.id,
       testId: resetTest.id,
       title: 'メール送信確認',
       description: 'パスワードリセットメールが正しく送信されることを確認',
@@ -94,9 +104,11 @@ export async function createTestCases(prisma: PrismaClient, users: User[], featu
     },
   });
 
-  // TestCase 1-2-2: トークン検証
+  // TestCase 1-2-2: トークン検証 (ID: 2)
   await prisma.testCase.create({
     data: {
+      id: 2, // testId内での連番
+      featureId: authFeature.id,
       testId: resetTest.id,
       title: 'トークン検証',
       description: 'リセットトークンの有効性が正しく検証されることを確認',
@@ -115,9 +127,10 @@ export async function createTestCases(prisma: PrismaClient, users: User[], featu
     throw new Error('ファイルアップロードのFeatureが見つかりません');
   }
 
-  // Test 2-1: 正常系
+  // Test 2-1: 正常系 (ID: 1)
   const uploadTest = await prisma.test.create({
     data: {
+      id: 1, // featureId内での連番
       featureId: uploadFeature.id,
       name: '正常系',
       description: '各種ファイル形式のアップロードテスト',
@@ -126,9 +139,11 @@ export async function createTestCases(prisma: PrismaClient, users: User[], featu
     },
   });
 
-  // TestCase 2-1-1: zipファイルアップロード
+  // TestCase 2-1-1: zipファイルアップロード (ID: 1)
   await prisma.testCase.create({
     data: {
+      id: 1, // testId内での連番
+      featureId: uploadFeature.id,
       testId: uploadTest.id,
       title: 'zipファイルアップロード',
       description: 'ZIP形式のファイルが正常にアップロードできることを確認',
@@ -141,9 +156,11 @@ export async function createTestCases(prisma: PrismaClient, users: User[], featu
     },
   });
 
-  // TestCase 2-1-2: pngファイルアップロード
+  // TestCase 2-1-2: pngファイルアップロード (ID: 2)
   await prisma.testCase.create({
     data: {
+      id: 2, // testId内での連番
+      featureId: uploadFeature.id,
       testId: uploadTest.id,
       title: 'pngファイルアップロード',
       description: 'PNG形式の画像ファイルが正常にアップロードできることを確認',
@@ -156,9 +173,11 @@ export async function createTestCases(prisma: PrismaClient, users: User[], featu
     },
   });
 
-  // TestCase 2-1-3: csvファイルアップロード
+  // TestCase 2-1-3: csvファイルアップロード (ID: 3)
   await prisma.testCase.create({
     data: {
+      id: 3, // testId内での連番
+      featureId: uploadFeature.id,
       testId: uploadTest.id,
       title: 'csvファイルアップロード',
       description: 'CSV形式のファイルが正常にアップロードできることを確認',

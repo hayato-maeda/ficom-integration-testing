@@ -30,7 +30,7 @@ async function main() {
 
   // Create data in dependency order
   const users = await createUsers(prisma);
-  const features = await createFeatures(prisma, users);
+  const features = await createFeatures(prisma);
   const tests = await createTests(prisma, features);
   const tags = await createTags(prisma);
   const testCases = await createTestCases(prisma, tests, users);

@@ -104,3 +104,47 @@ export interface UpdateTagInput {
   name?: string;
   color?: string;
 }
+
+// 機能ステータス定数
+export const FeatureStatus = {
+  /** 計画中 */
+  PLANNING: 'PLANNING',
+  /** 開発中 */
+  DEVELOPING: 'DEVELOPING',
+  /** テスト中 */
+  TESTING: 'TESTING',
+  /** 完了 */
+  COMPLETED: 'COMPLETED',
+  /** 保留 */
+  ON_HOLD: 'ON_HOLD',
+} as const;
+
+// 機能ステータスの型
+export type FeatureStatusType = (typeof FeatureStatus)[keyof typeof FeatureStatus];
+
+// 機能型
+export interface Feature {
+  id: number;
+  name: string;
+  description?: string;
+  color?: string;
+  status: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// 機能作成入力型
+export interface CreateFeatureInput {
+  name: string;
+  description?: string;
+  color?: string;
+}
+
+// 機能更新入力型
+export interface UpdateFeatureInput {
+  id: number;
+  name?: string;
+  description?: string;
+  color?: string;
+  status?: string;
+}

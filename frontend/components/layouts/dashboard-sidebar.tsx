@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
-import { ClipboardList, Tag, X } from 'lucide-react';
+import { ClipboardList, Tag, X, Boxes } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 interface DashboardSidebarProps {
@@ -16,6 +16,11 @@ const navigation = [
     name: 'テストケース',
     href: '/test-cases',
     icon: ClipboardList,
+  },
+  {
+    name: '機能',
+    href: '/features',
+    icon: Boxes,
   },
   {
     name: 'タグ',

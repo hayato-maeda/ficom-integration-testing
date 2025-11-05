@@ -36,9 +36,11 @@ model User {
 /// 結合テストの内容を管理します。
 /// タイトル、説明、手順、期待結果、実績、ステータスなどの情報を持ちます。
 /// ステータス: DRAFT（下書き）, IN_REVIEW（レビュー中）, APPROVED（承認済み）, REJECTED（却下）, ARCHIVED（アーカイブ）
+/// TestCaseは必ずTestに属します。idはTest内での連番（1, 2, 3...）
 model TestCase {
-  id             Int      @id @default(autoincrement())
-  testId         Int?
+  testFeatureId  Int
+  testId         Int
+  id             Int
   title          String
   description    String?
   steps          String   @db.Text
@@ -50,7 +52,7 @@ model TestCase {
   updatedAt      DateTime @updatedAt
 
   // リレーション
-  test      Test?             @relation(fields: [testId], references: [id], onDelete: Cascade)
+  test      Test              @relation(fields: [testFeatureId, testId], references: [featureId, id], onDelete: Cascade)
   createdBy User              @relation("TestCaseCreator", fields: [createdById], references: [id])
   tags      TestCaseTag[]
   features  TestCaseFeature[]
@@ -58,6 +60,7 @@ model TestCase {
   approvals Approval[]
   comments  Comment[]
 
+  @@id([testFeatureId, testId, id])
   @@map("test_cases")
 }
 
@@ -79,15 +82,17 @@ model Tag {
 /// テストケースタグ中間テーブル
 /// テストケースとタグの多対多リレーションを管理します。
 model TestCaseTag {
-  testCaseId Int
-  tagId      Int
-  assignedAt DateTime @default(now())
+  testCaseFeatureId Int
+  testCaseTestId    Int
+  testCaseId        Int
+  tagId             Int
+  assignedAt        DateTime @default(now())
 
   // リレーション
-  testCase TestCase @relation(fields: [testCaseId], references: [id], onDelete: Cascade)
+  testCase TestCase @relation(fields: [testCaseFeatureId, testCaseTestId, testCaseId], references: [testFeatureId, testId, id], onDelete: Cascade)
   tag      Tag      @relation(fields: [tagId], references: [id], onDelete: Cascade)
 
-  @@id([testCaseId, tagId])
+  @@id([testCaseFeatureId, testCaseTestId, testCaseId, tagId])
   @@map("test_case_tags")
 }
 
@@ -95,17 +100,19 @@ model TestCaseTag {
 /// テストケースに添付されるファイルの情報を管理します。
 /// スクリーンショットやログファイルなどを保存します。
 model File {
-  id         Int      @id @default(autoincrement())
-  filename   String
-  path       String
-  mimeType   String
-  size       Int
-  testCaseId Int
-  uploadedBy Int
-  createdAt  DateTime @default(now())
+  id                Int      @id @default(autoincrement())
+  filename          String
+  path              String
+  mimeType          String
+  size              Int
+  testCaseFeatureId Int
+  testCaseTestId    Int
+  testCaseId        Int
+  uploadedBy        Int
+  createdAt         DateTime @default(now())
 
   // リレーション
-  testCase TestCase @relation(fields: [testCaseId], references: [id], onDelete: Cascade)
+  testCase TestCase @relation(fields: [testCaseFeatureId, testCaseTestId, testCaseId], references: [testFeatureId, testId, id], onDelete: Cascade)
   uploader User     @relation(fields: [uploadedBy], references: [id])
 
   @@map("files")
@@ -116,19 +123,21 @@ model File {
 /// コメント付きで承認状態を記録できます。
 /// ステータス: PENDING（承認待ち）, APPROVED（承認）, REJECTED（却下）
 model Approval {
-  id         Int      @id @default(autoincrement())
-  testCaseId Int
-  userId     Int
-  status     String   @default("PENDING")
-  comment    String?  @db.Text
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id                Int      @id @default(autoincrement())
+  testCaseFeatureId Int
+  testCaseTestId    Int
+  testCaseId        Int
+  userId            Int
+  status            String   @default("PENDING")
+  comment           String?  @db.Text
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
 
   // リレーション
-  testCase TestCase @relation(fields: [testCaseId], references: [id], onDelete: Cascade)
+  testCase TestCase @relation(fields: [testCaseFeatureId, testCaseTestId, testCaseId], references: [testFeatureId, testId, id], onDelete: Cascade)
   user     User     @relation(fields: [userId], references: [id])
 
-  @@unique([testCaseId, userId])
+  @@unique([testCaseFeatureId, testCaseTestId, testCaseId, userId])
   @@map("approvals")
 }
 
@@ -136,15 +145,17 @@ model Approval {
 /// テストケースに対するコメントを管理します。
 /// レビューやフィードバックを記録します。
 model Comment {
-  id         Int      @id @default(autoincrement())
-  content    String   @db.Text
-  testCaseId Int
-  userId     Int
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id                Int      @id @default(autoincrement())
+  content           String   @db.Text
+  testCaseFeatureId Int
+  testCaseTestId    Int
+  testCaseId        Int
+  userId            Int
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
 
   // リレーション
-  testCase TestCase @relation(fields: [testCaseId], references: [id], onDelete: Cascade)
+  testCase TestCase @relation(fields: [testCaseFeatureId, testCaseTestId, testCaseId], references: [testFeatureId, testId, id], onDelete: Cascade)
   user     User     @relation(fields: [userId], references: [id])
 
   @@map("comments")
@@ -173,9 +184,10 @@ model Feature {
 /// テスト
 /// Feature配下のテストを管理します。
 /// 各Testには複数のTestCaseが紐づきます。
+/// idはFeature内での連番（1, 2, 3...）
 model Test {
-  id          Int      @id @default(autoincrement())
   featureId   Int
+  id          Int
   title       String
   description String?  @db.Text
   createdAt   DateTime @default(now())
@@ -185,20 +197,23 @@ model Test {
   feature   Feature    @relation(fields: [featureId], references: [id], onDelete: Cascade)
   testCases TestCase[]
 
+  @@id([featureId, id])
   @@map("tests")
 }
 
 /// テストケース機能中間テーブル
 /// テストケースと機能の多対多リレーションを管理します。
 model TestCaseFeature {
-  testCaseId Int
-  featureId  Int
-  assignedAt DateTime @default(now())
+  testCaseFeatureId Int
+  testCaseTestId    Int
+  testCaseId        Int
+  featureId         Int
+  assignedAt        DateTime @default(now())
 
   // リレーション
-  testCase TestCase @relation(fields: [testCaseId], references: [id], onDelete: Cascade)
+  testCase TestCase @relation(fields: [testCaseFeatureId, testCaseTestId, testCaseId], references: [testFeatureId, testId, id], onDelete: Cascade)
   feature  Feature  @relation(fields: [featureId], references: [id], onDelete: Cascade)
 
-  @@id([testCaseId, featureId])
+  @@id([testCaseFeatureId, testCaseTestId, testCaseId, featureId])
   @@map("test_case_features")
 }

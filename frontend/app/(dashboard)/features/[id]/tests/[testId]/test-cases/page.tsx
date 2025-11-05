@@ -420,7 +420,9 @@ export default function TestCasesPage() {
                     <TableRow
                       key={testCase.id}
                       className="cursor-pointer hover:bg-muted/50"
-                      onClick={() => router.push(`/test-cases/${testCase.id}`)}
+                      onClick={() =>
+                        router.push(`/features/${featureId}/tests/${testId}/test-cases/${testCase.id}`)
+                      }
                     >
                       <TableCell className="font-medium">{testCase.id}</TableCell>
                       <TableCell>

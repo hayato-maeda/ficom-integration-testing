@@ -18,11 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import {
-  GET_TEST_CASE_QUERY,
-  GET_TEST_CASES_QUERY,
-  UPDATE_TEST_CASE_MUTATION,
-} from '@/lib/graphql/test-cases';
+import { GET_TEST_CASE_QUERY, UPDATE_TEST_CASE_MUTATION } from '@/lib/graphql/test-cases';
 import { MutationResponse, TestCase, TestCaseStatus } from '@/types';
 import { ArrowLeft, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -60,21 +56,18 @@ const statusOptions = [
 export default function TestCaseEditPage() {
   const params = useParams();
   const router = useRouter();
-  const id = parseInt(params.id as string, 10);
+  const featureId = parseInt(params.id as string, 10);
+  const testId = parseInt(params.testId as string, 10);
+  const testCaseId = parseInt(params.testCaseId as string, 10);
 
-  const { data, loading: queryLoading } = useQuery<{ testCase: TestCase | null }>(
-    GET_TEST_CASE_QUERY,
-    {
-      variables: { id },
-      skip: isNaN(id),
-    }
-  );
+  const { data, loading: queryLoading } = useQuery<{ testCase: TestCase | null }>(GET_TEST_CASE_QUERY, {
+    variables: { id: testCaseId },
+    skip: isNaN(testCaseId),
+  });
 
   const [updateTestCase, { loading: mutationLoading }] = useMutation<{
     updateTestCase: MutationResponse<TestCase>;
-  }>(UPDATE_TEST_CASE_MUTATION, {
-    refetchQueries: [{ query: GET_TEST_CASES_QUERY }, { query: GET_TEST_CASE_QUERY, variables: { id } }],
-  });
+  }>(UPDATE_TEST_CASE_MUTATION);
 
   const form = useForm<TestCaseFormData>({
     resolver: zodResolver(testCaseFormSchema),
@@ -108,7 +101,7 @@ export default function TestCaseEditPage() {
     try {
       const result = await updateTestCase({
         variables: {
-          id,
+          id: testCaseId,
           title: data.title,
           description: data.description || undefined,
           steps: data.steps,
@@ -123,7 +116,7 @@ export default function TestCaseEditPage() {
           id: 'update-success',
           style: { background: '#dcfce7', color: '#166534', border: '1px solid #bbf7d0' },
         });
-        router.push(`/test-cases/${id}`);
+        router.push(`/features/${featureId}/tests/${testId}/test-cases/${testCaseId}`);
       } else {
         toast.error(result.data?.updateTestCase.message || '更新に失敗しました', {
           id: 'update-error',
@@ -138,16 +131,16 @@ export default function TestCaseEditPage() {
     }
   };
 
-  if (isNaN(id)) {
+  if (isNaN(featureId) || isNaN(testId) || isNaN(testCaseId)) {
     return (
       <div className="space-y-6">
-        <Button variant="ghost" onClick={() => router.push('/test-cases')}>
+        <Button variant="ghost" onClick={() => router.push(`/features/${featureId}/tests/${testId}/test-cases`)}>
           <ArrowLeft className="mr-2 h-4 w-4" />
           テストケース一覧に戻る
         </Button>
         <Card>
           <CardContent className="flex items-center justify-center py-12">
-            <p className="text-destructive">無効なテストケースIDです</p>
+            <p className="text-destructive">無効なIDです</p>
           </CardContent>
         </Card>
       </div>
@@ -157,9 +150,12 @@ export default function TestCaseEditPage() {
   if (queryLoading) {
     return (
       <div className="space-y-6">
-        <Button variant="ghost" onClick={() => router.push('/test-cases')}>
+        <Button
+          variant="ghost"
+          onClick={() => router.push(`/features/${featureId}/tests/${testId}/test-cases/${testCaseId}`)}
+        >
           <ArrowLeft className="mr-2 h-4 w-4" />
-          テストケース一覧に戻る
+          詳細に戻る
         </Button>
         <Card>
           <CardContent className="flex items-center justify-center py-12">
@@ -173,7 +169,7 @@ export default function TestCaseEditPage() {
   if (!testCase) {
     return (
       <div className="space-y-6">
-        <Button variant="ghost" onClick={() => router.push('/test-cases')}>
+        <Button variant="ghost" onClick={() => router.push(`/features/${featureId}/tests/${testId}/test-cases`)}>
           <ArrowLeft className="mr-2 h-4 w-4" />
           テストケース一覧に戻る
         </Button>
@@ -190,7 +186,10 @@ export default function TestCaseEditPage() {
     <div className="space-y-6">
       {/* ヘッダー */}
       <div className="flex items-center justify-between">
-        <Button variant="ghost" onClick={() => router.push(`/test-cases/${id}`)}>
+        <Button
+          variant="ghost"
+          onClick={() => router.push(`/features/${featureId}/tests/${testId}/test-cases/${testCaseId}`)}
+        >
           <ArrowLeft className="mr-2 h-4 w-4" />
           詳細に戻る
         </Button>
@@ -200,9 +199,7 @@ export default function TestCaseEditPage() {
       <Card>
         <CardHeader>
           <CardTitle>テストケース編集</CardTitle>
-          <CardDescription>
-            テストケース #{id} を編集します
-          </CardDescription>
+          <CardDescription>テストケース #{testCaseId} を編集します</CardDescription>
         </CardHeader>
         <CardContent>
           <Form {...form}>
@@ -232,11 +229,7 @@ export default function TestCaseEditPage() {
                   <FormItem>
                     <FormLabel>説明</FormLabel>
                     <FormControl>
-                      <Textarea
-                        placeholder="テストケースの説明を入力"
-                        className="min-h-[100px]"
-                        {...field}
-                      />
+                      <Textarea placeholder="テストケースの説明を入力" className="min-h-[100px]" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -253,11 +246,7 @@ export default function TestCaseEditPage() {
                       テスト手順<span className="text-destructive">*</span>
                     </FormLabel>
                     <FormControl>
-                      <Textarea
-                        placeholder="テストの実行手順を入力"
-                        className="min-h-[150px]"
-                        {...field}
-                      />
+                      <Textarea placeholder="テストの実行手順を入力" className="min-h-[150px]" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -274,11 +263,7 @@ export default function TestCaseEditPage() {
                       期待結果<span className="text-destructive">*</span>
                     </FormLabel>
                     <FormControl>
-                      <Textarea
-                        placeholder="期待される結果を入力"
-                        className="min-h-[100px]"
-                        {...field}
-                      />
+                      <Textarea placeholder="期待される結果を入力" className="min-h-[100px]" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -293,11 +278,7 @@ export default function TestCaseEditPage() {
                   <FormItem>
                     <FormLabel>実績結果</FormLabel>
                     <FormControl>
-                      <Textarea
-                        placeholder="実際の結果を入力（任意）"
-                        className="min-h-[100px]"
-                        {...field}
-                      />
+                      <Textarea placeholder="実際の結果を入力（任意）" className="min-h-[100px]" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -335,7 +316,7 @@ export default function TestCaseEditPage() {
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={() => router.push(`/test-cases/${id}`)}
+                  onClick={() => router.push(`/features/${featureId}/tests/${testId}/test-cases/${testCaseId}`)}
                   disabled={mutationLoading}
                 >
                   キャンセル

@@ -1,15 +1,31 @@
 'use client';
 
-import { useQuery } from '@apollo/client/react';
+import { useMutation, useQuery } from '@apollo/client/react';
 import { useParams, useRouter } from 'next/navigation';
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { GET_TEST_CASE_QUERY } from '@/lib/graphql/test-cases';
-import { TestCase, TestCaseStatus } from '@/types';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import {
+  GET_TEST_CASE_QUERY,
+  GET_TEST_CASES_QUERY,
+  DELETE_TEST_CASE_MUTATION,
+} from '@/lib/graphql/test-cases';
+import { MutationResponse, TestCase, TestCaseStatus } from '@/types';
 import { ArrowLeft, Loader2, Pencil, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { ja } from 'date-fns/locale/ja';
+import { toast } from 'sonner';
 
 /**
  * ステータスバッジのスタイルを取得
@@ -60,13 +76,48 @@ export default function TestCaseDetailPage() {
   const params = useParams();
   const router = useRouter();
   const id = parseInt(params.id as string, 10);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
   const { data, loading, error } = useQuery<{ testCase: TestCase | null }>(GET_TEST_CASE_QUERY, {
     variables: { id },
     skip: isNaN(id),
   });
 
+  const [deleteTestCase, { loading: deleteLoading }] = useMutation<{
+    deleteTestCase: MutationResponse<TestCase>;
+  }>(DELETE_TEST_CASE_MUTATION, {
+    refetchQueries: [{ query: GET_TEST_CASES_QUERY }],
+  });
+
   const testCase = data?.testCase;
+
+  const handleDelete = async () => {
+    try {
+      const result = await deleteTestCase({
+        variables: { id },
+      });
+
+      if (result.data?.deleteTestCase.isValid) {
+        toast.success('テストケースを削除しました', {
+          id: 'delete-success',
+          style: { background: '#dcfce7', color: '#166534', border: '1px solid #bbf7d0' },
+        });
+        router.push('/test-cases');
+      } else {
+        toast.error(result.data?.deleteTestCase.message || '削除に失敗しました', {
+          id: 'delete-error',
+          style: { background: '#fee2e2', color: '#991b1b', border: '1px solid #fecaca' },
+        });
+      }
+    } catch (error) {
+      toast.error('エラーが発生しました', {
+        id: 'delete-error',
+        style: { background: '#fee2e2', color: '#991b1b', border: '1px solid #fecaca' },
+      });
+    } finally {
+      setDeleteDialogOpen(false);
+    }
+  };
 
   if (isNaN(id)) {
     return (
@@ -94,11 +145,16 @@ export default function TestCaseDetailPage() {
         </Button>
         {testCase && (
           <div className="flex gap-2">
-            <Button variant="outline" size="sm">
+            <Button variant="outline" size="sm" onClick={() => router.push(`/test-cases/${id}/edit`)}>
               <Pencil className="mr-2 h-4 w-4" />
               編集
             </Button>
-            <Button variant="outline" size="sm">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setDeleteDialogOpen(true)}
+              disabled={deleteLoading}
+            >
               <Trash2 className="mr-2 h-4 w-4" />
               削除
             </Button>
@@ -250,6 +306,25 @@ export default function TestCaseDetailPage() {
           </div>
         </div>
       )}
+
+      {/* 削除確認ダイアログ */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>テストケースを削除しますか？</AlertDialogTitle>
+            <AlertDialogDescription>
+              この操作は取り消せません。テストケース「{testCase?.title}」を完全に削除します。
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleteLoading}>キャンセル</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} disabled={deleteLoading}>
+              {deleteLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              削除
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

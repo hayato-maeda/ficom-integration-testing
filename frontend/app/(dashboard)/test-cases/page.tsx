@@ -2,13 +2,22 @@
 
 import { useQuery } from '@apollo/client/react';
 import { useRouter } from 'next/navigation';
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { GET_TEST_CASES_QUERY } from '@/lib/graphql/test-cases';
 import { TestCase, TestCaseStatus } from '@/types';
-import { Plus, Loader2 } from 'lucide-react';
+import { Plus, Loader2, Search, X } from 'lucide-react';
 import { format } from 'date-fns';
 import { ja } from 'date-fns/locale/ja';
 
@@ -60,6 +69,36 @@ export default function TestCasesPage() {
   const router = useRouter();
   const { data, loading, error } = useQuery<{ testCases: TestCase[] }>(GET_TEST_CASES_QUERY);
 
+  // 検索・フィルタリング状態
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+
+  // フィルターをクリア
+  const clearFilters = () => {
+    setSearchQuery('');
+    setStatusFilter('all');
+  };
+
+  // フィルタリングされたテストケースを取得
+  const getFilteredTestCases = () => {
+    if (!data?.testCases) return [];
+
+    return data.testCases.filter((testCase) => {
+      // 検索クエリでフィルタリング（タイトルと説明）
+      const matchesSearch =
+        !searchQuery ||
+        testCase.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        testCase.description?.toLowerCase().includes(searchQuery.toLowerCase());
+
+      // ステータスでフィルタリング
+      const matchesStatus = statusFilter === 'all' || testCase.status === statusFilter;
+
+      return matchesSearch && matchesStatus;
+    });
+  };
+
+  const filteredTestCases = getFilteredTestCases();
+
   return (
     <div className="space-y-6">
       {/* ページヘッダー */}
@@ -68,17 +107,75 @@ export default function TestCasesPage() {
           <h1 className="text-3xl font-bold tracking-tight">テストケース</h1>
           <p className="text-muted-foreground">テストケースの管理と実行</p>
         </div>
-        <Button>
+        <Button onClick={() => router.push('/test-cases/new')}>
           <Plus className="mr-2 h-4 w-4" />
           新規作成
         </Button>
       </div>
 
+      {/* 検索・フィルタリング */}
+      <Card>
+        <CardHeader>
+          <CardTitle>検索・フィルタリング</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-10 md:items-end">
+            {/* 検索 */}
+            <div className="md:col-span-8">
+              <label className="text-sm font-medium">検索</label>
+              <div className="relative mt-1.5">
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  placeholder="タイトルや説明で検索..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-9"
+                />
+              </div>
+            </div>
+
+            {/* ステータスフィルター */}
+            <div className="md:col-span-1">
+              <label className="text-sm font-medium">ステータス</label>
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="mt-1.5 min-w-[100px]">
+                  <SelectValue placeholder="すべて" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">すべて</SelectItem>
+                  <SelectItem value={TestCaseStatus.DRAFT}>下書き</SelectItem>
+                  <SelectItem value={TestCaseStatus.IN_REVIEW}>レビュー中</SelectItem>
+                  <SelectItem value={TestCaseStatus.APPROVED}>承認済み</SelectItem>
+                  <SelectItem value={TestCaseStatus.REJECTED}>却下</SelectItem>
+                  <SelectItem value={TestCaseStatus.ARCHIVED}>アーカイブ</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* クリアボタン */}
+            <div className="md:col-span-1">
+              <Button variant="outline" onClick={clearFilters} className="mt-1.5 w-full">
+                <X className="mr-2 h-4 w-4" />
+                クリア
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* テストケース一覧 */}
       <Card>
         <CardHeader>
-          <CardTitle>テストケース一覧</CardTitle>
-          <CardDescription>登録されているテストケースの一覧です</CardDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle>テストケース一覧</CardTitle>
+              <CardDescription>
+                {filteredTestCases.length > 0
+                  ? `${filteredTestCases.length}件のテストケース`
+                  : '登録されているテストケースの一覧です'}
+              </CardDescription>
+            </div>
+          </div>
         </CardHeader>
         <CardContent>
           {loading && (
@@ -99,7 +196,13 @@ export default function TestCasesPage() {
             </div>
           )}
 
-          {!loading && !error && data?.testCases && data.testCases.length > 0 && (
+          {!loading && !error && data?.testCases && data.testCases.length > 0 && filteredTestCases.length === 0 && (
+            <div className="flex items-center justify-center py-12 text-muted-foreground">
+              <p>検索条件に一致するテストケースがありません</p>
+            </div>
+          )}
+
+          {!loading && !error && filteredTestCases.length > 0 && (
             <div className="rounded-md border">
               <Table>
                 <TableHeader>
@@ -113,7 +216,7 @@ export default function TestCasesPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {data.testCases.map((testCase) => (
+                  {filteredTestCases.map((testCase) => (
                     <TableRow
                       key={testCase.id}
                       className="cursor-pointer hover:bg-muted/50"

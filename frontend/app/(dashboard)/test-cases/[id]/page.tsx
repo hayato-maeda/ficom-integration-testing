@@ -167,6 +167,17 @@ export default function TestCaseDetailPage() {
   const testCase = data?.testCase;
   const allFeatures = featuresData?.features || [];
 
+  // 戻るボタンのクリックハンドラ
+  const handleBack = () => {
+    // テストケースに紐づく機能がある場合は最初の機能の詳細ページに戻る
+    if (testCase?.features && testCase.features.length > 0) {
+      router.push(`/features/${testCase.features[0].id}/test-cases`);
+    } else {
+      // 機能が紐づいていない場合は機能一覧に戻る
+      router.push('/features');
+    }
+  };
+
   // 未割り当ての機能を取得
   const unassignedFeatures = allFeatures.filter(
     (feature) => !testCase?.features?.some((f) => f.id === feature.id)
@@ -263,9 +274,9 @@ export default function TestCaseDetailPage() {
   if (isNaN(id)) {
     return (
       <div className="space-y-6">
-        <Button variant="ghost" onClick={() => router.push('/test-cases')}>
+        <Button variant="ghost" onClick={() => router.push('/features')}>
           <ArrowLeft className="mr-2 h-4 w-4" />
-          テストケース一覧に戻る
+          機能一覧に戻る
         </Button>
         <Card>
           <CardContent className="flex items-center justify-center py-12">
@@ -280,9 +291,9 @@ export default function TestCaseDetailPage() {
     <div className="space-y-6">
       {/* ヘッダー */}
       <div className="flex items-center justify-between">
-        <Button variant="ghost" onClick={() => router.push('/test-cases')}>
+        <Button variant="ghost" onClick={handleBack}>
           <ArrowLeft className="mr-2 h-4 w-4" />
-          テストケース一覧に戻る
+          戻る
         </Button>
         {testCase && (
           <div className="flex gap-2">

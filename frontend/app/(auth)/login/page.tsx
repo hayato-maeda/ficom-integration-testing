@@ -40,7 +40,7 @@ export default function LoginPage() {
 
     if (response.isValid) {
       toast.dismiss('login-error');
-      router.push('/test-cases');
+      router.push('/features');
     } else {
       toast.error(response.message, {
         id: 'login-error',

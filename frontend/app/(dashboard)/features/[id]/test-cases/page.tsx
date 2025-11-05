@@ -28,7 +28,7 @@ import {
 } from '@/lib/graphql/features';
 import { CREATE_TEST_CASE_MUTATION } from '@/lib/graphql/test-cases';
 import { Feature, TestCase, FeatureStatus, TestCaseStatus, MutationResponse } from '@/types';
-import { ArrowLeft, Loader2, Pencil, Plus } from 'lucide-react';
+import { ArrowLeft, Loader2, Pencil, Plus, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 import { format } from 'date-fns';
 import { ja } from 'date-fns/locale/ja';
 import { toast } from 'sonner';
@@ -122,6 +122,10 @@ export default function FeatureTestCasesPage() {
   const id = parseInt(params.id as string, 10);
   const [addTestCaseDialogOpen, setAddTestCaseDialogOpen] = useState(false);
 
+  // ソート状態（初期値はIDの昇順）
+  const [sortColumn, setSortColumn] = useState<'id' | 'title' | 'status' | 'createdBy' | 'createdAt'>('id');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+
   // テストケース作成フォームのスキーマ
   const testCaseFormSchema = z.object({
     title: z.string().min(1, 'タイトルを入力してください'),
@@ -168,8 +172,62 @@ export default function FeatureTestCasesPage() {
   });
 
   const feature = featureData?.feature;
-  const testCases = testCasesData?.testCasesByFeature || [];
   const loading = featureLoading || testCasesLoading;
+
+  // ソートを変更
+  const handleSort = (column: 'id' | 'title' | 'status' | 'createdBy' | 'createdAt') => {
+    if (sortColumn === column) {
+      // 同じカラムをクリックした場合は方向を反転
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      // 別のカラムをクリックした場合は昇順で開始
+      setSortColumn(column);
+      setSortDirection('asc');
+    }
+  };
+
+  // ソートアイコンを取得
+  const getSortIcon = (column: 'id' | 'title' | 'status' | 'createdBy' | 'createdAt') => {
+    if (sortColumn !== column) {
+      return <ArrowUpDown className="ml-2 h-4 w-4" />;
+    }
+    return sortDirection === 'asc' ? (
+      <ArrowUp className="ml-2 h-4 w-4" />
+    ) : (
+      <ArrowDown className="ml-2 h-4 w-4" />
+    );
+  };
+
+  // ソートされたテストケースを取得
+  const getSortedTestCases = () => {
+    const testCases = testCasesData?.testCasesByFeature || [];
+
+    return [...testCases].sort((a, b) => {
+      let compareValue = 0;
+
+      switch (sortColumn) {
+        case 'id':
+          compareValue = a.id - b.id;
+          break;
+        case 'title':
+          compareValue = a.title.localeCompare(b.title, 'ja');
+          break;
+        case 'status':
+          compareValue = a.status.localeCompare(b.status);
+          break;
+        case 'createdBy':
+          compareValue = a.createdBy.name.localeCompare(b.createdBy.name, 'ja');
+          break;
+        case 'createdAt':
+          compareValue = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+          break;
+      }
+
+      return sortDirection === 'asc' ? compareValue : -compareValue;
+    });
+  };
+
+  const testCases = getSortedTestCases();
 
   const handleAddTestCase = async (values: z.infer<typeof testCaseFormSchema>) => {
     try {
@@ -367,12 +425,52 @@ export default function FeatureTestCasesPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="w-[50px]">ID</TableHead>
-                    <TableHead>タイトル</TableHead>
-                    <TableHead>ステータス</TableHead>
+                    <TableHead className="w-[50px]">
+                      <button
+                        className="flex items-center font-medium hover:text-foreground"
+                        onClick={() => handleSort('id')}
+                      >
+                        ID
+                        {getSortIcon('id')}
+                      </button>
+                    </TableHead>
+                    <TableHead>
+                      <button
+                        className="flex items-center font-medium hover:text-foreground"
+                        onClick={() => handleSort('title')}
+                      >
+                        タイトル
+                        {getSortIcon('title')}
+                      </button>
+                    </TableHead>
+                    <TableHead>
+                      <button
+                        className="flex items-center font-medium hover:text-foreground"
+                        onClick={() => handleSort('status')}
+                      >
+                        ステータス
+                        {getSortIcon('status')}
+                      </button>
+                    </TableHead>
                     <TableHead>タグ</TableHead>
-                    <TableHead>作成者</TableHead>
-                    <TableHead>作成日</TableHead>
+                    <TableHead>
+                      <button
+                        className="flex items-center font-medium hover:text-foreground"
+                        onClick={() => handleSort('createdBy')}
+                      >
+                        作成者
+                        {getSortIcon('createdBy')}
+                      </button>
+                    </TableHead>
+                    <TableHead>
+                      <button
+                        className="flex items-center font-medium hover:text-foreground"
+                        onClick={() => handleSort('createdAt')}
+                      >
+                        作成日
+                        {getSortIcon('createdAt')}
+                      </button>
+                    </TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>

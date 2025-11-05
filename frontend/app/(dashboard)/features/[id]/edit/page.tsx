@@ -57,7 +57,7 @@ const statusOptions = [
 ];
 
 /**
- * 機能編集ページ
+ * テスト編集ページ
  *
  * 既存の機能を編集するためのフォームを提供します。
  */
@@ -117,7 +117,7 @@ export default function FeatureEditPage() {
       });
 
       if (result.data?.updateFeature.isValid) {
-        toast.success('機能を更新しました', {
+        toast.success('テストを更新しました', {
           id: 'update-success',
           style: { background: '#dcfce7', color: '#166534', border: '1px solid #bbf7d0' },
         });
@@ -197,9 +197,9 @@ export default function FeatureEditPage() {
       {/* フォーム */}
       <Card>
         <CardHeader>
-          <CardTitle>機能編集</CardTitle>
+          <CardTitle>編集</CardTitle>
           <CardDescription>
-            機能 #{id} を編集します
+            {`テスト #${id} を編集します`}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -212,7 +212,7 @@ export default function FeatureEditPage() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>
-                      機能名<span className="text-destructive">*</span>
+                      テスト名<span className="text-destructive">*</span>
                     </FormLabel>
                     <FormControl>
                       <Input placeholder="例: ユーザー認証機能" {...field} />

@@ -13,7 +13,7 @@ interface DashboardSidebarProps {
 
 const navigation = [
   {
-    name: '機能',
+    name: 'テスト一覧',
     href: '/features',
     icon: Boxes,
   },

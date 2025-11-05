@@ -16,10 +16,10 @@ import { ArrowLeft, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 /**
- * 機能作成フォームのスキーマ
+ * テスト作成フォームのスキーマ
  */
 const featureFormSchema = z.object({
-  name: z.string().min(1, '機能名を入力してください'),
+  name: z.string().min(1, 'テスト名を入力してください'),
   description: z.string().optional(),
   color: z
     .string()
@@ -66,7 +66,7 @@ export default function FeatureNewPage() {
       });
 
       if (result.data?.createFeature.isValid) {
-        toast.success('機能を作成しました', {
+        toast.success('テストを作成しました', {
           id: 'create-success',
           style: { background: '#dcfce7', color: '#166534', border: '1px solid #bbf7d0' },
         });

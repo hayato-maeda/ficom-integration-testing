@@ -72,9 +72,9 @@ const getStatusLabel = (status: string) => {
 };
 
 /**
- * 機能一覧ページ
+ * テスト一覧ページ
  *
- * 機能の一覧を表示し、検索・フィルタリング・作成・削除機能を提供します。
+ * テスト一覧を表示し、検索・フィルタリング・作成・削除機能を提供します。
  */
 export default function FeaturesPage() {
   const router = useRouter();
@@ -129,13 +129,13 @@ export default function FeaturesPage() {
     );
   };
 
-  // フィルタリングとソートされた機能を取得
+  // フィルタリングとソートされたテスト一覧を取得
   const getFilteredAndSortedFeatures = () => {
     if (!data?.features) return [];
 
     // フィルタリング
     const filtered = data.features.filter((feature) => {
-      // 検索クエリでフィルタリング（機能名と説明）
+      // 検索クエリでフィルタリング（テスト名と説明）
       const matchesSearch =
         !searchQuery ||
         feature.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -191,14 +191,14 @@ export default function FeaturesPage() {
       });
 
       if (result.data?.deleteFeature.isValid) {
-        toast.success(result.data.deleteFeature.message || '機能を削除しました');
+        toast.success(result.data.deleteFeature.message || 'テスト一覧を削除しました');
         setDeleteDialogOpen(false);
         setFeatureToDelete(null);
       } else {
-        toast.error(result.data?.deleteFeature.message || '機能の削除に失敗しました');
+        toast.error(result.data?.deleteFeature.message || 'テスト一覧の削除に失敗しました');
       }
     } catch (error) {
-      toast.error('機能の削除中にエラーが発生しました');
+      toast.error('テスト一覧の削除中にエラーが発生しました');
       console.error('Delete feature error:', error);
     }
   };
@@ -213,8 +213,8 @@ export default function FeaturesPage() {
       {/* ページヘッダー */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">機能</h1>
-          <p className="text-muted-foreground">機能の管理とテストケースの整理</p>
+          <h1 className="text-3xl font-bold tracking-tight">テスト一覧</h1>
+          <p className="text-muted-foreground">テストの管理とテストケースの整理</p>
         </div>
         <Button onClick={() => router.push('/features/new')}>
           <Plus className="mr-2 h-4 w-4" />
@@ -235,7 +235,7 @@ export default function FeaturesPage() {
               <div className="relative mt-1.5">
                 <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
-                  placeholder="機能名や説明で検索..."
+                  placeholder="テスト名や説明で検索..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="pl-9"
@@ -272,16 +272,16 @@ export default function FeaturesPage() {
         </CardContent>
       </Card>
 
-      {/* 機能一覧 */}
+      {/* テスト一覧 */}
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle>機能一覧</CardTitle>
+              <CardTitle>テスト一覧</CardTitle>
               <CardDescription>
                 {filteredFeatures.length > 0
-                  ? `${filteredFeatures.length}件の機能`
-                  : '登録されている機能の一覧です'}
+                  ? `${filteredFeatures.length}件のテスト`
+                  : '登録されているテストの一覧です'}
               </CardDescription>
             </div>
           </div>
@@ -301,13 +301,13 @@ export default function FeaturesPage() {
 
           {!loading && !error && data?.features && data.features.length === 0 && (
             <div className="flex items-center justify-center py-12 text-muted-foreground">
-              <p>機能が登録されていません</p>
+              <p>テストが登録されていません</p>
             </div>
           )}
 
           {!loading && !error && data?.features && data.features.length > 0 && filteredFeatures.length === 0 && (
             <div className="flex items-center justify-center py-12 text-muted-foreground">
-              <p>検索条件に一致する機能がありません</p>
+              <p>検索条件に一致するテストがありません</p>
             </div>
           )}
 
@@ -330,7 +330,7 @@ export default function FeaturesPage() {
                         className="flex items-center font-medium hover:text-foreground"
                         onClick={() => handleSort('name')}
                       >
-                        機能名
+                        テスト名
                         {getSortIcon('name')}
                       </button>
                     </TableHead>
@@ -432,11 +432,11 @@ export default function FeaturesPage() {
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>機能を削除しますか？</AlertDialogTitle>
+            <AlertDialogTitle>テストを削除しますか？</AlertDialogTitle>
             <AlertDialogDescription>
               {featureToDelete && (
                 <>
-                  機能「{featureToDelete.name}」を削除します。
+                  テスト「{featureToDelete.name}」を削除します。
                   <br />
                   この操作は取り消せません。
                 </>

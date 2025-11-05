@@ -21,11 +21,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import {
-  GET_FEATURE_QUERY,
-  GET_TEST_CASES_BY_FEATURE_QUERY,
-  ASSIGN_FEATURE_MUTATION,
-} from '@/lib/graphql/features';
+import { GET_FEATURE_QUERY, GET_TEST_CASES_BY_FEATURE_QUERY, ASSIGN_FEATURE_MUTATION } from '@/lib/graphql/features';
 import { CREATE_TEST_CASE_MUTATION } from '@/lib/graphql/test-cases';
 import { Feature, TestCase, FeatureStatus, TestCaseStatus, MutationResponse } from '@/types';
 import { ArrowLeft, Loader2, Pencil, Plus, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
@@ -112,9 +108,9 @@ const getTestCaseStatusLabel = (status: string) => {
 };
 
 /**
- * 機能詳細ページ（テストケース一覧）
+ * テスト詳細ページ（テストケース一覧）
  *
- * 指定された機能の詳細情報と、その機能に紐づくテストケース一覧を表示します。
+ * 指定されたテストの詳細情報と、そのテストに紐づくテストケース一覧を表示します。
  */
 export default function FeatureTestCasesPage() {
   const params = useParams();
@@ -146,13 +142,10 @@ export default function FeatureTestCasesPage() {
     },
   });
 
-  const { data: featureData, loading: featureLoading } = useQuery<{ feature: Feature | null }>(
-    GET_FEATURE_QUERY,
-    {
-      variables: { id },
-      skip: isNaN(id),
-    }
-  );
+  const { data: featureData, loading: featureLoading } = useQuery<{ feature: Feature | null }>(GET_FEATURE_QUERY, {
+    variables: { id },
+    skip: isNaN(id),
+  });
 
   const { data: testCasesData, loading: testCasesLoading } = useQuery<{
     testCasesByFeature: TestCase[];
@@ -191,11 +184,7 @@ export default function FeatureTestCasesPage() {
     if (sortColumn !== column) {
       return <ArrowUpDown className="ml-2 h-4 w-4" />;
     }
-    return sortDirection === 'asc' ? (
-      <ArrowUp className="ml-2 h-4 w-4" />
-    ) : (
-      <ArrowDown className="ml-2 h-4 w-4" />
-    );
+    return sortDirection === 'asc' ? <ArrowUp className="ml-2 h-4 w-4" /> : <ArrowDown className="ml-2 h-4 w-4" />;
   };
 
   // ソートされたテストケースを取得
@@ -243,17 +232,14 @@ export default function FeatureTestCasesPage() {
       });
 
       if (!createResult.data?.createTestCase.isValid || !createResult.data?.createTestCase.data) {
-        toast.error(
-          createResult.data?.createTestCase.message || 'テストケースの作成に失敗しました',
-          {
-            id: 'create-error',
-            style: { background: '#fee2e2', color: '#991b1b', border: '1px solid #fecaca' },
-          }
-        );
+        toast.error(createResult.data?.createTestCase.message || 'テストケースの作成に失敗しました', {
+          id: 'create-error',
+          style: { background: '#fee2e2', color: '#991b1b', border: '1px solid #fecaca' },
+        });
         return;
       }
 
-      // 作成したテストケースを機能に割り当て
+      // 作成したテストケースをテストに割り当て
       const testCaseId = createResult.data.createTestCase.data.id;
       const assignResult = await assignFeature({
         variables: {
@@ -263,20 +249,17 @@ export default function FeatureTestCasesPage() {
       });
 
       if (assignResult.data?.assignFeature.isValid) {
-        toast.success('テストケースを作成し、機能に追加しました', {
+        toast.success('テストケースを作成し、テストに追加しました', {
           id: 'create-assign-success',
           style: { background: '#dcfce7', color: '#166534', border: '1px solid #bbf7d0' },
         });
         setAddTestCaseDialogOpen(false);
         form.reset();
       } else {
-        toast.error(
-          assignResult.data?.assignFeature.message || 'テストケースの追加に失敗しました',
-          {
-            id: 'assign-error',
-            style: { background: '#fee2e2', color: '#991b1b', border: '1px solid #fecaca' },
-          }
-        );
+        toast.error(assignResult.data?.assignFeature.message || 'テストケースの追加に失敗しました', {
+          id: 'assign-error',
+          style: { background: '#fee2e2', color: '#991b1b', border: '1px solid #fecaca' },
+        });
       }
     } catch (_error) {
       toast.error('エラーが発生しました', {
@@ -291,11 +274,11 @@ export default function FeatureTestCasesPage() {
       <div className="space-y-6">
         <Button variant="ghost" onClick={() => router.push('/features')}>
           <ArrowLeft className="mr-2 h-4 w-4" />
-          機能一覧に戻る
+          テスト一覧に戻る
         </Button>
         <Card>
           <CardContent className="flex items-center justify-center py-12">
-            <p className="text-destructive">無効な機能IDです</p>
+            <p className="text-destructive">無効なテストIDです</p>
           </CardContent>
         </Card>
       </div>
@@ -307,7 +290,7 @@ export default function FeatureTestCasesPage() {
       <div className="space-y-6">
         <Button variant="ghost" onClick={() => router.push('/features')}>
           <ArrowLeft className="mr-2 h-4 w-4" />
-          機能一覧に戻る
+          テスト一覧に戻る
         </Button>
         <Card>
           <CardContent className="flex items-center justify-center py-12">
@@ -323,11 +306,11 @@ export default function FeatureTestCasesPage() {
       <div className="space-y-6">
         <Button variant="ghost" onClick={() => router.push('/features')}>
           <ArrowLeft className="mr-2 h-4 w-4" />
-          機能一覧に戻る
+          テスト一覧に戻る
         </Button>
         <Card>
           <CardContent className="flex items-center justify-center py-12">
-            <p className="text-muted-foreground">機能が見つかりませんでした</p>
+            <p className="text-muted-foreground">テストが見つかりませんでした</p>
           </CardContent>
         </Card>
       </div>
@@ -340,7 +323,7 @@ export default function FeatureTestCasesPage() {
       <div className="flex items-center justify-between">
         <Button variant="ghost" onClick={() => router.push('/features')}>
           <ArrowLeft className="mr-2 h-4 w-4" />
-          機能一覧に戻る
+          テスト一覧に戻る
         </Button>
         <Button onClick={() => router.push(`/features/${id}/edit`)}>
           <Pencil className="mr-2 h-4 w-4" />
@@ -348,7 +331,7 @@ export default function FeatureTestCasesPage() {
         </Button>
       </div>
 
-      {/* 機能詳細カード */}
+      {/* テスト詳細カード */}
       <Card>
         <CardHeader>
           <div className="flex items-start justify-between">
@@ -359,16 +342,14 @@ export default function FeatureTestCasesPage() {
                   {getFeatureStatusLabel(feature.status)}
                 </Badge>
               </div>
-              {feature.description && (
-                <CardDescription className="text-base">{feature.description}</CardDescription>
-              )}
+              {feature.description && <CardDescription className="text-base">{feature.description}</CardDescription>}
             </div>
           </div>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
             <div>
-              <p className="text-sm font-medium text-muted-foreground">機能ID</p>
+              <p className="text-sm font-medium text-muted-foreground">テストID</p>
               <p className="text-lg font-semibold">#{feature.id}</p>
             </div>
             <div>
@@ -376,10 +357,7 @@ export default function FeatureTestCasesPage() {
               <div className="flex items-center gap-2">
                 {feature.color ? (
                   <>
-                    <div
-                      className="h-6 w-6 rounded border"
-                      style={{ backgroundColor: feature.color }}
-                    />
+                    <div className="h-6 w-6 rounded border" style={{ backgroundColor: feature.color }} />
                     <span className="text-sm">{feature.color}</span>
                   </>
                 ) : (
@@ -389,9 +367,7 @@ export default function FeatureTestCasesPage() {
             </div>
             <div>
               <p className="text-sm font-medium text-muted-foreground">作成日</p>
-              <p className="text-lg">
-                {format(new Date(feature.createdAt), 'yyyy年MM月dd日', { locale: ja })}
-              </p>
+              <p className="text-lg">{format(new Date(feature.createdAt), 'yyyy年MM月dd日', { locale: ja })}</p>
             </div>
           </div>
         </CardContent>
@@ -405,20 +381,20 @@ export default function FeatureTestCasesPage() {
               <CardTitle>テストケース一覧</CardTitle>
               <CardDescription>
                 {testCases.length > 0
-                  ? `${testCases.length}件のテストケースがこの機能に紐づいています`
-                  : 'この機能に紐づくテストケースはありません'}
+                  ? `${testCases.length}件のテストケースがこのテストに紐づいています`
+                  : 'このテストに紐づくテストケースはありません'}
               </CardDescription>
             </div>
             <Button size="sm" onClick={() => setAddTestCaseDialogOpen(true)}>
               <Plus className="mr-2 h-4 w-4" />
-              テストケースを追加
+              追加
             </Button>
           </div>
         </CardHeader>
         <CardContent>
           {testCases.length === 0 ? (
             <div className="flex items-center justify-center py-12 text-muted-foreground">
-              <p>この機能に紐づくテストケースはありません</p>
+              <p>このテストに紐づくテストケースはありません</p>
             </div>
           ) : (
             <div className="rounded-md border">
@@ -485,9 +461,7 @@ export default function FeatureTestCasesPage() {
                         <div>
                           <p className="font-medium">{testCase.title}</p>
                           {testCase.description && (
-                            <p className="text-sm text-muted-foreground line-clamp-1">
-                              {testCase.description}
-                            </p>
+                            <p className="text-sm text-muted-foreground line-clamp-1">{testCase.description}</p>
                           )}
                         </div>
                       </TableCell>
@@ -510,9 +484,7 @@ export default function FeatureTestCasesPage() {
                         </div>
                       </TableCell>
                       <TableCell>{testCase.createdBy.name}</TableCell>
-                      <TableCell>
-                        {format(new Date(testCase.createdAt), 'yyyy/MM/dd', { locale: ja })}
-                      </TableCell>
+                      <TableCell>{format(new Date(testCase.createdAt), 'yyyy/MM/dd', { locale: ja })}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -527,7 +499,7 @@ export default function FeatureTestCasesPage() {
         <DialogContent className="max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>テストケースを作成</DialogTitle>
-            <DialogDescription>新しいテストケースを作成し、この機能に追加します</DialogDescription>
+            <DialogDescription>新しいテストケースを作成し、このテストに追加します</DialogDescription>
           </DialogHeader>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(handleAddTestCase)} className="space-y-4">
@@ -552,11 +524,7 @@ export default function FeatureTestCasesPage() {
                   <FormItem>
                     <FormLabel>説明（任意）</FormLabel>
                     <FormControl>
-                      <Textarea
-                        placeholder="テストケースの説明を入力"
-                        className="min-h-[80px]"
-                        {...field}
-                      />
+                      <Textarea placeholder="テストケースの説明を入力" className="min-h-[80px]" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -570,11 +538,7 @@ export default function FeatureTestCasesPage() {
                   <FormItem>
                     <FormLabel>テスト手順</FormLabel>
                     <FormControl>
-                      <Textarea
-                        placeholder="テスト手順を入力"
-                        className="min-h-[100px]"
-                        {...field}
-                      />
+                      <Textarea placeholder="テスト手順を入力" className="min-h-[100px]" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -588,11 +552,7 @@ export default function FeatureTestCasesPage() {
                   <FormItem>
                     <FormLabel>期待結果</FormLabel>
                     <FormControl>
-                      <Textarea
-                        placeholder="期待結果を入力"
-                        className="min-h-[80px]"
-                        {...field}
-                      />
+                      <Textarea placeholder="期待結果を入力" className="min-h-[80px]" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -606,11 +566,7 @@ export default function FeatureTestCasesPage() {
                   <FormItem>
                     <FormLabel>実績結果（任意）</FormLabel>
                     <FormControl>
-                      <Textarea
-                        placeholder="実績結果を入力"
-                        className="min-h-[80px]"
-                        {...field}
-                      />
+                      <Textarea placeholder="実績結果を入力" className="min-h-[80px]" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -630,9 +586,7 @@ export default function FeatureTestCasesPage() {
                   キャンセル
                 </Button>
                 <Button type="submit" disabled={createLoading || assignLoading}>
-                  {(createLoading || assignLoading) && (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  )}
+                  {(createLoading || assignLoading) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   作成して追加
                 </Button>
               </DialogFooter>

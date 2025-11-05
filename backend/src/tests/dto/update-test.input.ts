@@ -7,7 +7,13 @@ import { TestStatus } from '../models/test.model';
  */
 @InputType()
 export class UpdateTestInput {
-  /** テストID */
+  /** 機能ID */
+  @Field(() => Int)
+  @IsNotEmpty({ message: 'featureId should not be empty' })
+  @IsInt({ message: 'featureId must be an integer' })
+  featureId: number;
+
+  /** テストID（機能内での連番） */
   @Field(() => Int)
   @IsNotEmpty({ message: 'id should not be empty' })
   @IsInt({ message: 'id must be an integer' })

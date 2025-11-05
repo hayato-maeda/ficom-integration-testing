@@ -218,9 +218,9 @@ export default function FeaturesPage() {
           <CardTitle>検索・フィルタリング</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-10 md:items-end">
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-7 md:grid-cols-10 md:items-end xl:grid-cols-10 2xl:grid-cols-10">
             {/* 検索 */}
-            <div className="md:col-span-8">
+            <div className="md:col-span-6 lg:col-span-5 xl:col-span-8 2xl:col-span-8">
               <label className="text-sm font-medium">検索</label>
               <div className="relative mt-1.5">
                 <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -234,10 +234,10 @@ export default function FeaturesPage() {
             </div>
 
             {/* ステータスフィルター */}
-            <div className="md:col-span-1">
+            <div className="md:col-span-2 lg:col-span-1 xl:col-span-1 2xl:col-span-1">
               <label className="text-sm font-medium">ステータス</label>
               <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="mt-1.5 w-full">
+                <SelectTrigger className="mt-1.5 w-full justify-center">
                   <SelectValue placeholder="すべて" />
                 </SelectTrigger>
                 <SelectContent>
@@ -252,9 +252,9 @@ export default function FeaturesPage() {
             </div>
 
             {/* クリアボタン */}
-            <div className="md:col-span-1">
-              <Button variant="outline" onClick={clearFilters} className="mt-1.5 w-full">
-                <X className="mr-2 h-4 w-4" />
+            <div className="md:col-span-2 lg:col-span-1 xl:col-span-1 2xl:col-span-1">
+              <Button variant="outline" onClick={clearFilters} className="mt-1.5 w-full justify-center">
+                <X className="h-4 w-4" />
                 クリア
               </Button>
             </div>

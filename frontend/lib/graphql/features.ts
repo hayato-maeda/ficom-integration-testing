@@ -178,3 +178,37 @@ export const GET_FEATURES_BY_TEST_CASE_QUERY = gql`
     }
   }
 `;
+
+/**
+ * 機能に紐づくテストケース一覧取得クエリ
+ *
+ * 指定された機能IDに紐づくテストケースを取得します。
+ *
+ * @param {number} featureId - 機能ID
+ * @returns テストケースの配列
+ */
+export const GET_TEST_CASES_BY_FEATURE_QUERY = gql`
+  query GetTestCasesByFeature($featureId: Int!) {
+    testCasesByFeature(featureId: $featureId) {
+      id
+      title
+      description
+      steps
+      expectedResult
+      actualResult
+      status
+      createdAt
+      updatedAt
+      createdBy {
+        id
+        name
+        email
+      }
+      tags {
+        id
+        name
+        color
+      }
+    }
+  }
+`;

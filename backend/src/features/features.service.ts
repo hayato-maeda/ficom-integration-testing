@@ -345,4 +345,41 @@ export class FeaturesService {
 
     return features;
   }
+
+  /**
+   * 機能に割り当てられているテストケースを取得
+   * @param featureId - 機能ID
+   * @returns テストケースの一覧
+   */
+  async getTestCasesByFeature(featureId: number) {
+    this.logger.debug({ featureId }, 'Fetching test cases for feature');
+
+    const testCaseFeatures = await this.prismaService.testCaseFeature.findMany({
+      where: { featureId },
+      include: {
+        testCase: {
+          include: {
+            createdBy: true,
+            tags: {
+              include: {
+                tag: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    const testCases = testCaseFeatures.map((testCaseFeature) => {
+      const testCase = testCaseFeature.testCase;
+      return {
+        ...testCase,
+        tags: testCase.tags.map((testCaseTag) => testCaseTag.tag),
+      };
+    });
+
+    this.logger.debug({ featureId, count: testCases.length }, 'Test cases fetched for feature');
+
+    return testCases;
+  }
 }

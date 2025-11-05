@@ -1,6 +1,7 @@
 import { UseGuards } from '@nestjs/common';
 import { Args, Int, Mutation, Query, Resolver } from '@nestjs/graphql';
 import { GqlSessionGuard } from '../auth/guards/gql-session.guard';
+import { TestCase } from '../test-cases/models/test-case.model';
 import { AssignFeatureInput } from './dto/assign-feature.input';
 import { CreateFeatureInput } from './dto/create-feature.input';
 import { FeatureAssignMutationResponse, FeatureMutationResponse } from './dto/feature-mutation.response';
@@ -107,5 +108,15 @@ export class FeaturesResolver {
   @Query(() => [Feature])
   async featuresByTestCase(@Args('testCaseId', { type: () => Int }) testCaseId: number): Promise<Feature[]> {
     return this.featuresService.getFeaturesByTestCase(testCaseId);
+  }
+
+  /**
+   * 機能に割り当てられているテストケース取得クエリ
+   * @param featureId - 機能ID
+   * @returns テストケースの一覧
+   */
+  @Query(() => [TestCase])
+  async testCasesByFeature(@Args('featureId', { type: () => Int }) featureId: number): Promise<TestCase[]> {
+    return this.featuresService.getTestCasesByFeature(featureId);
   }
 }

@@ -119,6 +119,7 @@ type Query {
   tagsByTestCase(testCaseId: Int!): [Tag!]!
   testCase(id: Int!): TestCase
   testCases: [TestCase!]!
+  testCasesByFeature(featureId: Int!): [TestCase!]!
 }
 
 input SignUpInput {

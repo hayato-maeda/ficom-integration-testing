@@ -27,7 +27,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { GET_FEATURES_QUERY, DELETE_FEATURE_MUTATION } from '@/lib/graphql/features';
 import { Feature, FeatureStatus, MutationResponse } from '@/types';
-import { Plus, Loader2, Search, X, Trash2 } from 'lucide-react';
+import { Plus, Loader2, Search, X, Trash2, Pencil } from 'lucide-react';
 import { format } from 'date-fns';
 import { ja } from 'date-fns/locale/ja';
 import { toast } from 'sonner';
@@ -269,7 +269,7 @@ export default function FeaturesPage() {
                     <TableHead>ステータス</TableHead>
                     <TableHead>色</TableHead>
                     <TableHead>作成日</TableHead>
-                    <TableHead className="w-[80px]">操作</TableHead>
+                    <TableHead className="w-[120px]">操作</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -312,14 +312,27 @@ export default function FeaturesPage() {
                         {format(new Date(feature.createdAt), 'yyyy/MM/dd', { locale: ja })}
                       </TableCell>
                       <TableCell>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={(e) => openDeleteDialog(feature, e)}
-                          disabled={deleteLoading}
-                        >
-                          <Trash2 className="h-4 w-4 text-destructive" />
-                        </Button>
+                        <div className="flex items-center gap-1">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              router.push(`/features/${feature.id}/edit`);
+                            }}
+                            disabled={deleteLoading}
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={(e) => openDeleteDialog(feature, e)}
+                            disabled={deleteLoading}
+                          >
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))}

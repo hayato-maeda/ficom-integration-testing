@@ -32,12 +32,32 @@ model User {
   @@map("users")
 }
 
+/// テスト
+/// Featureに紐づくテストを管理します。
+/// 各テストは複数のテストケースを持ちます。
+model Test {
+  id          Int      @id @default(autoincrement())
+  featureId   Int
+  name        String
+  description String?  @db.Text
+  status      String   @default("DRAFT")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // リレーション
+  feature   Feature    @relation(fields: [featureId], references: [id], onDelete: Cascade)
+  testCases TestCase[]
+
+  @@map("tests")
+}
+
 /// テストケース
 /// 結合テストの内容を管理します。
 /// タイトル、説明、手順、期待結果、実績、ステータスなどの情報を持ちます。
 /// ステータス: DRAFT（下書き）, IN_REVIEW（レビュー中）, APPROVED（承認済み）, REJECTED（却下）, ARCHIVED（アーカイブ）
 model TestCase {
-  id             Int      @id @default(autoincrement())
+  testId         Int
+  testCaseId     Int
   title          String
   description    String?
   steps          String   @db.Text
@@ -49,13 +69,14 @@ model TestCase {
   updatedAt      DateTime @updatedAt
 
   // リレーション
-  createdBy User              @relation("TestCaseCreator", fields: [createdById], references: [id])
+  test      Test            @relation(fields: [testId], references: [id], onDelete: Cascade)
+  createdBy User            @relation("TestCaseCreator", fields: [createdById], references: [id])
   tags      TestCaseTag[]
-  features  TestCaseFeature[]
   files     File[]
   approvals Approval[]
   comments  Comment[]
 
+  @@id([testId, testCaseId])
   @@map("test_cases")
 }
 
@@ -77,15 +98,16 @@ model Tag {
 /// テストケースタグ中間テーブル
 /// テストケースとタグの多対多リレーションを管理します。
 model TestCaseTag {
+  testId     Int
   testCaseId Int
   tagId      Int
   assignedAt DateTime @default(now())
 
   // リレーション
-  testCase TestCase @relation(fields: [testCaseId], references: [id], onDelete: Cascade)
+  testCase TestCase @relation(fields: [testId, testCaseId], references: [testId, testCaseId], onDelete: Cascade)
   tag      Tag      @relation(fields: [tagId], references: [id], onDelete: Cascade)
 
-  @@id([testCaseId, tagId])
+  @@id([testId, testCaseId, tagId])
   @@map("test_case_tags")
 }
 
@@ -93,17 +115,18 @@ model TestCaseTag {
 /// テストケースに添付されるファイルの情報を管理します。
 /// スクリーンショットやログファイルなどを保存します。
 model File {
-  id         Int      @id @default(autoincrement())
-  filename   String
-  path       String
-  mimeType   String
-  size       Int
-  testCaseId Int
-  uploadedBy Int
-  createdAt  DateTime @default(now())
+  id           Int      @id @default(autoincrement())
+  filename     String
+  path         String
+  mimeType     String
+  size         Int
+  testId       Int
+  testCaseId   Int
+  uploadedBy   Int
+  createdAt    DateTime @default(now())
 
   // リレーション
-  testCase TestCase @relation(fields: [testCaseId], references: [id], onDelete: Cascade)
+  testCase TestCase @relation(fields: [testId, testCaseId], references: [testId, testCaseId], onDelete: Cascade)
   uploader User     @relation(fields: [uploadedBy], references: [id])
 
   @@map("files")
@@ -115,6 +138,7 @@ model File {
 /// ステータス: PENDING（承認待ち）, APPROVED（承認）, REJECTED（却下）
 model Approval {
   id         Int      @id @default(autoincrement())
+  testId     Int
   testCaseId Int
   userId     Int
   status     String   @default("PENDING")
@@ -123,10 +147,10 @@ model Approval {
   updatedAt  DateTime @updatedAt
 
   // リレーション
-  testCase TestCase @relation(fields: [testCaseId], references: [id], onDelete: Cascade)
+  testCase TestCase @relation(fields: [testId, testCaseId], references: [testId, testCaseId], onDelete: Cascade)
   user     User     @relation(fields: [userId], references: [id])
 
-  @@unique([testCaseId, userId])
+  @@unique([testId, testCaseId, userId])
   @@map("approvals")
 }
 
@@ -136,20 +160,21 @@ model Approval {
 model Comment {
   id         Int      @id @default(autoincrement())
   content    String   @db.Text
+  testId     Int
   testCaseId Int
   userId     Int
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
   // リレーション
-  testCase TestCase @relation(fields: [testCaseId], references: [id], onDelete: Cascade)
+  testCase TestCase @relation(fields: [testId, testCaseId], references: [testId, testCaseId], onDelete: Cascade)
   user     User     @relation(fields: [userId], references: [id])
 
   @@map("comments")
 }
 
 /// 機能
-/// テストケースをグループ化するための機能を管理します。
+/// テストをグループ化するための機能を管理します。
 /// 機能名、説明、カラーコード、ステータスなどの情報を持ちます。
 /// ステータス: PLANNING（計画中）, DEVELOPING（開発中）, TESTING（テスト中）, COMPLETED（完了）, ON_HOLD（保留）
 model Feature {
@@ -162,22 +187,7 @@ model Feature {
   updatedAt   DateTime @updatedAt
 
   // リレーション
-  testCases TestCaseFeature[]
+  tests Test[]
 
   @@map("features")
-}
-
-/// テストケース機能中間テーブル
-/// テストケースと機能の多対多リレーションを管理します。
-model TestCaseFeature {
-  testCaseId Int
-  featureId  Int
-  assignedAt DateTime @default(now())
-
-  // リレーション
-  testCase TestCase @relation(fields: [testCaseId], references: [id], onDelete: Cascade)
-  feature  Feature  @relation(fields: [featureId], references: [id], onDelete: Cascade)
-
-  @@id([testCaseId, featureId])
-  @@map("test_case_features")
 }

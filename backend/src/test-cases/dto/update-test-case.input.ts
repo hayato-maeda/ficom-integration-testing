@@ -7,11 +7,17 @@ import { TestCaseStatus } from '../models/test-case.model';
  */
 @InputType()
 export class UpdateTestCaseInput {
+  /** テストID */
+  @Field(() => Int)
+  @IsNotEmpty({ message: 'testId should not be empty' })
+  @IsInt({ message: 'testId must be an integer' })
+  testId: number;
+
   /** テストケースID */
   @Field(() => Int)
-  @IsNotEmpty({ message: 'id should not be empty' })
-  @IsInt({ message: 'id must be an integer' })
-  id: number;
+  @IsNotEmpty({ message: 'testCaseId should not be empty' })
+  @IsInt({ message: 'testCaseId must be an integer' })
+  testCaseId: number;
 
   /** タイトル */
   @Field(() => String, { nullable: true })

@@ -190,20 +190,25 @@ export class TagsService {
    */
   async assignTag(assignTagInput: AssignTagInput): Promise<TagAssignMutationResponse> {
     this.logger.info(
-      { testCaseId: assignTagInput.testCaseId, tagId: assignTagInput.tagId },
+      { testId: assignTagInput.testId, testCaseId: assignTagInput.testCaseId, tagId: assignTagInput.tagId },
       'Assigning tag to test case',
     );
 
     // テストケースの存在確認
     const testCase = await this.prismaService.testCase.findUnique({
-      where: { id: assignTagInput.testCaseId },
+      where: {
+        testId_testCaseId: {
+          testId: assignTagInput.testId,
+          testCaseId: assignTagInput.testCaseId,
+        },
+      },
     });
 
     if (!testCase) {
-      this.logger.warn({ testCaseId: assignTagInput.testCaseId }, 'Test case not found');
+      this.logger.warn({ testId: assignTagInput.testId, testCaseId: assignTagInput.testCaseId }, 'Test case not found');
       return {
         isValid: false,
-        message: TAGS_MESSAGES.TEST_CASE_NOT_FOUND(assignTagInput.testCaseId),
+        message: `Test case with testId ${assignTagInput.testId} and testCaseId ${assignTagInput.testCaseId} not found`,
         data: null,
       };
     }
@@ -225,7 +230,8 @@ export class TagsService {
     // 既に割り当て済みかチェック
     const existing = await this.prismaService.testCaseTag.findUnique({
       where: {
-        testCaseId_tagId: {
+        testId_testCaseId_tagId: {
+          testId: assignTagInput.testId,
           testCaseId: assignTagInput.testCaseId,
           tagId: assignTagInput.tagId,
         },
@@ -234,7 +240,7 @@ export class TagsService {
 
     if (existing) {
       this.logger.warn(
-        { testCaseId: assignTagInput.testCaseId, tagId: assignTagInput.tagId },
+        { testId: assignTagInput.testId, testCaseId: assignTagInput.testCaseId, tagId: assignTagInput.tagId },
         'Tag already assigned to test case',
       );
       return {
@@ -246,13 +252,14 @@ export class TagsService {
 
     await this.prismaService.testCaseTag.create({
       data: {
+        testId: assignTagInput.testId,
         testCaseId: assignTagInput.testCaseId,
         tagId: assignTagInput.tagId,
       },
     });
 
     this.logger.info(
-      { testCaseId: assignTagInput.testCaseId, tagId: assignTagInput.tagId },
+      { testId: assignTagInput.testId, testCaseId: assignTagInput.testCaseId, tagId: assignTagInput.tagId },
       'Tag assigned to test case successfully',
     );
 
@@ -265,17 +272,19 @@ export class TagsService {
 
   /**
    * テストケースからタグを削除
+   * @param testId - テストID
    * @param testCaseId - テストケースID
    * @param tagId - タグID
    * @returns タグ割り当てMutationレスポンス
    */
-  async unassignTag(testCaseId: number, tagId: number): Promise<TagAssignMutationResponse> {
-    this.logger.info({ testCaseId, tagId }, 'Unassigning tag from test case');
+  async unassignTag(testId: number, testCaseId: number, tagId: number): Promise<TagAssignMutationResponse> {
+    this.logger.info({ testId, testCaseId, tagId }, 'Unassigning tag from test case');
 
     // 割り当ての存在確認
     const existing = await this.prismaService.testCaseTag.findUnique({
       where: {
-        testCaseId_tagId: {
+        testId_testCaseId_tagId: {
+          testId,
           testCaseId,
           tagId,
         },
@@ -283,7 +292,7 @@ export class TagsService {
     });
 
     if (!existing) {
-      this.logger.warn({ testCaseId, tagId }, 'Tag assignment not found');
+      this.logger.warn({ testId, testCaseId, tagId }, 'Tag assignment not found');
       return {
         isValid: false,
         message: TAGS_MESSAGES.TAG_NOT_ASSIGNED,
@@ -293,14 +302,15 @@ export class TagsService {
 
     await this.prismaService.testCaseTag.delete({
       where: {
-        testCaseId_tagId: {
+        testId_testCaseId_tagId: {
+          testId,
           testCaseId,
           tagId,
         },
       },
     });
 
-    this.logger.info({ testCaseId, tagId }, 'Tag unassigned from test case successfully');
+    this.logger.info({ testId, testCaseId, tagId }, 'Tag unassigned from test case successfully');
 
     return {
       isValid: true,
@@ -311,20 +321,21 @@ export class TagsService {
 
   /**
    * テストケースに割り当てられているタグを取得
+   * @param testId - テストID
    * @param testCaseId - テストケースID
    * @returns タグの一覧
    */
-  async getTagsByTestCase(testCaseId: number): Promise<Tag[]> {
-    this.logger.debug({ testCaseId }, 'Fetching tags for test case');
+  async getTagsByTestCase(testId: number, testCaseId: number): Promise<Tag[]> {
+    this.logger.debug({ testId, testCaseId }, 'Fetching tags for test case');
 
     const testCaseTags = await this.prismaService.testCaseTag.findMany({
-      where: { testCaseId },
+      where: { testId, testCaseId },
       include: { tag: true },
     });
 
     const tags = testCaseTags.map((testCaseTag) => testCaseTag.tag);
 
-    this.logger.debug({ testCaseId, count: tags.length }, 'Tags fetched for test case');
+    this.logger.debug({ testId, testCaseId, count: tags.length }, 'Tags fetched for test case');
 
     return tags;
   }

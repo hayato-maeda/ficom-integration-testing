@@ -19,6 +19,7 @@ import { FilesModule } from './files/files.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { TagsModule } from './tags/tags.module';
 import { TestCasesModule } from './test-cases/test-cases.module';
+import { TestsModule } from './tests/tests.module';
 
 const isProduction = process.env.NODE_ENV === 'production';
 const isNotProduction = !isProduction;
@@ -44,6 +45,7 @@ const isNotProduction = !isProduction;
     LoggerModule.forRoot(pinoLoggerConfig()),
     PrismaModule,
     AuthModule,
+    TestsModule,
     TestCasesModule,
     TagsModule,
     FeaturesModule,

@@ -31,9 +31,13 @@ export type TestCaseStatusType = (typeof TestCaseStatus)[keyof typeof TestCaseSt
  */
 @ObjectType()
 export class TestCase {
+  /** テストID */
+  @Field(() => Int)
+  testId: number;
+
   /** テストケースID */
   @Field(() => Int)
-  id: number;
+  testCaseId: number;
 
   /** タイトル */
   @Field(() => String)

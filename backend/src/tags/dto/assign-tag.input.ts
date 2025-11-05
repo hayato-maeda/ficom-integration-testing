@@ -6,6 +6,12 @@ import { IsInt, IsNotEmpty } from 'class-validator';
  */
 @InputType()
 export class AssignTagInput {
+  /** テストID */
+  @Field(() => Int)
+  @IsNotEmpty({ message: 'testId should not be empty' })
+  @IsInt({ message: 'testId must be an integer' })
+  testId: number;
+
   /** テストケースID */
   @Field(() => Int)
   @IsNotEmpty({ message: 'testCaseId should not be empty' })

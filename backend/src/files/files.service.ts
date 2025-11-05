@@ -24,6 +24,7 @@ export class FilesService {
    * @param path - ファイルパス
    * @param mimeType - MIMEタイプ
    * @param size - ファイルサイズ
+   * @param testId - テストID
    * @param testCaseId - テストケースID
    * @param uploadedBy - アップロードユーザーID
    * @returns 保存されたファイル情報
@@ -33,6 +34,7 @@ export class FilesService {
     path: string,
     mimeType: string,
     size: number,
+    testId: number,
     testCaseId: number,
     uploadedBy: number,
   ): Promise<File> {
@@ -42,6 +44,7 @@ export class FilesService {
         path,
         mimeType,
         size,
+        testId,
         testCaseId,
         uploadedBy,
       },
@@ -54,6 +57,7 @@ export class FilesService {
         path,
         mimeType,
         size,
+        testId,
         testCaseId,
         uploadedBy,
       },
@@ -125,14 +129,15 @@ export class FilesService {
 
   /**
    * テストケースに紐づくファイル一覧取得
+   * @param testId - テストID
    * @param testCaseId - テストケースID
    * @returns ファイルの一覧
    */
-  async findByTestCase(testCaseId: number): Promise<File[]> {
-    this.logger.info({ testCaseId }, 'Fetching files for test case');
+  async findByTestCase(testId: number, testCaseId: number): Promise<File[]> {
+    this.logger.info({ testId, testCaseId }, 'Fetching files for test case');
 
     return this.prismaService.file.findMany({
-      where: { testCaseId },
+      where: { testId, testCaseId },
       include: {
         testCase: {
           include: {

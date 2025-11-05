@@ -24,6 +24,7 @@ model User {
   updatedAt               DateTime  @updatedAt
 
   // リレーション
+  createdTests     Test[]     @relation("TestCreator")
   createdTestCases TestCase[] @relation("TestCaseCreator")
   approvals        Approval[]
   uploadedFiles    File[]
@@ -32,12 +33,35 @@ model User {
   @@map("users")
 }
 
+/// テスト
+/// 機能（Feature）に属するテストを管理します。
+/// 各テストは複数のテストケースを持ちます。
+/// ステータス: DRAFT（下書き）, IN_REVIEW（レビュー中）, APPROVED（承認済み）, REJECTED（却下）, ARCHIVED（アーカイブ）
+model Test {
+  id        Int      @id @default(autoincrement())
+  featureId Int
+  name      String
+  description String?  @db.Text
+  status    String   @default("DRAFT")
+  createdById Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // リレーション
+  feature   Feature    @relation(fields: [featureId], references: [id], onDelete: Cascade)
+  createdBy User       @relation("TestCreator", fields: [createdById], references: [id])
+  testCases TestCase[]
+
+  @@map("tests")
+}
+
 /// テストケース
-/// 結合テストの内容を管理します。
+/// テスト（Test）に属する個別のテストケースを管理します。
 /// タイトル、説明、手順、期待結果、実績、ステータスなどの情報を持ちます。
 /// ステータス: DRAFT（下書き）, IN_REVIEW（レビュー中）, APPROVED（承認済み）, REJECTED（却下）, ARCHIVED（アーカイブ）
 model TestCase {
   id             Int      @id @default(autoincrement())
+  testId         Int
   title          String
   description    String?
   steps          String   @db.Text
@@ -49,9 +73,9 @@ model TestCase {
   updatedAt      DateTime @updatedAt
 
   // リレーション
-  createdBy User              @relation("TestCaseCreator", fields: [createdById], references: [id])
+  test      Test           @relation(fields: [testId], references: [id], onDelete: Cascade)
+  createdBy User           @relation("TestCaseCreator", fields: [createdById], references: [id])
   tags      TestCaseTag[]
-  features  TestCaseFeature[]
   files     File[]
   approvals Approval[]
   comments  Comment[]
@@ -149,7 +173,7 @@ model Comment {
 }
 
 /// 機能
-/// テストケースをグループ化するための機能を管理します。
+/// テスト（Test）をグループ化するための機能を管理します。
 /// 機能名、説明、カラーコード、ステータスなどの情報を持ちます。
 /// ステータス: PLANNING（計画中）, DEVELOPING（開発中）, TESTING（テスト中）, COMPLETED（完了）, ON_HOLD（保留）
 model Feature {
@@ -162,22 +186,7 @@ model Feature {
   updatedAt   DateTime @updatedAt
 
   // リレーション
-  testCases TestCaseFeature[]
+  tests Test[]
 
   @@map("features")
-}
-
-/// テストケース機能中間テーブル
-/// テストケースと機能の多対多リレーションを管理します。
-model TestCaseFeature {
-  testCaseId Int
-  featureId  Int
-  assignedAt DateTime @default(now())
-
-  // リレーション
-  testCase TestCase @relation(fields: [testCaseId], references: [id], onDelete: Cascade)
-  feature  Feature  @relation(fields: [featureId], references: [id], onDelete: Cascade)
-
-  @@id([testCaseId, featureId])
-  @@map("test_case_features")
 }

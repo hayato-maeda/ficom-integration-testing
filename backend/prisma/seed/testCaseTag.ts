@@ -4,83 +4,70 @@ export async function createTestCaseTags(prisma: PrismaClient, testCases: TestCa
   console.log('Creating test case tags...');
 
   await Promise.all([
-    // Test case 1: ユーザーログイン
+    // TestCase 0: 正常ログイン
     prisma.testCaseTag.create({
-      data: { testCaseId: testCases[0].id, tagId: tags[0].id },
+      data: { testCaseId: testCases[0].id, tagId: tags[0].id }, // 機能テスト
     }),
     prisma.testCaseTag.create({
-      data: { testCaseId: testCases[0].id, tagId: tags[3].id },
-    }),
-
-    // Test case 2: パスワードリセット
-    prisma.testCaseTag.create({
-      data: { testCaseId: testCases[1].id, tagId: tags[0].id },
-    }),
-    prisma.testCaseTag.create({
-      data: { testCaseId: testCases[1].id, tagId: tags[3].id },
+      data: { testCaseId: testCases[0].id, tagId: tags[3].id }, // 認証
     }),
 
-    // Test case 3: テストケース作成
+    // TestCase 1: パスワード誤り
     prisma.testCaseTag.create({
-      data: { testCaseId: testCases[2].id, tagId: tags[0].id },
+      data: { testCaseId: testCases[1].id, tagId: tags[1].id }, // バグ
     }),
     prisma.testCaseTag.create({
-      data: { testCaseId: testCases[2].id, tagId: tags[2].id },
-    }),
-
-    // Test case 4: ファイルアップロード
-    prisma.testCaseTag.create({
-      data: { testCaseId: testCases[3].id, tagId: tags[0].id },
-    }),
-    prisma.testCaseTag.create({
-      data: { testCaseId: testCases[3].id, tagId: tags[7].id },
+      data: { testCaseId: testCases[1].id, tagId: tags[3].id }, // 認証
     }),
 
-    // Test case 5: タグフィルタリング
+    // TestCase 2: 存在しないユーザー
     prisma.testCaseTag.create({
-      data: { testCaseId: testCases[4].id, tagId: tags[0].id },
+      data: { testCaseId: testCases[2].id, tagId: tags[1].id }, // バグ
     }),
     prisma.testCaseTag.create({
-      data: { testCaseId: testCases[4].id, tagId: tags[2].id },
-    }),
-
-    // Test case 6: 承認ワークフロー
-    prisma.testCaseTag.create({
-      data: { testCaseId: testCases[5].id, tagId: tags[0].id },
+      data: { testCaseId: testCases[2].id, tagId: tags[3].id }, // 認証
     }),
 
-    // Test case 7: コメント機能
+    // TestCase 3: メール送信確認
     prisma.testCaseTag.create({
-      data: { testCaseId: testCases[6].id, tagId: tags[0].id },
+      data: { testCaseId: testCases[3].id, tagId: tags[0].id }, // 機能テスト
     }),
     prisma.testCaseTag.create({
-      data: { testCaseId: testCases[6].id, tagId: tags[2].id },
-    }),
-
-    // Test case 8: 検索機能
-    prisma.testCaseTag.create({
-      data: { testCaseId: testCases[7].id, tagId: tags[0].id },
-    }),
-    prisma.testCaseTag.create({
-      data: { testCaseId: testCases[7].id, tagId: tags[4].id },
+      data: { testCaseId: testCases[3].id, tagId: tags[3].id }, // 認証
     }),
 
-    // Test case 9: エクスポート機能
+    // TestCase 4: トークン検証
     prisma.testCaseTag.create({
-      data: { testCaseId: testCases[8].id, tagId: tags[0].id },
+      data: { testCaseId: testCases[4].id, tagId: tags[2].id }, // UI/UX
     }),
     prisma.testCaseTag.create({
-      data: { testCaseId: testCases[8].id, tagId: tags[5].id },
+      data: { testCaseId: testCases[4].id, tagId: tags[3].id }, // 認証
     }),
 
-    // Test case 10: ページネーション
+    // TestCase 5: zipファイルアップロード
     prisma.testCaseTag.create({
-      data: { testCaseId: testCases[9].id, tagId: tags[0].id },
+      data: { testCaseId: testCases[5].id, tagId: tags[0].id }, // 機能テスト
     }),
     prisma.testCaseTag.create({
-      data: { testCaseId: testCases[9].id, tagId: tags[4].id },
+      data: { testCaseId: testCases[5].id, tagId: tags[7].id }, // ファイル処理
+    }),
+
+    // TestCase 6: pngファイルアップロード
+    prisma.testCaseTag.create({
+      data: { testCaseId: testCases[6].id, tagId: tags[0].id }, // 機能テスト
+    }),
+    prisma.testCaseTag.create({
+      data: { testCaseId: testCases[6].id, tagId: tags[7].id }, // ファイル処理
+    }),
+
+    // TestCase 7: csvファイルアップロード
+    prisma.testCaseTag.create({
+      data: { testCaseId: testCases[7].id, tagId: tags[0].id }, // 機能テスト
+    }),
+    prisma.testCaseTag.create({
+      data: { testCaseId: testCases[7].id, tagId: tags[7].id }, // ファイル処理
     }),
   ]);
 
-  console.log('✅ Created 18 test case tags');
+  console.log('✅ Created 16 test case tags');
 }

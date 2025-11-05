@@ -21,9 +21,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { GET_FEATURE_QUERY, GET_TEST_CASES_BY_FEATURE_QUERY, ASSIGN_FEATURE_MUTATION } from '@/lib/graphql/features';
-import { CREATE_TEST_CASE_MUTATION } from '@/lib/graphql/test-cases';
-import { Feature, TestCase, FeatureStatus, TestCaseStatus, MutationResponse } from '@/types';
+import { GET_FEATURE_QUERY } from '@/lib/graphql/features';
+import { CREATE_TEST_MUTATION, GET_TESTS_BY_FEATURE_QUERY } from '@/lib/graphql/tests';
+import { Feature, Test, FeatureStatus, TestStatus, MutationResponse } from '@/types';
 import { ArrowLeft, Loader2, Pencil, Plus, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 import { format } from 'date-fns';
 import { ja } from 'date-fns/locale/ja';
@@ -37,11 +37,9 @@ const getFeatureStatusBadgeVariant = (status: string) => {
     case FeatureStatus.COMPLETED:
       return 'default';
     case FeatureStatus.DEVELOPING:
-      return 'secondary';
     case FeatureStatus.TESTING:
       return 'secondary';
     case FeatureStatus.ON_HOLD:
-      return 'outline';
     case FeatureStatus.PLANNING:
     default:
       return 'outline';
@@ -69,38 +67,38 @@ const getFeatureStatusLabel = (status: string) => {
 };
 
 /**
- * テストケースステータスバッジのスタイルを取得
+ * テストステータスバッジのスタイルを取得
  */
-const getTestCaseStatusBadgeVariant = (status: string) => {
+const getTestStatusBadgeVariant = (status: string) => {
   switch (status) {
-    case TestCaseStatus.APPROVED:
+    case TestStatus.APPROVED:
       return 'default';
-    case TestCaseStatus.IN_REVIEW:
+    case TestStatus.IN_REVIEW:
       return 'secondary';
-    case TestCaseStatus.REJECTED:
+    case TestStatus.REJECTED:
       return 'destructive';
-    case TestCaseStatus.ARCHIVED:
+    case TestStatus.ARCHIVED:
       return 'outline';
-    case TestCaseStatus.DRAFT:
+    case TestStatus.DRAFT:
     default:
       return 'outline';
   }
 };
 
 /**
- * テストケースステータスの日本語表示名を取得
+ * テストステータスの日本語表示名を取得
  */
-const getTestCaseStatusLabel = (status: string) => {
+const getTestStatusLabel = (status: string) => {
   switch (status) {
-    case TestCaseStatus.DRAFT:
+    case TestStatus.DRAFT:
       return '下書き';
-    case TestCaseStatus.IN_REVIEW:
+    case TestStatus.IN_REVIEW:
       return 'レビュー中';
-    case TestCaseStatus.APPROVED:
+    case TestStatus.APPROVED:
       return '承認済み';
-    case TestCaseStatus.REJECTED:
+    case TestStatus.REJECTED:
       return '却下';
-    case TestCaseStatus.ARCHIVED:
+    case TestStatus.ARCHIVED:
       return 'アーカイブ';
     default:
       return status;
@@ -108,37 +106,31 @@ const getTestCaseStatusLabel = (status: string) => {
 };
 
 /**
- * テスト詳細ページ（テストケース一覧）
+ * 機能詳細ページ（テスト一覧）
  *
- * 指定されたテストの詳細情報と、そのテストに紐づくテストケース一覧を表示します。
+ * 指定された機能の詳細情報と、その機能に紐づくテスト一覧を表示します。
  */
-export default function FeatureTestCasesPage() {
+export default function FeatureTestsPage() {
   const params = useParams();
   const router = useRouter();
   const id = parseInt(params.id as string, 10);
-  const [addTestCaseDialogOpen, setAddTestCaseDialogOpen] = useState(false);
+  const [addTestDialogOpen, setAddTestDialogOpen] = useState(false);
 
   // ソート状態（初期値はIDの昇順）
-  const [sortColumn, setSortColumn] = useState<'id' | 'title' | 'status' | 'createdBy' | 'createdAt'>('id');
+  const [sortColumn, setSortColumn] = useState<'id' | 'name' | 'status' | 'createdBy' | 'createdAt'>('id');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
 
-  // テストケース作成フォームのスキーマ
-  const testCaseFormSchema = z.object({
-    title: z.string().min(1, 'タイトルを入力してください'),
+  // テスト作成フォームのスキーマ
+  const testFormSchema = z.object({
+    name: z.string().min(1, 'テスト名を入力してください'),
     description: z.string().optional(),
-    steps: z.string().min(1, 'テスト手順を入力してください'),
-    expectedResult: z.string().min(1, '期待結果を入力してください'),
-    actualResult: z.string().optional(),
   });
 
-  const form = useForm<z.infer<typeof testCaseFormSchema>>({
-    resolver: zodResolver(testCaseFormSchema),
+  const form = useForm<z.infer<typeof testFormSchema>>({
+    resolver: zodResolver(testFormSchema),
     defaultValues: {
-      title: '',
+      name: '',
       description: '',
-      steps: '',
-      expectedResult: '',
-      actualResult: '',
     },
   });
 
@@ -147,59 +139,55 @@ export default function FeatureTestCasesPage() {
     skip: isNaN(id),
   });
 
-  const { data: testCasesData, loading: testCasesLoading } = useQuery<{
-    testCasesByFeature: TestCase[];
-  }>(GET_TEST_CASES_BY_FEATURE_QUERY, {
+  const {
+    data: testsData,
+    loading: testsLoading,
+    refetch,
+  } = useQuery<{
+    testsByFeature: Test[];
+  }>(GET_TESTS_BY_FEATURE_QUERY, {
     variables: { featureId: id },
     skip: isNaN(id),
   });
 
-  const [createTestCase, { loading: createLoading }] = useMutation<{
-    createTestCase: MutationResponse<TestCase>;
-  }>(CREATE_TEST_CASE_MUTATION);
-
-  const [assignFeature, { loading: assignLoading }] = useMutation<{
-    assignFeature: MutationResponse<null>;
-  }>(ASSIGN_FEATURE_MUTATION, {
-    refetchQueries: [{ query: GET_TEST_CASES_BY_FEATURE_QUERY, variables: { featureId: id } }],
-  });
+  const [createTest, { loading: createLoading }] = useMutation<{
+    createTest: MutationResponse<Test>;
+  }>(CREATE_TEST_MUTATION);
 
   const feature = featureData?.feature;
-  const loading = featureLoading || testCasesLoading;
+  const loading = featureLoading || testsLoading;
 
   // ソートを変更
-  const handleSort = (column: 'id' | 'title' | 'status' | 'createdBy' | 'createdAt') => {
+  const handleSort = (column: 'id' | 'name' | 'status' | 'createdBy' | 'createdAt') => {
     if (sortColumn === column) {
-      // 同じカラムをクリックした場合は方向を反転
       setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
     } else {
-      // 別のカラムをクリックした場合は昇順で開始
       setSortColumn(column);
       setSortDirection('asc');
     }
   };
 
   // ソートアイコンを取得
-  const getSortIcon = (column: 'id' | 'title' | 'status' | 'createdBy' | 'createdAt') => {
+  const getSortIcon = (column: 'id' | 'name' | 'status' | 'createdBy' | 'createdAt') => {
     if (sortColumn !== column) {
       return <ArrowUpDown className="ml-2 h-4 w-4" />;
     }
     return sortDirection === 'asc' ? <ArrowUp className="ml-2 h-4 w-4" /> : <ArrowDown className="ml-2 h-4 w-4" />;
   };
 
-  // ソートされたテストケースを取得
-  const getSortedTestCases = () => {
-    const testCases = testCasesData?.testCasesByFeature || [];
+  // ソートされたテストを取得
+  const getSortedTests = () => {
+    const tests = testsData?.testsByFeature || [];
 
-    return [...testCases].sort((a, b) => {
+    return [...tests].sort((a, b) => {
       let compareValue = 0;
 
       switch (sortColumn) {
         case 'id':
           compareValue = a.id - b.id;
           break;
-        case 'title':
-          compareValue = a.title.localeCompare(b.title, 'ja');
+        case 'name':
+          compareValue = a.name.localeCompare(b.name, 'ja');
           break;
         case 'status':
           compareValue = a.status.localeCompare(b.status);
@@ -216,48 +204,30 @@ export default function FeatureTestCasesPage() {
     });
   };
 
-  const testCases = getSortedTestCases();
+  const tests = getSortedTests();
 
-  const handleAddTestCase = async (values: z.infer<typeof testCaseFormSchema>) => {
+  const handleAddTest = async (values: z.infer<typeof testFormSchema>) => {
     try {
-      // テストケースを作成
-      const createResult = await createTestCase({
+      const result = await createTest({
         variables: {
-          title: values.title,
-          description: values.description,
-          steps: values.steps,
-          expectedResult: values.expectedResult,
-          actualResult: values.actualResult,
-        },
-      });
-
-      if (!createResult.data?.createTestCase.isValid || !createResult.data?.createTestCase.data) {
-        toast.error(createResult.data?.createTestCase.message || 'テストケースの作成に失敗しました', {
-          id: 'create-error',
-          style: { background: '#fee2e2', color: '#991b1b', border: '1px solid #fecaca' },
-        });
-        return;
-      }
-
-      // 作成したテストケースをテストに割り当て
-      const testCaseId = createResult.data.createTestCase.data.id;
-      const assignResult = await assignFeature({
-        variables: {
-          testCaseId,
           featureId: id,
+          name: values.name,
+          description: values.description,
+          status: 'DRAFT',
         },
       });
 
-      if (assignResult.data?.assignFeature.isValid) {
-        toast.success('テストケースを作成し、テストに追加しました', {
-          id: 'create-assign-success',
+      if (result.data?.createTest.isValid) {
+        toast.success('テストを作成しました', {
+          id: 'create-success',
           style: { background: '#dcfce7', color: '#166534', border: '1px solid #bbf7d0' },
         });
-        setAddTestCaseDialogOpen(false);
+        setAddTestDialogOpen(false);
         form.reset();
+        refetch();
       } else {
-        toast.error(assignResult.data?.assignFeature.message || 'テストケースの追加に失敗しました', {
-          id: 'assign-error',
+        toast.error(result.data?.createTest.message || 'テストの作成に失敗しました', {
+          id: 'create-error',
           style: { background: '#fee2e2', color: '#991b1b', border: '1px solid #fecaca' },
         });
       }
@@ -274,11 +244,11 @@ export default function FeatureTestCasesPage() {
       <div className="space-y-6">
         <Button variant="ghost" onClick={() => router.push('/features')}>
           <ArrowLeft className="mr-2 h-4 w-4" />
-          テスト一覧に戻る
+          機能一覧に戻る
         </Button>
         <Card>
           <CardContent className="flex items-center justify-center py-12">
-            <p className="text-destructive">無効なテストIDです</p>
+            <p className="text-destructive">無効な機能IDです</p>
           </CardContent>
         </Card>
       </div>
@@ -290,7 +260,7 @@ export default function FeatureTestCasesPage() {
       <div className="space-y-6">
         <Button variant="ghost" onClick={() => router.push('/features')}>
           <ArrowLeft className="mr-2 h-4 w-4" />
-          テスト一覧に戻る
+          機能一覧に戻る
         </Button>
         <Card>
           <CardContent className="flex items-center justify-center py-12">
@@ -306,11 +276,11 @@ export default function FeatureTestCasesPage() {
       <div className="space-y-6">
         <Button variant="ghost" onClick={() => router.push('/features')}>
           <ArrowLeft className="mr-2 h-4 w-4" />
-          テスト一覧に戻る
+          機能一覧に戻る
         </Button>
         <Card>
           <CardContent className="flex items-center justify-center py-12">
-            <p className="text-muted-foreground">テストが見つかりませんでした</p>
+            <p className="text-muted-foreground">機能が見つかりませんでした</p>
           </CardContent>
         </Card>
       </div>
@@ -323,7 +293,7 @@ export default function FeatureTestCasesPage() {
       <div className="flex items-center justify-between">
         <Button variant="ghost" onClick={() => router.push('/features')}>
           <ArrowLeft className="mr-2 h-4 w-4" />
-          テスト一覧に戻る
+          機能一覧に戻る
         </Button>
         <Button onClick={() => router.push(`/features/${id}/edit`)}>
           <Pencil className="mr-2 h-4 w-4" />
@@ -331,7 +301,7 @@ export default function FeatureTestCasesPage() {
         </Button>
       </div>
 
-      {/* テスト詳細カード */}
+      {/* 機能詳細カード */}
       <Card>
         <CardHeader>
           <div className="flex items-start justify-between">
@@ -349,7 +319,7 @@ export default function FeatureTestCasesPage() {
         <CardContent>
           <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
             <div>
-              <p className="text-sm font-medium text-muted-foreground">テストID</p>
+              <p className="text-sm font-medium text-muted-foreground">機能ID</p>
               <p className="text-lg font-semibold">#{feature.id}</p>
             </div>
             <div>
@@ -373,28 +343,26 @@ export default function FeatureTestCasesPage() {
         </CardContent>
       </Card>
 
-      {/* テストケース一覧カード */}
+      {/* テスト一覧カード */}
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle>テストケース一覧</CardTitle>
+              <CardTitle>テスト一覧</CardTitle>
               <CardDescription>
-                {testCases.length > 0
-                  ? `${testCases.length}件のテストケースがこのテストに紐づいています`
-                  : 'このテストに紐づくテストケースはありません'}
+                {tests.length > 0 ? `${tests.length}件のテストがこの機能に紐づいています` : 'この機能に紐づくテストはありません'}
               </CardDescription>
             </div>
-            <Button size="sm" onClick={() => setAddTestCaseDialogOpen(true)}>
+            <Button size="sm" onClick={() => setAddTestDialogOpen(true)}>
               <Plus className="mr-2 h-4 w-4" />
               追加
             </Button>
           </div>
         </CardHeader>
         <CardContent>
-          {testCases.length === 0 ? (
+          {tests.length === 0 ? (
             <div className="flex items-center justify-center py-12 text-muted-foreground">
-              <p>このテストに紐づくテストケースはありません</p>
+              <p>この機能に紐づくテストはありません</p>
             </div>
           ) : (
             <div className="rounded-md border">
@@ -413,10 +381,10 @@ export default function FeatureTestCasesPage() {
                     <TableHead>
                       <button
                         className="flex items-center font-medium hover:text-foreground"
-                        onClick={() => handleSort('title')}
+                        onClick={() => handleSort('name')}
                       >
-                        タイトル
-                        {getSortIcon('title')}
+                        テスト名
+                        {getSortIcon('name')}
                       </button>
                     </TableHead>
                     <TableHead>
@@ -428,7 +396,6 @@ export default function FeatureTestCasesPage() {
                         {getSortIcon('status')}
                       </button>
                     </TableHead>
-                    <TableHead>タグ</TableHead>
                     <TableHead>
                       <button
                         className="flex items-center font-medium hover:text-foreground"
@@ -450,41 +417,28 @@ export default function FeatureTestCasesPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {testCases.map((testCase) => (
+                  {tests.map((test) => (
                     <TableRow
-                      key={testCase.id}
+                      key={test.id}
                       className="cursor-pointer hover:bg-muted/50"
-                      onClick={() => router.push(`/test-cases/${testCase.id}`)}
+                      onClick={() => router.push(`/features/${id}/tests/${test.id}/test-cases`)}
                     >
-                      <TableCell className="font-medium">{testCase.id}</TableCell>
+                      <TableCell className="font-medium">{test.id}</TableCell>
                       <TableCell>
                         <div>
-                          <p className="font-medium">{testCase.title}</p>
-                          {testCase.description && (
-                            <p className="text-sm text-muted-foreground line-clamp-1">{testCase.description}</p>
+                          <p className="font-medium">{test.name}</p>
+                          {test.description && (
+                            <p className="text-sm text-muted-foreground line-clamp-1">{test.description}</p>
                           )}
                         </div>
                       </TableCell>
                       <TableCell>
-                        <Badge variant={getTestCaseStatusBadgeVariant(testCase.status)}>
-                          {getTestCaseStatusLabel(testCase.status)}
+                        <Badge variant={getTestStatusBadgeVariant(test.status)}>
+                          {getTestStatusLabel(test.status)}
                         </Badge>
                       </TableCell>
-                      <TableCell>
-                        <div className="flex flex-wrap gap-1">
-                          {testCase.tags.map((tag) => (
-                            <Badge
-                              key={tag.id}
-                              variant="outline"
-                              style={tag.color ? { borderColor: tag.color, color: tag.color } : undefined}
-                            >
-                              {tag.name}
-                            </Badge>
-                          ))}
-                        </div>
-                      </TableCell>
-                      <TableCell>{testCase.createdBy.name}</TableCell>
-                      <TableCell>{format(new Date(testCase.createdAt), 'yyyy/MM/dd', { locale: ja })}</TableCell>
+                      <TableCell>{test.createdBy.name}</TableCell>
+                      <TableCell>{format(new Date(test.createdAt), 'yyyy/MM/dd', { locale: ja })}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -494,23 +448,23 @@ export default function FeatureTestCasesPage() {
         </CardContent>
       </Card>
 
-      {/* テストケース追加ダイアログ */}
-      <Dialog open={addTestCaseDialogOpen} onOpenChange={setAddTestCaseDialogOpen}>
+      {/* テスト追加ダイアログ */}
+      <Dialog open={addTestDialogOpen} onOpenChange={setAddTestDialogOpen}>
         <DialogContent className="max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>テストケースを作成</DialogTitle>
-            <DialogDescription>新しいテストケースを作成し、このテストに追加します</DialogDescription>
+            <DialogTitle>テストを作成</DialogTitle>
+            <DialogDescription>新しいテストを作成し、この機能に追加します</DialogDescription>
           </DialogHeader>
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(handleAddTestCase)} className="space-y-4">
+            <form onSubmit={form.handleSubmit(handleAddTest)} className="space-y-4">
               <FormField
                 control={form.control}
-                name="title"
+                name="name"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>タイトル</FormLabel>
+                    <FormLabel>テスト名</FormLabel>
                     <FormControl>
-                      <Input placeholder="テストケースのタイトルを入力" {...field} />
+                      <Input placeholder="テスト名を入力" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -524,49 +478,7 @@ export default function FeatureTestCasesPage() {
                   <FormItem>
                     <FormLabel>説明（任意）</FormLabel>
                     <FormControl>
-                      <Textarea placeholder="テストケースの説明を入力" className="min-h-[80px]" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="steps"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>テスト手順</FormLabel>
-                    <FormControl>
-                      <Textarea placeholder="テスト手順を入力" className="min-h-[100px]" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="expectedResult"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>期待結果</FormLabel>
-                    <FormControl>
-                      <Textarea placeholder="期待結果を入力" className="min-h-[80px]" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="actualResult"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>実績結果（任意）</FormLabel>
-                    <FormControl>
-                      <Textarea placeholder="実績結果を入力" className="min-h-[80px]" {...field} />
+                      <Textarea placeholder="テストの説明を入力" className="min-h-[80px]" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -578,16 +490,16 @@ export default function FeatureTestCasesPage() {
                   type="button"
                   variant="outline"
                   onClick={() => {
-                    setAddTestCaseDialogOpen(false);
+                    setAddTestDialogOpen(false);
                     form.reset();
                   }}
-                  disabled={createLoading || assignLoading}
+                  disabled={createLoading}
                 >
                   キャンセル
                 </Button>
-                <Button type="submit" disabled={createLoading || assignLoading}>
-                  {(createLoading || assignLoading) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  作成して追加
+                <Button type="submit" disabled={createLoading}>
+                  {createLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  作成
                 </Button>
               </DialogFooter>
             </form>

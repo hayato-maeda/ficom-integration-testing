@@ -7,6 +7,23 @@ export interface User {
   updatedAt: string;
 }
 
+// テストステータス定数
+export const TestStatus = {
+  /** 下書き */
+  DRAFT: 'DRAFT',
+  /** レビュー中 */
+  IN_REVIEW: 'IN_REVIEW',
+  /** 承認済み */
+  APPROVED: 'APPROVED',
+  /** 却下 */
+  REJECTED: 'REJECTED',
+  /** アーカイブ */
+  ARCHIVED: 'ARCHIVED',
+} as const;
+
+// テストステータスの型
+export type TestStatusType = (typeof TestStatus)[keyof typeof TestStatus];
+
 // テストケースステータス定数
 export const TestCaseStatus = {
   /** 下書き */
@@ -32,9 +49,36 @@ export interface Tag {
   createdAt: string;
 }
 
+// 機能型（前方宣言）
+export interface Feature {
+  id: number;
+  name: string;
+  description?: string;
+  color?: string;
+  status: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// テスト型
+export interface Test {
+  id: number;
+  featureId: number;
+  name: string;
+  description?: string;
+  status: string;
+  createdById: number;
+  createdBy: User;
+  feature?: Feature;
+  createdAt: string;
+  updatedAt: string;
+}
+
 // テストケース型
 export interface TestCase {
   id: number;
+  testId: number;
+  test?: Test;
   title: string;
   description?: string;
   steps: string;
@@ -43,7 +87,6 @@ export interface TestCase {
   status: string;
   createdBy: User;
   tags: Tag[];
-  features?: Feature[];
   createdAt: string;
   updatedAt: string;
 }
@@ -74,8 +117,25 @@ export interface SignupInput {
   name: string;
 }
 
+// テスト作成入力型
+export interface CreateTestInput {
+  featureId: number;
+  name: string;
+  description?: string;
+  status?: string;
+}
+
+// テスト更新入力型
+export interface UpdateTestInput {
+  id: number;
+  name?: string;
+  description?: string;
+  status?: string;
+}
+
 // テストケース作成入力型
 export interface CreateTestCaseInput {
+  testId: number;
   title: string;
   description?: string;
   steps: string;
@@ -122,17 +182,6 @@ export const FeatureStatus = {
 
 // 機能ステータスの型
 export type FeatureStatusType = (typeof FeatureStatus)[keyof typeof FeatureStatus];
-
-// 機能型
-export interface Feature {
-  id: number;
-  name: string;
-  description?: string;
-  color?: string;
-  status: string;
-  createdAt: string;
-  updatedAt: string;
-}
 
 // 機能作成入力型
 export interface CreateFeatureInput {

@@ -43,6 +43,7 @@ export interface TestCase {
   status: string;
   createdBy: User;
   tags: Tag[];
+  features?: Feature[];
   createdAt: string;
   updatedAt: string;
 }

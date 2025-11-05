@@ -16,6 +16,10 @@ import {
 import { cn } from '@/lib/utils';
 import { Label } from '@/components/ui/label';
 
+/**
+ * フォームコンポーネント
+ * React Hook Formのコンテキストプロバイダー
+ */
 const Form = FormProvider;
 
 type FormFieldContextValue<
@@ -27,6 +31,11 @@ type FormFieldContextValue<
 
 const FormFieldContext = React.createContext<FormFieldContextValue>({} as FormFieldContextValue);
 
+/**
+ * フォームフィールドコンポーネント
+ * React Hook Formのコントローラーをラップし、フィールド名のコンテキストを提供します
+ * @param props - React Hook Form Controllerの全てのprops
+ */
 const FormField = <
   TFieldValues extends FieldValues = FieldValues,
   TName extends FieldPath<TFieldValues> = FieldPath<TFieldValues>,
@@ -69,6 +78,12 @@ type FormItemContextValue = {
 
 const FormItemContext = React.createContext<FormItemContextValue>({} as FormItemContextValue);
 
+/**
+ * フォームアイテムコンポーネント
+ * フォームフィールドのコンテナ。ラベル、入力、説明、エラーメッセージをグループ化します
+ * @param props - HTMLdiv要素の全てのprops
+ * @param props.className - 追加のCSSクラス名
+ */
 function FormItem({ className, ...props }: React.ComponentProps<'div'>) {
   const id = React.useId();
 
@@ -79,6 +94,12 @@ function FormItem({ className, ...props }: React.ComponentProps<'div'>) {
   );
 }
 
+/**
+ * フォームラベルコンポーネント
+ * フォームフィールドのラベル。エラー状態に応じてスタイルが変化します
+ * @param props - Radix UI Label.Rootの全てのprops
+ * @param props.className - 追加のCSSクラス名
+ */
 function FormLabel({ className, ...props }: React.ComponentProps<typeof LabelPrimitive.Root>) {
   const { error, formItemId } = useFormField();
 
@@ -93,6 +114,11 @@ function FormLabel({ className, ...props }: React.ComponentProps<typeof LabelPri
   );
 }
 
+/**
+ * フォームコントロールコンポーネント
+ * フォーム入力要素をラップし、適切なアクセシビリティ属性を設定します
+ * @param props - Radix UI Slotの全てのprops
+ */
 function FormControl({ ...props }: React.ComponentProps<typeof Slot>) {
   const { error, formItemId, formDescriptionId, formMessageId } = useFormField();
 
@@ -107,6 +133,12 @@ function FormControl({ ...props }: React.ComponentProps<typeof Slot>) {
   );
 }
 
+/**
+ * フォーム説明コンポーネント
+ * フォームフィールドの補足説明やヒントを表示します
+ * @param props - HTMLp要素の全てのprops
+ * @param props.className - 追加のCSSクラス名
+ */
 function FormDescription({ className, ...props }: React.ComponentProps<'p'>) {
   const { formDescriptionId } = useFormField();
 
@@ -120,6 +152,12 @@ function FormDescription({ className, ...props }: React.ComponentProps<'p'>) {
   );
 }
 
+/**
+ * フォームメッセージコンポーネント
+ * バリデーションエラーメッセージを表示します
+ * @param props - HTMLp要素の全てのprops
+ * @param props.className - 追加のCSSクラス名
+ */
 function FormMessage({ className, ...props }: React.ComponentProps<'p'>) {
   const { error, formMessageId } = useFormField();
   const body = error ? (error?.message ?? '') : props.children;

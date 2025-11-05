@@ -4,6 +4,12 @@ import { CircleCheckIcon, InfoIcon, Loader2Icon, OctagonXIcon, TriangleAlertIcon
 import { useTheme } from 'next-themes';
 import { Toaster as Sonner, type ToasterProps } from 'sonner';
 
+/**
+ * トースターコンポーネント
+ * Sonnerライブラリを使用したトースト通知を表示します
+ * テーマに応じたスタイルとカスタムアイコンが設定されています
+ * @param props - Sonner Toasterの全てのprops
+ */
 const Toaster = ({ ...props }: ToasterProps) => {
   const { theme = 'system' } = useTheme();
 

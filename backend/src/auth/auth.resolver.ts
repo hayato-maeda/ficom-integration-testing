@@ -7,7 +7,6 @@ import type { SessionData } from './config/session.config';
 import { CurrentUser } from './decorators/current-user.decorator';
 import { Session } from './decorators/session.decorator';
 import { AuthMutationResponse } from './dto/auth-mutation.response';
-import { MeResponse } from './dto/auth.response';
 import { LoginInput } from './dto/login.input';
 import { SignUpInput } from './dto/signup.input';
 import { GqlSessionGuard } from './guards/gql-session.guard';
@@ -38,17 +37,14 @@ export class AuthResolver {
     if (result.isValid && result.data) {
       session.accessToken = result.data.accessToken;
       session.refreshToken = result.data.refreshToken;
-      session.accessTokenExpiresAt = Date.now() + 60 * 60 * 1000; // 1時間後
       await session.save();
 
       // クライアントにはトークンを返さない（セッションCookieで管理）
-      // ただし、有効期限はクライアント側で事前チェックできるように返す
       return {
         isValid: result.isValid,
         message: result.message,
         data: {
           user: result.data.user,
-          accessTokenExpiresAt: session.accessTokenExpiresAt,
         },
       };
     }
@@ -79,17 +75,14 @@ export class AuthResolver {
     if (result.isValid && result.data) {
       session.accessToken = result.data.accessToken;
       session.refreshToken = result.data.refreshToken;
-      session.accessTokenExpiresAt = Date.now() + 60 * 60 * 1000; // 1時間後
       await session.save();
 
       // クライアントにはトークンを返さない（セッションCookieで管理）
-      // ただし、有効期限はクライアント側で事前チェックできるように返す
       return {
         isValid: result.isValid,
         message: result.message,
         data: {
           user: result.data.user,
-          accessTokenExpiresAt: session.accessTokenExpiresAt,
         },
       };
     }
@@ -128,17 +121,14 @@ export class AuthResolver {
     if (result.isValid && result.data) {
       session.accessToken = result.data.accessToken;
       session.refreshToken = result.data.refreshToken;
-      session.accessTokenExpiresAt = Date.now() + 60 * 60 * 1000; // 1時間後
       await session.save();
 
       // クライアントにはトークンを返さない（セッションCookieで管理）
-      // ただし、有効期限はクライアント側で事前チェックできるように返す
       return {
         isValid: result.isValid,
         message: result.message,
         data: {
           user: result.data.user,
-          accessTokenExpiresAt: session.accessTokenExpiresAt,
         },
       };
     }
@@ -171,17 +161,13 @@ export class AuthResolver {
 
   /**
    * 現在のユーザー取得クエリ
-   * セッションから現在ログイン中のユーザー情報とトークン有効期限を取得します。
+   * セッションから現在ログイン中のユーザー情報を取得します。
    * @param user - 認証済みユーザー（セッションから自動注入）
-   * @param session - セッション
-   * @returns ユーザー情報とトークン有効期限
+   * @returns ユーザー情報
    */
-  @Query(() => MeResponse)
+  @Query(() => User)
   @UseGuards(GqlSessionGuard)
-  async me(@CurrentUser() user: User, @Session() session: IronSession<SessionData>): Promise<MeResponse> {
-    return {
-      user,
-      accessTokenExpiresAt: session.accessTokenExpiresAt || Date.now() + 60 * 60 * 1000,
-    };
+  async me(@CurrentUser() user: User): Promise<User> {
+    return user;
   }
 }

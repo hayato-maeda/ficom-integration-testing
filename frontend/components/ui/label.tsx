@@ -5,6 +5,12 @@ import * as LabelPrimitive from '@radix-ui/react-label';
 
 import { cn } from '@/lib/utils';
 
+/**
+ * ラベルコンポーネント
+ * フォーム要素に関連付けられるラベルテキスト
+ * @param props - Radix UI Label.Rootの全てのprops
+ * @param props.className - 追加のCSSクラス名
+ */
 function Label({ className, ...props }: React.ComponentProps<typeof LabelPrimitive.Root>) {
   return (
     <LabelPrimitive.Root

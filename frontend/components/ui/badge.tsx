@@ -22,6 +22,14 @@ const badgeVariants = cva(
   },
 );
 
+/**
+ * バッジコンポーネント
+ * ステータスやカテゴリーなどを視覚的に表示する小さなラベル
+ * @param props - HTMLスパン要素の全てのprops
+ * @param props.className - 追加のCSSクラス名
+ * @param props.variant - バッジのバリアント ('default' | 'secondary' | 'destructive' | 'outline')
+ * @param props.asChild - 子要素としてレンダリングするかどうか
+ */
 function Badge({
   className,
   variant,

@@ -9,8 +9,6 @@ export interface SessionData {
   accessToken?: string;
   /** リフレッシュトークン */
   refreshToken?: string;
-  /** アクセストークンの有効期限（UNIX timestamp） */
-  accessTokenExpiresAt?: number;
 }
 
 /**

@@ -75,7 +75,10 @@ const authRetryLink = new ApolloLink((operation, forward) => {
             (err: GraphQLFormattedError) => err.extensions?.code === 'UNAUTHENTICATED',
           );
 
-          if (hasAuthError && attemptNumber === 1) {
+          // MEクエリの場合は自動リトライをスキップ（認証確認用のクエリのため）
+          const isNotMeQuery = operation.operationName !== 'Me';
+
+          if (hasAuthError && attemptNumber === 1 && isNotMeQuery) {
             // 初回の認証エラー時: トークンをリフレッシュしてリトライ
             try {
               const refreshSuccess = await refreshAuthToken();
@@ -89,23 +92,10 @@ const authRetryLink = new ApolloLink((operation, forward) => {
                 handleResponse(2); // 2回目の試行
                 return;
               } else {
-                // リフレッシュ失敗: ログインページにリダイレクト
-                console.error('Token refresh failed, redirecting to login...');
-                if (typeof window !== 'undefined') {
-                  window.location.href = '/login';
-                }
+                console.log('Token refresh failed, letting AuthGuard handle redirect');
               }
             } catch (error) {
               console.error('Error during token refresh:', error);
-              if (typeof window !== 'undefined') {
-                window.location.href = '/login';
-              }
-            }
-          } else if (hasAuthError && attemptNumber > 1) {
-            // 2回目以降の認証エラー: ログインページにリダイレクト
-            console.error('Authentication failed after retry, redirecting to login...');
-            if (typeof window !== 'undefined') {
-              window.location.href = '/login';
             }
           }
 

@@ -6,18 +6,41 @@ import { CheckIcon, ChevronRightIcon, CircleIcon } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
 
+/**
+ * DropdownMenuコンポーネントのルート要素
+ * ドロップダウンメニューのコンテキストと状態管理を提供します
+ * @param props - Radix UI DropdownMenu.Rootの全てのprops
+ */
 function DropdownMenu({ ...props }: React.ComponentProps<typeof DropdownMenuPrimitive.Root>) {
   return <DropdownMenuPrimitive.Root data-slot="dropdown-menu" {...props} />;
 }
 
+/**
+ * DropdownMenuコンテンツをレンダリングするためのポータル
+ * メニューコンテンツをDOMツリーの別の場所にレンダリングします
+ * @param props - Radix UI DropdownMenu.Portalの全てのprops
+ */
 function DropdownMenuPortal({ ...props }: React.ComponentProps<typeof DropdownMenuPrimitive.Portal>) {
   return <DropdownMenuPrimitive.Portal data-slot="dropdown-menu-portal" {...props} />;
 }
 
+/**
+ * ドロップダウンメニューを開閉するトリガー要素
+ * クリックやキーボード操作でメニューの表示/非表示を切り替えます
+ * @param props - Radix UI DropdownMenu.Triggerの全てのprops
+ */
 function DropdownMenuTrigger({ ...props }: React.ComponentProps<typeof DropdownMenuPrimitive.Trigger>) {
   return <DropdownMenuPrimitive.Trigger data-slot="dropdown-menu-trigger" {...props} />;
 }
 
+/**
+ * ドロップダウンメニューのコンテンツコンテナ
+ * メニューアイテムを含むポップオーバーコンテンツをレンダリングします
+ * アニメーション、影、境界線などのスタイルが適用されています
+ * @param props - Radix UI DropdownMenu.Contentの全てのprops
+ * @param props.className - 追加のCSSクラス名
+ * @param props.sideOffset - トリガーからのオフセット距離 (デフォルト: 4)
+ */
 function DropdownMenuContent({
   className,
   sideOffset = 4,
@@ -38,10 +61,23 @@ function DropdownMenuContent({
   );
 }
 
+/**
+ * メニューアイテムをグループ化するコンテナ
+ * 関連するメニューアイテムをセマンティックにグループ化します
+ * @param props - Radix UI DropdownMenu.Groupの全てのprops
+ */
 function DropdownMenuGroup({ ...props }: React.ComponentProps<typeof DropdownMenuPrimitive.Group>) {
   return <DropdownMenuPrimitive.Group data-slot="dropdown-menu-group" {...props} />;
 }
 
+/**
+ * ドロップダウンメニューの個別アイテム
+ * クリック可能なメニューオプションを表します
+ * @param props - Radix UI DropdownMenu.Itemの全てのprops
+ * @param props.className - 追加のCSSクラス名
+ * @param props.inset - 左側にインデントを追加するかどうか
+ * @param props.variant - アイテムのバリアント ('default' | 'destructive')
+ */
 function DropdownMenuItem({
   className,
   inset,
@@ -65,6 +101,14 @@ function DropdownMenuItem({
   );
 }
 
+/**
+ * チェックボックス機能を持つメニューアイテム
+ * オン/オフの状態を切り替えることができるメニューオプションです
+ * @param props - Radix UI DropdownMenu.CheckboxItemの全てのprops
+ * @param props.className - 追加のCSSクラス名
+ * @param props.children - 子要素
+ * @param props.checked - チェック状態
+ */
 function DropdownMenuCheckboxItem({
   className,
   children,
@@ -91,10 +135,22 @@ function DropdownMenuCheckboxItem({
   );
 }
 
+/**
+ * ラジオボタンアイテムをグループ化するコンテナ
+ * 相互排他的な選択肢をグループ化します
+ * @param props - Radix UI DropdownMenu.RadioGroupの全てのprops
+ */
 function DropdownMenuRadioGroup({ ...props }: React.ComponentProps<typeof DropdownMenuPrimitive.RadioGroup>) {
   return <DropdownMenuPrimitive.RadioGroup data-slot="dropdown-menu-radio-group" {...props} />;
 }
 
+/**
+ * ラジオボタン機能を持つメニューアイテム
+ * グループ内で1つのみ選択可能なメニューオプションです
+ * @param props - Radix UI DropdownMenu.RadioItemの全てのprops
+ * @param props.className - 追加のCSSクラス名
+ * @param props.children - 子要素
+ */
 function DropdownMenuRadioItem({
   className,
   children,
@@ -119,6 +175,13 @@ function DropdownMenuRadioItem({
   );
 }
 
+/**
+ * メニューグループのラベル
+ * メニューアイテムのグループに見出しを提供します
+ * @param props - Radix UI DropdownMenu.Labelの全てのprops
+ * @param props.className - 追加のCSSクラス名
+ * @param props.inset - 左側にインデントを追加するかどうか
+ */
 function DropdownMenuLabel({
   className,
   inset,
@@ -136,6 +199,12 @@ function DropdownMenuLabel({
   );
 }
 
+/**
+ * メニューアイテム間の視覚的な区切り線
+ * メニュー内のセクションを視覚的に分離します
+ * @param props - Radix UI DropdownMenu.Separatorの全てのprops
+ * @param props.className - 追加のCSSクラス名
+ */
 function DropdownMenuSeparator({ className, ...props }: React.ComponentProps<typeof DropdownMenuPrimitive.Separator>) {
   return (
     <DropdownMenuPrimitive.Separator
@@ -146,6 +215,12 @@ function DropdownMenuSeparator({ className, ...props }: React.ComponentProps<typ
   );
 }
 
+/**
+ * メニューアイテムのキーボードショートカット表示
+ * メニューアイテムの右側にショートカットキーを表示します
+ * @param props - HTMLスパン要素の全てのprops
+ * @param props.className - 追加のCSSクラス名
+ */
 function DropdownMenuShortcut({ className, ...props }: React.ComponentProps<'span'>) {
   return (
     <span
@@ -156,10 +231,23 @@ function DropdownMenuShortcut({ className, ...props }: React.ComponentProps<'spa
   );
 }
 
+/**
+ * サブメニューのルートコンポーネント
+ * ネストされたメニュー構造を作成するためのコンテキストを提供します
+ * @param props - Radix UI DropdownMenu.Subの全てのprops
+ */
 function DropdownMenuSub({ ...props }: React.ComponentProps<typeof DropdownMenuPrimitive.Sub>) {
   return <DropdownMenuPrimitive.Sub data-slot="dropdown-menu-sub" {...props} />;
 }
 
+/**
+ * サブメニューを開くトリガーアイテム
+ * ホバーまたはクリックでサブメニューを表示します
+ * @param props - Radix UI DropdownMenu.SubTriggerの全てのprops
+ * @param props.className - 追加のCSSクラス名
+ * @param props.inset - 左側にインデントを追加するかどうか
+ * @param props.children - 子要素
+ */
 function DropdownMenuSubTrigger({
   className,
   inset,
@@ -184,6 +272,12 @@ function DropdownMenuSubTrigger({
   );
 }
 
+/**
+ * サブメニューのコンテンツコンテナ
+ * サブメニューアイテムを含むポップオーバーコンテンツをレンダリングします
+ * @param props - Radix UI DropdownMenu.SubContentの全てのprops
+ * @param props.className - 追加のCSSクラス名
+ */
 function DropdownMenuSubContent({
   className,
   ...props

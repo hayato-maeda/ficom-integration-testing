@@ -13,25 +13,6 @@ export class AuthResponse {
   /** ユーザー情報 */
   @Field(() => User)
   user: User;
-
-  /** アクセストークンの有効期限（UNIX timestamp ミリ秒） */
-  @Field(() => Number)
-  accessTokenExpiresAt: number;
-}
-
-/**
- * Meクエリレスポンス
- * 現在のユーザー情報とトークン有効期限を返す
- */
-@ObjectType()
-export class MeResponse {
-  /** ユーザー情報 */
-  @Field(() => User)
-  user: User;
-
-  /** アクセストークンの有効期限（UNIX timestamp ミリ秒） */
-  @Field(() => Number)
-  accessTokenExpiresAt: number;
 }
 
 /**

@@ -1,16 +1,37 @@
 'use client';
 
-import { useQuery } from '@apollo/client/react';
+import { useMutation, useQuery } from '@apollo/client/react';
 import { useParams, useRouter } from 'next/navigation';
+import { useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { GET_FEATURE_QUERY, GET_TEST_CASES_BY_FEATURE_QUERY } from '@/lib/graphql/features';
-import { Feature, TestCase, FeatureStatus, TestCaseStatus } from '@/types';
-import { ArrowLeft, Loader2, Pencil } from 'lucide-react';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import {
+  GET_FEATURE_QUERY,
+  GET_TEST_CASES_BY_FEATURE_QUERY,
+  ASSIGN_FEATURE_MUTATION,
+} from '@/lib/graphql/features';
+import { CREATE_TEST_CASE_MUTATION } from '@/lib/graphql/test-cases';
+import { Feature, TestCase, FeatureStatus, TestCaseStatus, MutationResponse } from '@/types';
+import { ArrowLeft, Loader2, Pencil, Plus } from 'lucide-react';
 import { format } from 'date-fns';
 import { ja } from 'date-fns/locale/ja';
+import { toast } from 'sonner';
 
 /**
  * 機能ステータスバッジのスタイルを取得
@@ -99,6 +120,27 @@ export default function FeatureTestCasesPage() {
   const params = useParams();
   const router = useRouter();
   const id = parseInt(params.id as string, 10);
+  const [addTestCaseDialogOpen, setAddTestCaseDialogOpen] = useState(false);
+
+  // テストケース作成フォームのスキーマ
+  const testCaseFormSchema = z.object({
+    title: z.string().min(1, 'タイトルを入力してください'),
+    description: z.string().optional(),
+    steps: z.string().min(1, 'テスト手順を入力してください'),
+    expectedResult: z.string().min(1, '期待結果を入力してください'),
+    actualResult: z.string().optional(),
+  });
+
+  const form = useForm<z.infer<typeof testCaseFormSchema>>({
+    resolver: zodResolver(testCaseFormSchema),
+    defaultValues: {
+      title: '',
+      description: '',
+      steps: '',
+      expectedResult: '',
+      actualResult: '',
+    },
+  });
 
   const { data: featureData, loading: featureLoading } = useQuery<{ feature: Feature | null }>(
     GET_FEATURE_QUERY,
@@ -115,9 +157,76 @@ export default function FeatureTestCasesPage() {
     skip: isNaN(id),
   });
 
+  const [createTestCase, { loading: createLoading }] = useMutation<{
+    createTestCase: MutationResponse<TestCase>;
+  }>(CREATE_TEST_CASE_MUTATION);
+
+  const [assignFeature, { loading: assignLoading }] = useMutation<{
+    assignFeature: MutationResponse<null>;
+  }>(ASSIGN_FEATURE_MUTATION, {
+    refetchQueries: [{ query: GET_TEST_CASES_BY_FEATURE_QUERY, variables: { featureId: id } }],
+  });
+
   const feature = featureData?.feature;
   const testCases = testCasesData?.testCasesByFeature || [];
   const loading = featureLoading || testCasesLoading;
+
+  const handleAddTestCase = async (values: z.infer<typeof testCaseFormSchema>) => {
+    try {
+      // テストケースを作成
+      const createResult = await createTestCase({
+        variables: {
+          title: values.title,
+          description: values.description,
+          steps: values.steps,
+          expectedResult: values.expectedResult,
+          actualResult: values.actualResult,
+        },
+      });
+
+      if (!createResult.data?.createTestCase.isValid || !createResult.data?.createTestCase.data) {
+        toast.error(
+          createResult.data?.createTestCase.message || 'テストケースの作成に失敗しました',
+          {
+            id: 'create-error',
+            style: { background: '#fee2e2', color: '#991b1b', border: '1px solid #fecaca' },
+          }
+        );
+        return;
+      }
+
+      // 作成したテストケースを機能に割り当て
+      const testCaseId = createResult.data.createTestCase.data.id;
+      const assignResult = await assignFeature({
+        variables: {
+          testCaseId,
+          featureId: id,
+        },
+      });
+
+      if (assignResult.data?.assignFeature.isValid) {
+        toast.success('テストケースを作成し、機能に追加しました', {
+          id: 'create-assign-success',
+          style: { background: '#dcfce7', color: '#166534', border: '1px solid #bbf7d0' },
+        });
+        setAddTestCaseDialogOpen(false);
+        form.reset();
+      } else {
+        toast.error(
+          assignResult.data?.assignFeature.message || 'テストケースの追加に失敗しました',
+          {
+            id: 'assign-error',
+            style: { background: '#fee2e2', color: '#991b1b', border: '1px solid #fecaca' },
+          }
+        );
+      }
+    } catch (_error) {
+      toast.error('エラーが発生しました', {
+        id: 'error',
+        style: { background: '#fee2e2', color: '#991b1b', border: '1px solid #fecaca' },
+      });
+    }
+  };
 
   if (isNaN(id)) {
     return (
@@ -233,12 +342,20 @@ export default function FeatureTestCasesPage() {
       {/* テストケース一覧カード */}
       <Card>
         <CardHeader>
-          <CardTitle>テストケース一覧</CardTitle>
-          <CardDescription>
-            {testCases.length > 0
-              ? `${testCases.length}件のテストケースがこの機能に紐づいています`
-              : 'この機能に紐づくテストケースはありません'}
-          </CardDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle>テストケース一覧</CardTitle>
+              <CardDescription>
+                {testCases.length > 0
+                  ? `${testCases.length}件のテストケースがこの機能に紐づいています`
+                  : 'この機能に紐づくテストケースはありません'}
+              </CardDescription>
+            </div>
+            <Button size="sm" onClick={() => setAddTestCaseDialogOpen(true)}>
+              <Plus className="mr-2 h-4 w-4" />
+              テストケースを追加
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
           {testCases.length === 0 ? (
@@ -306,6 +423,125 @@ export default function FeatureTestCasesPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* テストケース追加ダイアログ */}
+      <Dialog open={addTestCaseDialogOpen} onOpenChange={setAddTestCaseDialogOpen}>
+        <DialogContent className="max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>テストケースを作成</DialogTitle>
+            <DialogDescription>新しいテストケースを作成し、この機能に追加します</DialogDescription>
+          </DialogHeader>
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(handleAddTestCase)} className="space-y-4">
+              <FormField
+                control={form.control}
+                name="title"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>タイトル</FormLabel>
+                    <FormControl>
+                      <Input placeholder="テストケースのタイトルを入力" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="description"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>説明（任意）</FormLabel>
+                    <FormControl>
+                      <Textarea
+                        placeholder="テストケースの説明を入力"
+                        className="min-h-[80px]"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="steps"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>テスト手順</FormLabel>
+                    <FormControl>
+                      <Textarea
+                        placeholder="テスト手順を入力"
+                        className="min-h-[100px]"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="expectedResult"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>期待結果</FormLabel>
+                    <FormControl>
+                      <Textarea
+                        placeholder="期待結果を入力"
+                        className="min-h-[80px]"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="actualResult"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>実績結果（任意）</FormLabel>
+                    <FormControl>
+                      <Textarea
+                        placeholder="実績結果を入力"
+                        className="min-h-[80px]"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <DialogFooter>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setAddTestCaseDialogOpen(false);
+                    form.reset();
+                  }}
+                  disabled={createLoading || assignLoading}
+                >
+                  キャンセル
+                </Button>
+                <Button type="submit" disabled={createLoading || assignLoading}>
+                  {(createLoading || assignLoading) && (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  )}
+                  作成して追加
+                </Button>
+              </DialogFooter>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

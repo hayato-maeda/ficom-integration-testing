@@ -13,14 +13,14 @@ interface DashboardSidebarProps {
 
 const navigation = [
   {
-    name: 'テストケース',
-    href: '/test-cases',
-    icon: ClipboardList,
-  },
-  {
     name: '機能',
     href: '/features',
     icon: Boxes,
+  },
+  {
+    name: 'テストケース',
+    href: '/test-cases',
+    icon: ClipboardList,
   },
   {
     name: 'タグ',
@@ -61,8 +61,7 @@ export function DashboardSidebar({ open = true, onClose }: DashboardSidebarProps
       >
         <div className="flex h-full flex-col">
           {/* モバイル用閉じるボタン */}
-          <div className="flex h-16 items-center justify-between px-4 md:hidden">
-            <span className="text-lg font-semibold">メニュー</span>
+          <div className="flex h-16 items-center justify-end px-4 md:hidden">
             <Button variant="ghost" size="icon" onClick={onClose} aria-label="メニューを閉じる">
               <X className="h-5 w-5" />
             </Button>

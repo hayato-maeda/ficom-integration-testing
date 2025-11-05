@@ -27,7 +27,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { GET_FEATURES_QUERY, DELETE_FEATURE_MUTATION } from '@/lib/graphql/features';
 import { Feature, FeatureStatus, MutationResponse } from '@/types';
-import { Plus, Loader2, Search, X, Trash2, Pencil } from 'lucide-react';
+import { Plus, Loader2, Search, X, Trash2, Pencil, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 import { format } from 'date-fns';
 import { ja } from 'date-fns/locale/ja';
 import { toast } from 'sonner';
@@ -84,6 +84,10 @@ export default function FeaturesPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
 
+  // ソート状態（初期値はIDの昇順）
+  const [sortColumn, setSortColumn] = useState<'id' | 'name' | 'status' | 'createdAt'>('id');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+
   // 削除ダイアログ状態
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [featureToDelete, setFeatureToDelete] = useState<Feature | null>(null);
@@ -101,11 +105,36 @@ export default function FeaturesPage() {
     setStatusFilter('all');
   };
 
-  // フィルタリングされた機能を取得
-  const getFilteredFeatures = () => {
+  // ソートを変更
+  const handleSort = (column: 'id' | 'name' | 'status' | 'createdAt') => {
+    if (sortColumn === column) {
+      // 同じカラムをクリックした場合は方向を反転
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      // 別のカラムをクリックした場合は昇順で開始
+      setSortColumn(column);
+      setSortDirection('asc');
+    }
+  };
+
+  // ソートアイコンを取得
+  const getSortIcon = (column: 'id' | 'name' | 'status' | 'createdAt') => {
+    if (sortColumn !== column) {
+      return <ArrowUpDown className="ml-2 h-4 w-4" />;
+    }
+    return sortDirection === 'asc' ? (
+      <ArrowUp className="ml-2 h-4 w-4" />
+    ) : (
+      <ArrowDown className="ml-2 h-4 w-4" />
+    );
+  };
+
+  // フィルタリングとソートされた機能を取得
+  const getFilteredAndSortedFeatures = () => {
     if (!data?.features) return [];
 
-    return data.features.filter((feature) => {
+    // フィルタリング
+    const filtered = data.features.filter((feature) => {
       // 検索クエリでフィルタリング（機能名と説明）
       const matchesSearch =
         !searchQuery ||
@@ -117,9 +146,33 @@ export default function FeaturesPage() {
 
       return matchesSearch && matchesStatus;
     });
+
+    // ソート
+    filtered.sort((a, b) => {
+      let compareValue = 0;
+
+      switch (sortColumn) {
+        case 'id':
+          compareValue = a.id - b.id;
+          break;
+        case 'name':
+          compareValue = a.name.localeCompare(b.name, 'ja');
+          break;
+        case 'status':
+          compareValue = a.status.localeCompare(b.status);
+          break;
+        case 'createdAt':
+          compareValue = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+          break;
+      }
+
+      return sortDirection === 'asc' ? compareValue : -compareValue;
+    });
+
+    return filtered;
   };
 
-  const filteredFeatures = getFilteredFeatures();
+  const filteredFeatures = getFilteredAndSortedFeatures();
 
   // 削除確認ダイアログを開く
   const openDeleteDialog = (feature: Feature, e: React.MouseEvent) => {
@@ -263,12 +316,44 @@ export default function FeaturesPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="w-[50px]">ID</TableHead>
-                    <TableHead>機能名</TableHead>
+                    <TableHead className="w-[50px]">
+                      <button
+                        className="flex items-center font-medium hover:text-foreground"
+                        onClick={() => handleSort('id')}
+                      >
+                        ID
+                        {getSortIcon('id')}
+                      </button>
+                    </TableHead>
+                    <TableHead>
+                      <button
+                        className="flex items-center font-medium hover:text-foreground"
+                        onClick={() => handleSort('name')}
+                      >
+                        機能名
+                        {getSortIcon('name')}
+                      </button>
+                    </TableHead>
                     <TableHead>説明</TableHead>
-                    <TableHead>ステータス</TableHead>
+                    <TableHead>
+                      <button
+                        className="flex items-center font-medium hover:text-foreground"
+                        onClick={() => handleSort('status')}
+                      >
+                        ステータス
+                        {getSortIcon('status')}
+                      </button>
+                    </TableHead>
                     <TableHead>色</TableHead>
-                    <TableHead>作成日</TableHead>
+                    <TableHead>
+                      <button
+                        className="flex items-center font-medium hover:text-foreground"
+                        onClick={() => handleSort('createdAt')}
+                      >
+                        作成日
+                        {getSortIcon('createdAt')}
+                      </button>
+                    </TableHead>
                     <TableHead className="w-[120px]">操作</TableHead>
                   </TableRow>
                 </TableHeader>

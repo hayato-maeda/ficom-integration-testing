@@ -17,7 +17,7 @@ import {
 } from '@/components/ui/select';
 import { GET_TEST_CASES_QUERY } from '@/lib/graphql/test-cases';
 import { TestCase, TestCaseStatus } from '@/types';
-import { Plus, Loader2, Search, X } from 'lucide-react';
+import { Plus, Loader2, Search, X, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 import { format } from 'date-fns';
 import { ja } from 'date-fns/locale/ja';
 
@@ -73,17 +73,46 @@ export default function TestCasesPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
 
+  // ソート状態（初期値はIDの昇順）
+  const [sortColumn, setSortColumn] = useState<'id' | 'title' | 'status' | 'createdBy' | 'createdAt'>('id');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+
   // フィルターをクリア
   const clearFilters = () => {
     setSearchQuery('');
     setStatusFilter('all');
   };
 
-  // フィルタリングされたテストケースを取得
-  const getFilteredTestCases = () => {
+  // ソートを変更
+  const handleSort = (column: 'id' | 'title' | 'status' | 'createdBy' | 'createdAt') => {
+    if (sortColumn === column) {
+      // 同じカラムをクリックした場合は方向を反転
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      // 別のカラムをクリックした場合は昇順で開始
+      setSortColumn(column);
+      setSortDirection('asc');
+    }
+  };
+
+  // ソートアイコンを取得
+  const getSortIcon = (column: 'id' | 'title' | 'status' | 'createdBy' | 'createdAt') => {
+    if (sortColumn !== column) {
+      return <ArrowUpDown className="ml-2 h-4 w-4" />;
+    }
+    return sortDirection === 'asc' ? (
+      <ArrowUp className="ml-2 h-4 w-4" />
+    ) : (
+      <ArrowDown className="ml-2 h-4 w-4" />
+    );
+  };
+
+  // フィルタリングとソートされたテストケースを取得
+  const getFilteredAndSortedTestCases = () => {
     if (!data?.testCases) return [];
 
-    return data.testCases.filter((testCase) => {
+    // フィルタリング
+    const filtered = data.testCases.filter((testCase) => {
       // 検索クエリでフィルタリング（タイトルと説明）
       const matchesSearch =
         !searchQuery ||
@@ -95,9 +124,36 @@ export default function TestCasesPage() {
 
       return matchesSearch && matchesStatus;
     });
+
+    // ソート
+    filtered.sort((a, b) => {
+      let compareValue = 0;
+
+      switch (sortColumn) {
+        case 'id':
+          compareValue = a.id - b.id;
+          break;
+        case 'title':
+          compareValue = a.title.localeCompare(b.title, 'ja');
+          break;
+        case 'status':
+          compareValue = a.status.localeCompare(b.status);
+          break;
+        case 'createdBy':
+          compareValue = a.createdBy.name.localeCompare(b.createdBy.name, 'ja');
+          break;
+        case 'createdAt':
+          compareValue = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+          break;
+      }
+
+      return sortDirection === 'asc' ? compareValue : -compareValue;
+    });
+
+    return filtered;
   };
 
-  const filteredTestCases = getFilteredTestCases();
+  const filteredTestCases = getFilteredAndSortedTestCases();
 
   return (
     <div className="space-y-6">
@@ -207,12 +263,52 @@ export default function TestCasesPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="w-[50px]">ID</TableHead>
-                    <TableHead>タイトル</TableHead>
-                    <TableHead>ステータス</TableHead>
+                    <TableHead className="w-[50px]">
+                      <button
+                        className="flex items-center font-medium hover:text-foreground"
+                        onClick={() => handleSort('id')}
+                      >
+                        ID
+                        {getSortIcon('id')}
+                      </button>
+                    </TableHead>
+                    <TableHead>
+                      <button
+                        className="flex items-center font-medium hover:text-foreground"
+                        onClick={() => handleSort('title')}
+                      >
+                        タイトル
+                        {getSortIcon('title')}
+                      </button>
+                    </TableHead>
+                    <TableHead>
+                      <button
+                        className="flex items-center font-medium hover:text-foreground"
+                        onClick={() => handleSort('status')}
+                      >
+                        ステータス
+                        {getSortIcon('status')}
+                      </button>
+                    </TableHead>
                     <TableHead>タグ</TableHead>
-                    <TableHead>作成者</TableHead>
-                    <TableHead>作成日</TableHead>
+                    <TableHead>
+                      <button
+                        className="flex items-center font-medium hover:text-foreground"
+                        onClick={() => handleSort('createdBy')}
+                      >
+                        作成者
+                        {getSortIcon('createdBy')}
+                      </button>
+                    </TableHead>
+                    <TableHead>
+                      <button
+                        className="flex items-center font-medium hover:text-foreground"
+                        onClick={() => handleSort('createdAt')}
+                      >
+                        作成日
+                        {getSortIcon('createdAt')}
+                      </button>
+                    </TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>

@@ -4,64 +4,83 @@ export async function createFiles(prisma: PrismaClient, testCases: TestCase[], u
   console.log('Creating files...');
 
   await Promise.all([
+    // Files for test case 1 (Login test)
     prisma.file.create({
       data: {
-        filename: 'login-screenshot.png',
-        path: '/uploads/test-cases/login-screenshot.png',
-        mimeType: 'image/png',
+        filename: 'login-screen.png',
+        url: 'https://example.com/uploads/login-screen.png',
+        mimetype: 'image/png',
         size: 245678,
+        testCaseFeatureId: testCases[0].testFeatureId,
+        testCaseTestId: testCases[0].testId,
         testCaseId: testCases[0].id,
-        uploadedBy: users[0].id,
+        uploaderId: users[0].id,
+      },
+    }),
+    prisma.file.create({
+      data: {
+        filename: 'dashboard-after-login.png',
+        url: 'https://example.com/uploads/dashboard-after-login.png',
+        mimetype: 'image/png',
+        size: 389012,
+        testCaseFeatureId: testCases[0].testFeatureId,
+        testCaseTestId: testCases[0].testId,
+        testCaseId: testCases[0].id,
+        uploaderId: users[1].id,
+      },
+    }),
+
+    // File for test case 2 (Password reset)
+    prisma.file.create({
+      data: {
+        filename: 'password-reset-email.png',
+        url: 'https://example.com/uploads/password-reset-email.png',
+        mimetype: 'image/png',
+        size: 156789,
+        testCaseFeatureId: testCases[1].testFeatureId,
+        testCaseTestId: testCases[1].testId,
+        testCaseId: testCases[1].id,
+        uploaderId: users[1].id,
+      },
+    }),
+
+    // Files for test case 4 (File upload error)
+    prisma.file.create({
+      data: {
+        filename: 'upload-error-screenshot.png',
+        url: 'https://example.com/uploads/upload-error-screenshot.png',
+        mimetype: 'image/png',
+        size: 198765,
+        testCaseFeatureId: testCases[3].testFeatureId,
+        testCaseTestId: testCases[3].testId,
+        testCaseId: testCases[3].id,
+        uploaderId: users[3].id,
       },
     }),
     prisma.file.create({
       data: {
         filename: 'error-log.txt',
-        path: '/uploads/test-cases/error-log.txt',
-        mimeType: 'text/plain',
-        size: 12345,
+        url: 'https://example.com/uploads/error-log.txt',
+        mimetype: 'text/plain',
+        size: 4567,
+        testCaseFeatureId: testCases[3].testFeatureId,
+        testCaseTestId: testCases[3].testId,
         testCaseId: testCases[3].id,
-        uploadedBy: users[3].id,
+        uploaderId: users[3].id,
       },
     }),
+
+    // File for test case 9 (Export function)
     prisma.file.create({
       data: {
-        filename: 'test-data.xlsx',
-        path: '/uploads/test-cases/test-data.xlsx',
-        mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        size: 56789,
-        testCaseId: testCases[5].id,
-        uploadedBy: users[5].id,
-      },
-    }),
-    prisma.file.create({
-      data: {
-        filename: 'dashboard-screenshot.png',
-        path: '/uploads/test-cases/dashboard-screenshot.png',
-        mimeType: 'image/png',
-        size: 345678,
-        testCaseId: testCases[0].id,
-        uploadedBy: users[1].id,
-      },
-    }),
-    prisma.file.create({
-      data: {
-        filename: 'api-response.json',
-        path: '/uploads/test-cases/api-response.json',
-        mimeType: 'application/json',
-        size: 8901,
+        filename: 'exported-test-cases.csv',
+        url: 'https://example.com/uploads/exported-test-cases.csv',
+        mimetype: 'text/csv',
+        size: 12345,
+        testCaseFeatureId: testCases[8].testFeatureId,
+        testCaseTestId: testCases[8].testId,
         testCaseId: testCases[8].id,
-        uploadedBy: users[7].id,
-      },
-    }),
-    prisma.file.create({
-      data: {
-        filename: 'performance-report.pdf',
-        path: '/uploads/test-cases/performance-report.pdf',
-        mimeType: 'application/pdf',
-        size: 678901,
-        testCaseId: testCases[7].id,
-        uploadedBy: users[4].id,
+        uploaderId: users[0].id,
       },
     }),
   ]);

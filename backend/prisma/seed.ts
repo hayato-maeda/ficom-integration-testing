@@ -1,8 +1,10 @@
 import { PrismaClient } from '@prisma/client';
 import { createApprovals } from './seed/approval';
 import { createComments } from './seed/comment';
+import { createFeatures } from './seed/feature';
 import { createFiles } from './seed/file';
 import { createTags } from './seed/tag';
+import { createTests } from './seed/test';
 import { createTestCases } from './seed/testCase';
 import { createTestCaseTags } from './seed/testCaseTag';
 import { createUsers } from './seed/user';
@@ -12,21 +14,26 @@ const prisma = new PrismaClient();
 async function main() {
   console.log('🌱 Starting seed...');
 
-  // Clean existing data
+  // Clean existing data (in reverse dependency order)
   await prisma.comment.deleteMany();
   await prisma.approval.deleteMany();
   await prisma.file.deleteMany();
   await prisma.testCaseTag.deleteMany();
+  await prisma.testCaseFeature.deleteMany();
   await prisma.tag.deleteMany();
   await prisma.testCase.deleteMany();
+  await prisma.test.deleteMany();
+  await prisma.feature.deleteMany();
   await prisma.user.deleteMany();
 
   console.log('✨ Cleared existing data\n');
 
-  // Create data in order
+  // Create data in dependency order
   const users = await createUsers(prisma);
+  const features = await createFeatures(prisma, users);
+  const tests = await createTests(prisma, features);
   const tags = await createTags(prisma);
-  const testCases = await createTestCases(prisma, users);
+  const testCases = await createTestCases(prisma, tests, users);
   await createTestCaseTags(prisma, testCases, tags);
   await createFiles(prisma, testCases, users);
   await createApprovals(prisma, testCases, users);
@@ -35,6 +42,8 @@ async function main() {
   console.log('\n🎉 Seed completed successfully!');
   console.log('\n📊 Summary:');
   console.log(`  - Users: ${users.length}`);
+  console.log(`  - Features: ${features.length}`);
+  console.log(`  - Tests: ${tests.length}`);
   console.log(`  - Tags: ${tags.length}`);
   console.log(`  - Test Cases: ${testCases.length}`);
   console.log('  - Test Case Tags: 18');

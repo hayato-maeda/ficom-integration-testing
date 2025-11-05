@@ -1,11 +1,17 @@
-import { PrismaClient, User } from '@prisma/client';
+import { PrismaClient, Test, TestCase, User } from '@prisma/client';
 
-export async function createTestCases(prisma: PrismaClient, users: User[]) {
+export async function createTestCases(prisma: PrismaClient, tests: Test[], users: User[]): Promise<TestCase[]> {
   console.log('Creating test cases...');
 
-  const testCases = await Promise.all([
+  const testCases: TestCase[] = [];
+
+  // ログイン機能テスト (Feature 1, Test 1) のテストケース
+  const loginTestCases = await Promise.all([
     prisma.testCase.create({
       data: {
+        testFeatureId: tests[0].featureId,
+        testId: tests[0].id,
+        id: 1,
         title: 'ユーザーログイン機能のテスト',
         description: '正常なログインフローを検証する',
         steps: `1. ログイン画面にアクセス
@@ -18,8 +24,16 @@ export async function createTestCases(prisma: PrismaClient, users: User[]) {
         createdById: users[0].id,
       },
     }),
+  ]);
+  testCases.push(...loginTestCases);
+
+  // パスワードリセットテスト (Feature 1, Test 2) のテストケース
+  const passwordResetTestCases = await Promise.all([
     prisma.testCase.create({
       data: {
+        testFeatureId: tests[1].featureId,
+        testId: tests[1].id,
+        id: 1,
         title: 'パスワードリセット機能のテスト',
         description: 'パスワードを忘れた場合のリセットフローを検証',
         steps: `1. ログイン画面で「パスワードを忘れた」リンクをクリック
@@ -32,8 +46,16 @@ export async function createTestCases(prisma: PrismaClient, users: User[]) {
         createdById: users[1].id,
       },
     }),
+  ]);
+  testCases.push(...passwordResetTestCases);
+
+  // テストケース作成テスト (Feature 2, Test 1) のテストケース
+  const createTestCaseTestCases = await Promise.all([
     prisma.testCase.create({
       data: {
+        testFeatureId: tests[2].featureId,
+        testId: tests[2].id,
+        id: 1,
         title: 'テストケース作成機能のテスト',
         description: '新規テストケースの作成が正常に動作することを確認',
         steps: `1. テストケース一覧画面で「新規作成」ボタンをクリック
@@ -45,8 +67,16 @@ export async function createTestCases(prisma: PrismaClient, users: User[]) {
         createdById: users[2].id,
       },
     }),
+  ]);
+  testCases.push(...createTestCaseTestCases);
+
+  // ファイルアップロードテスト (Feature 3, Test 1) のテストケース
+  const fileUploadTestCases = await Promise.all([
     prisma.testCase.create({
       data: {
+        testFeatureId: tests[3].featureId,
+        testId: tests[3].id,
+        id: 1,
         title: 'ファイルアップロード機能のテスト',
         description: 'テストケースへのファイル添付が正常に動作することを確認',
         steps: `1. テストケース詳細画面を開く
@@ -59,8 +89,16 @@ export async function createTestCases(prisma: PrismaClient, users: User[]) {
         createdById: users[3].id,
       },
     }),
+  ]);
+  testCases.push(...fileUploadTestCases);
+
+  // タグフィルタリングテスト (Feature 4, Test 1) のテストケース
+  const tagFilterTestCases = await Promise.all([
     prisma.testCase.create({
       data: {
+        testFeatureId: tests[4].featureId,
+        testId: tests[4].id,
+        id: 1,
         title: 'タグフィルタリング機能のテスト',
         description: 'タグによるテストケースのフィルタリングを検証',
         steps: `1. テストケース一覧画面を開く
@@ -71,8 +109,16 @@ export async function createTestCases(prisma: PrismaClient, users: User[]) {
         createdById: users[4].id,
       },
     }),
+  ]);
+  testCases.push(...tagFilterTestCases);
+
+  // 承認ワークフローテスト (Feature 5, Test 1) のテストケース
+  const approvalWorkflowTestCases = await Promise.all([
     prisma.testCase.create({
       data: {
+        testFeatureId: tests[6].featureId,
+        testId: tests[6].id,
+        id: 1,
         title: '承認ワークフローのテスト',
         description: 'テストケースの承認・却下フローを検証',
         steps: `1. レビュー待ちのテストケースを開く
@@ -85,8 +131,16 @@ export async function createTestCases(prisma: PrismaClient, users: User[]) {
         createdById: users[5].id,
       },
     }),
+  ]);
+  testCases.push(...approvalWorkflowTestCases);
+
+  // コメント機能テスト (Feature 5, Test 2) のテストケース
+  const commentTestCases = await Promise.all([
     prisma.testCase.create({
       data: {
+        testFeatureId: tests[7].featureId,
+        testId: tests[7].id,
+        id: 1,
         title: 'コメント機能のテスト',
         description: 'テストケースへのコメント追加・削除を検証',
         steps: `1. テストケース詳細画面を開く
@@ -98,8 +152,16 @@ export async function createTestCases(prisma: PrismaClient, users: User[]) {
         createdById: users[6].id,
       },
     }),
+  ]);
+  testCases.push(...commentTestCases);
+
+  // キーワード検索テスト (Feature 4, Test 2) のテストケース
+  const searchTestCases = await Promise.all([
     prisma.testCase.create({
       data: {
+        testFeatureId: tests[5].featureId,
+        testId: tests[5].id,
+        id: 1,
         title: '検索機能のテスト',
         description: 'テストケースのキーワード検索を検証',
         steps: `1. テストケース一覧画面で検索ボックスに「ログイン」と入力
@@ -109,8 +171,16 @@ export async function createTestCases(prisma: PrismaClient, users: User[]) {
         createdById: users[7].id,
       },
     }),
+  ]);
+  testCases.push(...searchTestCases);
+
+  // エクスポート機能テスト (Feature 6, Test 1) のテストケース
+  const exportTestCases = await Promise.all([
     prisma.testCase.create({
       data: {
+        testFeatureId: tests[8].featureId,
+        testId: tests[8].id,
+        id: 1,
         title: 'エクスポート機能のテスト',
         description: 'テストケース一覧のCSVエクスポートを検証',
         steps: `1. テストケース一覧画面で「エクスポート」ボタンをクリック
@@ -122,8 +192,16 @@ export async function createTestCases(prisma: PrismaClient, users: User[]) {
         createdById: users[0].id,
       },
     }),
+  ]);
+  testCases.push(...exportTestCases);
+
+  // ページネーションテスト (Feature 6, Test 2) のテストケース
+  const paginationTestCases = await Promise.all([
     prisma.testCase.create({
       data: {
+        testFeatureId: tests[9].featureId,
+        testId: tests[9].id,
+        id: 1,
         title: 'ページネーション機能のテスト',
         description: 'テストケース一覧のページング動作を検証',
         steps: `1. テストケース一覧画面を開く（20件以上のデータがある状態）
@@ -136,6 +214,7 @@ export async function createTestCases(prisma: PrismaClient, users: User[]) {
       },
     }),
   ]);
+  testCases.push(...paginationTestCases);
 
   console.log(`✅ Created ${testCases.length} test cases`);
   return testCases;

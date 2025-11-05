@@ -328,20 +328,26 @@ export class FeaturesService {
 
   /**
    * テストケースに割り当てられている機能を取得
+   * @param testCaseFeatureId - 機能ID
+   * @param testCaseTestId - テストID
    * @param testCaseId - テストケースID
    * @returns 機能の一覧
    */
-  async getFeaturesByTestCase(testCaseId: number): Promise<Feature[]> {
-    this.logger.debug({ testCaseId }, 'Fetching features for test case');
+  async getFeaturesByTestCase(testCaseFeatureId: number, testCaseTestId: number, testCaseId: number): Promise<Feature[]> {
+    this.logger.debug({ testCaseFeatureId, testCaseTestId, testCaseId }, 'Fetching features for test case');
 
     const testCaseFeatures = await this.prismaService.testCaseFeature.findMany({
-      where: { testCaseId },
+      where: {
+        testCaseFeatureId,
+        testCaseTestId,
+        testCaseId,
+      },
       include: { feature: true },
     });
 
     const features = testCaseFeatures.map((testCaseFeature) => testCaseFeature.feature);
 
-    this.logger.debug({ testCaseId, count: features.length }, 'Features fetched for test case');
+    this.logger.debug({ testCaseFeatureId, testCaseTestId, testCaseId, count: features.length }, 'Features fetched for test case');
 
     return features;
   }

@@ -41,12 +41,16 @@ export class TestsResolver {
 
   /**
    * テスト取得クエリ
+   * @param featureId - 機能ID
    * @param id - テストID
    * @returns テストまたはnull
    */
   @Query(() => Test, { nullable: true })
-  async test(@Args('id', { type: () => Int }) id: number): Promise<Test | null> {
-    return this.testsService.findOne(id);
+  async test(
+    @Args('featureId', { type: () => Int }) featureId: number,
+    @Args('id', { type: () => Int }) id: number,
+  ): Promise<Test | null> {
+    return this.testsService.findOne(featureId, id);
   }
 
   /**
@@ -64,12 +68,16 @@ export class TestsResolver {
 
   /**
    * テスト削除ミューテーション
+   * @param featureId - 機能ID
    * @param id - テストID
    * @returns テストMutationレスポンス
    */
   @Mutation(() => TestMutationResponse)
-  async deleteTest(@Args('id', { type: () => Int }) id: number): Promise<TestMutationResponse> {
-    return this.testsService.remove(id);
+  async deleteTest(
+    @Args('featureId', { type: () => Int }) featureId: number,
+    @Args('id', { type: () => Int }) id: number,
+  ): Promise<TestMutationResponse> {
+    return this.testsService.remove(featureId, id);
   }
 
   /**
@@ -84,11 +92,15 @@ export class TestsResolver {
 
   /**
    * テストに紐づくテストケース取得クエリ
+   * @param featureId - 機能ID
    * @param testId - テストID
    * @returns テストケースの一覧
    */
   @Query(() => [TestCase])
-  async testCasesByTest(@Args('testId', { type: () => Int }) testId: number): Promise<TestCase[]> {
-    return this.testsService.getTestCasesByTest(testId);
+  async testCasesByTest(
+    @Args('featureId', { type: () => Int }) featureId: number,
+    @Args('testId', { type: () => Int }) testId: number,
+  ): Promise<TestCase[]> {
+    return this.testsService.getTestCasesByTest(featureId, testId);
   }
 }

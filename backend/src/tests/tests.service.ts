@@ -41,15 +41,25 @@ export class TestsService {
       };
     }
 
+    // Feature内での次のID番号を計算
+    const existingTests = await this.prismaService.test.findMany({
+      where: { featureId: createTestInput.featureId },
+      orderBy: { id: 'desc' },
+      take: 1,
+    });
+
+    const nextId = existingTests.length > 0 ? existingTests[0].id + 1 : 1;
+
     const test = await this.prismaService.test.create({
       data: {
         featureId: createTestInput.featureId,
+        id: nextId,
         title: createTestInput.title,
         description: createTestInput.description,
       },
     });
 
-    this.logger.info({ testId: test.id, title: test.title }, 'Test created successfully');
+    this.logger.info({ featureId: test.featureId, testId: test.id, title: test.title }, 'Test created successfully');
 
     return {
       isValid: true,
@@ -78,14 +88,20 @@ export class TestsService {
 
   /**
    * 特定のテストを取得
+   * @param featureId - 機能ID
    * @param id - テストID
    * @returns テストまたはnull
    */
-  async findOne(id: number): Promise<Test | null> {
-    this.logger.debug({ testId: id }, 'Fetching test');
+  async findOne(featureId: number, id: number): Promise<Test | null> {
+    this.logger.debug({ featureId, testId: id }, 'Fetching test');
 
     const test = await this.prismaService.test.findUnique({
-      where: { id },
+      where: {
+        featureId_id: {
+          featureId,
+          id,
+        },
+      },
     });
 
     return test;
@@ -97,32 +113,42 @@ export class TestsService {
    * @returns テストMutationレスポンス
    */
   async update(updateTestInput: UpdateTestInput): Promise<TestMutationResponse> {
-    this.logger.info({ testId: updateTestInput.id }, 'Updating test');
+    this.logger.info({ featureId: updateTestInput.featureId, testId: updateTestInput.id }, 'Updating test');
 
     // テストの存在確認
     const existingTest = await this.prismaService.test.findUnique({
-      where: { id: updateTestInput.id },
+      where: {
+        featureId_id: {
+          featureId: updateTestInput.featureId,
+          id: updateTestInput.id,
+        },
+      },
     });
 
     if (!existingTest) {
-      this.logger.warn({ testId: updateTestInput.id }, 'Test not found for update');
+      this.logger.warn({ featureId: updateTestInput.featureId, testId: updateTestInput.id }, 'Test not found for update');
       return {
         isValid: false,
-        message: `テストID ${updateTestInput.id} が見つかりません`,
+        message: `テスト（機能ID: ${updateTestInput.featureId}, テストID: ${updateTestInput.id}）が見つかりません`,
         data: null,
       };
     }
 
-    // 更新データの準備
-    const { id: _, ...updateFields } = updateTestInput;
+    // 更新データの準備（featureIdとidを除外）
+    const { featureId: _, id: __, ...updateFields } = updateTestInput;
     const updateData = Object.fromEntries(Object.entries(updateFields).filter(([, value]) => value !== undefined));
 
     const test = await this.prismaService.test.update({
-      where: { id: updateTestInput.id },
+      where: {
+        featureId_id: {
+          featureId: updateTestInput.featureId,
+          id: updateTestInput.id,
+        },
+      },
       data: updateData,
     });
 
-    this.logger.info({ testId: test.id }, 'Test updated successfully');
+    this.logger.info({ featureId: test.featureId, testId: test.id }, 'Test updated successfully');
 
     return {
       isValid: true,
@@ -133,31 +159,42 @@ export class TestsService {
 
   /**
    * テストを削除
+   * @param featureId - 機能ID
    * @param id - テストID
    * @returns テストMutationレスポンス
    */
-  async remove(id: number): Promise<TestMutationResponse> {
-    this.logger.info({ testId: id }, 'Deleting test');
+  async remove(featureId: number, id: number): Promise<TestMutationResponse> {
+    this.logger.info({ featureId, testId: id }, 'Deleting test');
 
     // テストの存在確認
     const existingTest = await this.prismaService.test.findUnique({
-      where: { id },
+      where: {
+        featureId_id: {
+          featureId,
+          id,
+        },
+      },
     });
 
     if (!existingTest) {
-      this.logger.warn({ testId: id }, 'Test not found for deletion');
+      this.logger.warn({ featureId, testId: id }, 'Test not found for deletion');
       return {
         isValid: false,
-        message: `テストID ${id} が見つかりません`,
+        message: `テスト（機能ID: ${featureId}, テストID: ${id}）が見つかりません`,
         data: null,
       };
     }
 
     await this.prismaService.test.delete({
-      where: { id },
+      where: {
+        featureId_id: {
+          featureId,
+          id,
+        },
+      },
     });
 
-    this.logger.info({ testId: id }, 'Test deleted successfully');
+    this.logger.info({ featureId, testId: id }, 'Test deleted successfully');
 
     return {
       isValid: true,
@@ -188,14 +225,18 @@ export class TestsService {
 
   /**
    * テストに紐づくテストケースを取得
+   * @param featureId - 機能ID
    * @param testId - テストID
    * @returns テストケースの一覧
    */
-  async getTestCasesByTest(testId: number) {
-    this.logger.debug({ testId }, 'Fetching test cases for test');
+  async getTestCasesByTest(featureId: number, testId: number) {
+    this.logger.debug({ featureId, testId }, 'Fetching test cases for test');
 
     const testCases = await this.prismaService.testCase.findMany({
-      where: { testId },
+      where: {
+        testFeatureId: featureId,
+        testId: testId,
+      },
       include: {
         createdBy: true,
         tags: {
@@ -205,7 +246,7 @@ export class TestsService {
         },
       },
       orderBy: {
-        createdAt: 'desc',
+        id: 'asc',
       },
     });
 
@@ -214,7 +255,7 @@ export class TestsService {
       tags: testCase.tags.map((testCaseTag) => testCaseTag.tag),
     }));
 
-    this.logger.debug({ testId, count: testCases.length }, 'Test cases fetched for test');
+    this.logger.debug({ featureId, testId, count: testCases.length }, 'Test cases fetched for test');
 
     return formattedTestCases;
   }

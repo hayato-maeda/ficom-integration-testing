@@ -1,6 +1,7 @@
 import { PrismaClient } from '@prisma/client';
 import { createApprovals } from './seed/approval';
 import { createComments } from './seed/comment';
+import { createFeatures } from './seed/feature';
 import { createFiles } from './seed/file';
 import { createTags } from './seed/tag';
 import { createTestCases } from './seed/testCase';
@@ -19,14 +20,21 @@ async function main() {
   await prisma.testCaseTag.deleteMany();
   await prisma.tag.deleteMany();
   await prisma.testCase.deleteMany();
+  await prisma.test.deleteMany();
+  await prisma.feature.deleteMany();
   await prisma.user.deleteMany();
 
   console.log('✨ Cleared existing data\n');
 
   // Create data in order
   const users = await createUsers(prisma);
+  const features = await createFeatures(prisma);
   const tags = await createTags(prisma);
-  const testCases = await createTestCases(prisma, users);
+  await createTestCases(prisma, users, features);
+
+  // Get all test cases after creation
+  const testCases = await prisma.testCase.findMany();
+
   await createTestCaseTags(prisma, testCases, tags);
   await createFiles(prisma, testCases, users);
   await createApprovals(prisma, testCases, users);
@@ -35,9 +43,10 @@ async function main() {
   console.log('\n🎉 Seed completed successfully!');
   console.log('\n📊 Summary:');
   console.log(`  - Users: ${users.length}`);
-  console.log(`  - Tags: ${tags.length}`);
+  console.log(`  - Features: ${features.length}`);
+  console.log(`  - Tests: 3`);
   console.log(`  - Test Cases: ${testCases.length}`);
-  console.log('  - Test Case Tags: 18');
+  console.log('  - Test Case Tags: 16');
   console.log('  - Files: 6');
   console.log('  - Approvals: 8');
   console.log('  - Comments: 10');

@@ -64,6 +64,16 @@ export class TestCasesResolver {
   }
 
   /**
+   * テストに属するテストケース取得クエリ
+   * @param testId - テストID
+   * @returns テストケースの一覧
+   */
+  @Query(() => [TestCase])
+  async testCasesByTest(@Args('testId', { type: () => Int }) testId: number): Promise<TestCase[]> {
+    return this.testCasesService.findByTest(testId);
+  }
+
+  /**
    * テストケース更新ミューテーション
    * @param updateTestCaseInput - 更新データ
    * @param user - 現在のユーザー
@@ -102,15 +112,16 @@ export class TestCasesResolver {
     return this.tagsService.getTagsByTestCase(testCase.id);
   }
 
-  /**
-   * テストケースの機能フィールドリゾルバー
-   * @param testCase - 親のテストケースオブジェクト
-   * @returns 機能の一覧
-   */
+  // ===================================================================
+  // 旧構造用のフィールドリゾルバー - 非推奨
+  // 新構造ではTestCaseはTestに属し、TestがFeatureに属します
+  // ===================================================================
+  /*
   @ResolveField(() => [Feature])
   async features(@Parent() testCase: TestCase): Promise<Feature[]> {
     return this.featuresService.getFeaturesByTestCase(testCase.id);
   }
+  */
 
   /**
    * テストケースのファイルフィールドリゾルバー

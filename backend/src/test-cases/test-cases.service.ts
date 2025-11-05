@@ -27,10 +27,11 @@ export class TestCasesService {
    * @returns テストケースMutationレスポンス
    */
   async create(createTestCaseInput: CreateTestCaseInput, userId: number): Promise<TestCaseMutationResponse> {
-    this.logger.info({ userId, title: createTestCaseInput.title }, 'Creating test case');
+    this.logger.info({ userId, title: createTestCaseInput.title, testId: createTestCaseInput.testId }, 'Creating test case');
 
     const testCase = await this.prismaService.testCase.create({
       data: {
+        testId: createTestCaseInput.testId,
         title: createTestCaseInput.title,
         description: createTestCaseInput.description,
         steps: createTestCaseInput.steps,
@@ -43,7 +44,7 @@ export class TestCasesService {
       },
     });
 
-    this.logger.info({ testCaseId: testCase.id, userId }, 'Test case created successfully');
+    this.logger.info({ testCaseId: testCase.id, testId: createTestCaseInput.testId, userId }, 'Test case created successfully');
 
     return {
       isValid: true,
@@ -91,6 +92,29 @@ export class TestCasesService {
     this.logger.info({ fetchedTestCase: testCase }, 'Fetched test case');
 
     return testCase;
+  }
+
+  /**
+   * テストに属するテストケースを取得
+   * @param testId - テストID
+   * @returns テストケースの一覧
+   */
+  async findByTest(testId: number): Promise<TestCase[]> {
+    this.logger.debug({ testId }, 'Fetching test cases by test');
+
+    const testCases = await this.prismaService.testCase.findMany({
+      where: { testId },
+      include: {
+        createdBy: true,
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+
+    this.logger.debug({ testId, count: testCases.length }, 'Test cases fetched for test');
+
+    return testCases;
   }
 
   /**

@@ -2,11 +2,6 @@
 # THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
 # ------------------------------------------------------
 
-input AssignFeatureInput {
-  featureId: Int!
-  testCaseId: Int!
-}
-
 input AssignTagInput {
   tagId: Int!
   testCaseId: Int!
@@ -38,7 +33,15 @@ input CreateTestCaseInput {
   description: String
   expectedResult: String!
   steps: String!
+  testId: Int!
   title: String!
+}
+
+input CreateTestInput {
+  description: String
+  featureId: Int!
+  name: String!
+  status: String
 }
 
 """
@@ -54,12 +57,6 @@ type Feature {
   name: String!
   status: String!
   updatedAt: DateTime!
-}
-
-type FeatureAssignMutationResponse {
-  data: TestCase
-  isValid: Boolean!
-  message: String!
 }
 
 type FeatureMutationResponse {
@@ -87,29 +84,29 @@ input LoginInput {
 }
 
 type Mutation {
-  assignFeature(assignFeatureInput: AssignFeatureInput!): FeatureAssignMutationResponse!
   assignTag(assignTagInput: AssignTagInput!): TagAssignMutationResponse!
   createFeature(createFeatureInput: CreateFeatureInput!): FeatureMutationResponse!
   createTag(createTagInput: CreateTagInput!): TagMutationResponse!
+  createTest(createTestInput: CreateTestInput!): TestMutationResponse!
   createTestCase(createTestCaseInput: CreateTestCaseInput!): TestCaseMutationResponse!
   deleteFeature(id: Int!): FeatureMutationResponse!
   deleteTag(id: Int!): TagMutationResponse!
+  deleteTest(id: Int!): TestMutationResponse!
   deleteTestCase(id: Int!): TestCaseMutationResponse!
   login(loginInput: LoginInput!): AuthMutationResponse!
   logout: AuthMutationResponse!
   refreshToken: AuthMutationResponse!
   signUp(signUpInput: SignUpInput!): AuthMutationResponse!
-  unassignFeature(featureId: Int!, testCaseId: Int!): FeatureAssignMutationResponse!
   unassignTag(tagId: Int!, testCaseId: Int!): TagAssignMutationResponse!
   updateFeature(updateFeatureInput: UpdateFeatureInput!): FeatureMutationResponse!
   updateTag(updateTagInput: UpdateTagInput!): TagMutationResponse!
+  updateTest(updateTestInput: UpdateTestInput!): TestMutationResponse!
   updateTestCase(updateTestCaseInput: UpdateTestCaseInput!): TestCaseMutationResponse!
 }
 
 type Query {
   feature(id: Int!): Feature
   features: [Feature!]!
-  featuresByTestCase(testCaseId: Int!): [Feature!]!
   file(id: Int!): File!
   files: [File!]!
   filesByTestCase(testCaseId: Int!): [File!]!
@@ -117,9 +114,12 @@ type Query {
   tag(id: Int!): Tag
   tags: [Tag!]!
   tagsByTestCase(testCaseId: Int!): [Tag!]!
+  test(id: Int!): Test
   testCase(id: Int!): TestCase
   testCases: [TestCase!]!
-  testCasesByFeature(featureId: Int!): [TestCase!]!
+  testCasesByTest(testId: Int!): [TestCase!]!
+  tests: [Test!]!
+  testsByFeature(featureId: Int!): [Test!]!
 }
 
 input SignUpInput {
@@ -147,6 +147,19 @@ type TagMutationResponse {
   message: String!
 }
 
+type Test {
+  createdAt: DateTime!
+  createdBy: User
+  createdById: Int!
+  description: String
+  feature: Feature
+  featureId: Int!
+  id: Int!
+  name: String!
+  status: String!
+  updatedAt: DateTime!
+}
+
 type TestCase {
   actualResult: String
   createdAt: DateTime!
@@ -154,18 +167,25 @@ type TestCase {
   createdById: Int!
   description: String
   expectedResult: String!
-  features: [Feature!]
   files: [File!]
   id: Int!
   status: String!
   steps: String!
   tags: [Tag!]
+  test: Test
+  testId: Int!
   title: String!
   updatedAt: DateTime!
 }
 
 type TestCaseMutationResponse {
   data: TestCase
+  isValid: Boolean!
+  message: String!
+}
+
+type TestMutationResponse {
+  data: Test
   isValid: Boolean!
   message: String!
 }
@@ -192,6 +212,13 @@ input UpdateTestCaseInput {
   status: String
   steps: String
   title: String
+}
+
+input UpdateTestInput {
+  description: String
+  id: Int!
+  name: String
+  status: String
 }
 
 type User {

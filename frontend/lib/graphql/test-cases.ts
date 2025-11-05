@@ -76,10 +76,41 @@ export const GET_TEST_CASE_QUERY = gql`
 `;
 
 /**
+ * Testに属するTestCase一覧取得クエリ
+ */
+export const GET_TEST_CASES_BY_TEST_QUERY = gql`
+  query GetTestCasesByTest($testId: Int!) {
+    testCasesByTest(testId: $testId) {
+      id
+      testId
+      title
+      description
+      steps
+      expectedResult
+      actualResult
+      status
+      createdBy {
+        id
+        name
+        email
+      }
+      tags {
+        id
+        name
+        color
+      }
+      createdAt
+      updatedAt
+    }
+  }
+`;
+
+/**
  * テストケース作成ミューテーション
  *
  * 新しいテストケースを作成します。
  *
+ * @param {number} testId - テストID
  * @param {string} title - タイトル
  * @param {string} description - 説明（任意）
  * @param {string} steps - テスト手順
@@ -89,6 +120,7 @@ export const GET_TEST_CASE_QUERY = gql`
  */
 export const CREATE_TEST_CASE_MUTATION = gql`
   mutation CreateTestCase(
+    $testId: Int!
     $title: String!
     $description: String
     $steps: String!
@@ -97,6 +129,7 @@ export const CREATE_TEST_CASE_MUTATION = gql`
   ) {
     createTestCase(
       createTestCaseInput: {
+        testId: $testId
         title: $title
         description: $description
         steps: $steps
@@ -108,6 +141,7 @@ export const CREATE_TEST_CASE_MUTATION = gql`
       message
       data {
         id
+        testId
         title
         description
         steps

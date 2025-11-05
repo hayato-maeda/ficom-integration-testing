@@ -50,7 +50,7 @@ export async function createFiles(prisma: PrismaClient, testCases: TestCase[], u
         path: '/uploads/test-cases/api-response.json',
         mimeType: 'application/json',
         size: 8901,
-        testCaseId: testCases[8].id,
+        testCaseId: testCases[6].id,
         uploadedBy: users[7].id,
       },
     }),

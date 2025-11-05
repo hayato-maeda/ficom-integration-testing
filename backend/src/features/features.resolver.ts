@@ -73,11 +73,12 @@ export class FeaturesResolver {
     return this.featuresService.remove(id);
   }
 
-  /**
-   * テストケースへの機能割り当てミューテーション
-   * @param assignFeatureInput - 割り当てデータ
-   * @returns 機能割り当てMutationレスポンス
-   */
+  // ===================================================================
+  // 以下のメソッドは旧構造（TestCaseFeature）用なので非推奨です
+  // 新構造ではTestsResolverを使用してください
+  // ===================================================================
+
+  /*
   @Mutation(() => FeatureAssignMutationResponse)
   async assignFeature(
     @Args('assignFeatureInput', { type: () => AssignFeatureInput })
@@ -86,12 +87,6 @@ export class FeaturesResolver {
     return this.featuresService.assignFeature(assignFeatureInput);
   }
 
-  /**
-   * テストケースからの機能削除ミューテーション
-   * @param testCaseId - テストケースID
-   * @param featureId - 機能ID
-   * @returns 機能割り当てMutationレスポンス
-   */
   @Mutation(() => FeatureAssignMutationResponse)
   async unassignFeature(
     @Args('testCaseId', { type: () => Int }) testCaseId: number,
@@ -100,23 +95,14 @@ export class FeaturesResolver {
     return this.featuresService.unassignFeature(testCaseId, featureId);
   }
 
-  /**
-   * テストケースに割り当てられている機能取得クエリ
-   * @param testCaseId - テストケースID
-   * @returns 機能の一覧
-   */
   @Query(() => [Feature])
   async featuresByTestCase(@Args('testCaseId', { type: () => Int }) testCaseId: number): Promise<Feature[]> {
     return this.featuresService.getFeaturesByTestCase(testCaseId);
   }
 
-  /**
-   * 機能に割り当てられているテストケース取得クエリ
-   * @param featureId - 機能ID
-   * @returns テストケースの一覧
-   */
   @Query(() => [TestCase])
   async testCasesByFeature(@Args('featureId', { type: () => Int }) featureId: number): Promise<TestCase[]> {
     return this.featuresService.getTestCasesByFeature(featureId);
   }
+  */
 }

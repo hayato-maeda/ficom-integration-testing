@@ -184,202 +184,30 @@ export class FeaturesService {
     };
   }
 
-  /**
-   * テストケースに機能を割り当て
-   * @param assignFeatureInput - 割り当てデータ
-   * @returns 機能割り当てMutationレスポンス
-   */
+  // ===================================================================
+  // 以下のメソッドは旧構造（TestCaseFeature）用なので非推奨です
+  // 新構造ではTestはFeatureに直接属し、TestCaseはTestに属します
+  // ===================================================================
+
+  /*
   async assignFeature(assignFeatureInput: AssignFeatureInput): Promise<FeatureAssignMutationResponse> {
-    this.logger.info(
-      { testCaseId: assignFeatureInput.testCaseId, featureId: assignFeatureInput.featureId },
-      'Assigning feature to test case',
-    );
-
-    // テストケースの存在確認
-    const testCase = await this.prismaService.testCase.findUnique({
-      where: { id: assignFeatureInput.testCaseId },
-    });
-
-    if (!testCase) {
-      this.logger.warn({ testCaseId: assignFeatureInput.testCaseId }, 'Test case not found');
-      return {
-        isValid: false,
-        message: FEATURES_MESSAGES.TEST_CASE_NOT_FOUND(assignFeatureInput.testCaseId),
-        data: null,
-      };
-    }
-
-    // 機能の存在確認
-    const feature = await this.prismaService.feature.findUnique({
-      where: { id: assignFeatureInput.featureId },
-    });
-
-    if (!feature) {
-      this.logger.warn({ featureId: assignFeatureInput.featureId }, 'Feature not found');
-      return {
-        isValid: false,
-        message: FEATURES_MESSAGES.FEATURE_NOT_FOUND(assignFeatureInput.featureId),
-        data: null,
-      };
-    }
-
-    // 既に割り当て済みかチェック
-    const existing = await this.prismaService.testCaseFeature.findUnique({
-      where: {
-        testCaseId_featureId: {
-          testCaseId: assignFeatureInput.testCaseId,
-          featureId: assignFeatureInput.featureId,
-        },
-      },
-    });
-
-    if (existing) {
-      this.logger.warn(
-        { testCaseId: assignFeatureInput.testCaseId, featureId: assignFeatureInput.featureId },
-        'Feature already assigned to test case',
-      );
-      return {
-        isValid: false,
-        message: FEATURES_MESSAGES.FEATURE_ALREADY_ASSIGNED,
-        data: null,
-      };
-    }
-
-    await this.prismaService.testCaseFeature.create({
-      data: {
-        testCaseId: assignFeatureInput.testCaseId,
-        featureId: assignFeatureInput.featureId,
-      },
-    });
-
-    // 更新後のテストケースを取得
-    const updatedTestCase = await this.prismaService.testCase.findUnique({
-      where: { id: assignFeatureInput.testCaseId },
-      include: {
-        createdBy: true,
-      },
-    });
-
-    this.logger.info(
-      { testCaseId: assignFeatureInput.testCaseId, featureId: assignFeatureInput.featureId },
-      'Feature assigned to test case successfully',
-    );
-
-    return {
-      isValid: true,
-      message: FEATURES_MESSAGES.FEATURE_ASSIGNED,
-      data: updatedTestCase,
-    };
+    // 旧構造用のメソッド - 非推奨
+    throw new Error('This method is deprecated. Use the new Test structure instead.');
   }
 
-  /**
-   * テストケースから機能を削除
-   * @param testCaseId - テストケースID
-   * @param featureId - 機能ID
-   * @returns 機能割り当てMutationレスポンス
-   */
   async unassignFeature(testCaseId: number, featureId: number): Promise<FeatureAssignMutationResponse> {
-    this.logger.info({ testCaseId, featureId }, 'Unassigning feature from test case');
-
-    // 割り当ての存在確認
-    const existing = await this.prismaService.testCaseFeature.findUnique({
-      where: {
-        testCaseId_featureId: {
-          testCaseId,
-          featureId,
-        },
-      },
-    });
-
-    if (!existing) {
-      this.logger.warn({ testCaseId, featureId }, 'Feature assignment not found');
-      return {
-        isValid: false,
-        message: FEATURES_MESSAGES.FEATURE_NOT_ASSIGNED,
-        data: null,
-      };
-    }
-
-    await this.prismaService.testCaseFeature.delete({
-      where: {
-        testCaseId_featureId: {
-          testCaseId,
-          featureId,
-        },
-      },
-    });
-
-    // 更新後のテストケースを取得
-    const updatedTestCase = await this.prismaService.testCase.findUnique({
-      where: { id: testCaseId },
-      include: {
-        createdBy: true,
-      },
-    });
-
-    this.logger.info({ testCaseId, featureId }, 'Feature unassigned from test case successfully');
-
-    return {
-      isValid: true,
-      message: FEATURES_MESSAGES.FEATURE_UNASSIGNED,
-      data: updatedTestCase,
-    };
+    // 旧構造用のメソッド - 非推奨
+    throw new Error('This method is deprecated. Use the new Test structure instead.');
   }
 
-  /**
-   * テストケースに割り当てられている機能を取得
-   * @param testCaseId - テストケースID
-   * @returns 機能の一覧
-   */
   async getFeaturesByTestCase(testCaseId: number): Promise<Feature[]> {
-    this.logger.debug({ testCaseId }, 'Fetching features for test case');
-
-    const testCaseFeatures = await this.prismaService.testCaseFeature.findMany({
-      where: { testCaseId },
-      include: { feature: true },
-    });
-
-    const features = testCaseFeatures.map((testCaseFeature) => testCaseFeature.feature);
-
-    this.logger.debug({ testCaseId, count: features.length }, 'Features fetched for test case');
-
-    return features;
+    // 旧構造用のメソッド - 非推奨
+    throw new Error('This method is deprecated. Use the new Test structure instead.');
   }
 
-  /**
-   * 機能に割り当てられているテストケースを取得
-   * @param featureId - 機能ID
-   * @returns テストケースの一覧
-   */
   async getTestCasesByFeature(featureId: number) {
-    this.logger.debug({ featureId }, 'Fetching test cases for feature');
-
-    const testCaseFeatures = await this.prismaService.testCaseFeature.findMany({
-      where: { featureId },
-      include: {
-        testCase: {
-          include: {
-            createdBy: true,
-            tags: {
-              include: {
-                tag: true,
-              },
-            },
-          },
-        },
-      },
-    });
-
-    const testCases = testCaseFeatures.map((testCaseFeature) => {
-      const testCase = testCaseFeature.testCase;
-      return {
-        ...testCase,
-        tags: testCase.tags.map((testCaseTag) => testCaseTag.tag),
-      };
-    });
-
-    this.logger.debug({ featureId, count: testCases.length }, 'Test cases fetched for feature');
-
-    return testCases;
+    // 旧構造用のメソッド - 非推奨
+    throw new Error('This method is deprecated. Use the new Test structure instead.');
   }
+  */
 }

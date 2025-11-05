@@ -70,7 +70,7 @@ export async function createComments(prisma: PrismaClient, testCases: TestCase[]
     prisma.comment.create({
       data: {
         content: 'エクスポートしたCSVの文字コードはUTF-8ですか？',
-        testCaseId: testCases[8].id,
+        testCaseId: testCases[6].id,
         userId: users[3].id,
       },
     }),

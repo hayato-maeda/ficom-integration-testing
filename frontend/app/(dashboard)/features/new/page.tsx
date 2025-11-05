@@ -24,10 +24,7 @@ const featureFormSchema = z.object({
   color: z
     .string()
     .optional()
-    .refine(
-      (val) => !val || /^#[0-9A-Fa-f]{6}$/.test(val),
-      'カラーコードは#XXXXXXの形式で入力してください',
-    ),
+    .refine((val) => !val || /^#[0-9A-Fa-f]{6}$/.test(val), 'カラーコードは#XXXXXXの形式で入力してください'),
 });
 
 type FeatureFormData = z.infer<typeof featureFormSchema>;
@@ -129,11 +126,7 @@ export default function FeatureNewPage() {
                   <FormItem>
                     <FormLabel>説明</FormLabel>
                     <FormControl>
-                      <Textarea
-                        placeholder="機能の説明を入力"
-                        className="min-h-[120px]"
-                        {...field}
-                      />
+                      <Textarea placeholder="機能の説明を入力" className="min-h-[120px]" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -163,9 +156,7 @@ export default function FeatureNewPage() {
                         />
                       </div>
                     </FormControl>
-                    <p className="text-sm text-muted-foreground">
-                      機能を識別するための色を選択してください
-                    </p>
+                    <p className="text-sm text-muted-foreground">機能を識別するための色を選択してください</p>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -173,12 +164,7 @@ export default function FeatureNewPage() {
 
               {/* アクションボタン */}
               <div className="flex justify-end gap-3">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => router.push('/features')}
-                  disabled={loading}
-                >
+                <Button type="button" variant="outline" onClick={() => router.push('/features')} disabled={loading}>
                   キャンセル
                 </Button>
                 <Button type="submit" disabled={loading}>

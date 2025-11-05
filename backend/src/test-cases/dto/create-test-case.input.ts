@@ -6,6 +6,12 @@ import { IsInt, IsNotEmpty, IsOptional, IsString } from 'class-validator';
  */
 @InputType()
 export class CreateTestCaseInput {
+  /** 機能ID */
+  @Field(() => Int)
+  @IsInt({ message: 'featureId must be an integer' })
+  @IsNotEmpty({ message: 'featureId should not be empty' })
+  featureId: number;
+
   /** テストID */
   @Field(() => Int)
   @IsInt({ message: 'testId must be an integer' })

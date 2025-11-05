@@ -87,16 +87,20 @@ export class TagsResolver {
 
   /**
    * テストケースからのタグ削除ミューテーション
+   * @param featureId - 機能ID
+   * @param testId - テストID
    * @param testCaseId - テストケースID
    * @param tagId - タグID
    * @returns タグ割り当てMutationレスポンス
    */
   @Mutation(() => TagAssignMutationResponse)
   async unassignTag(
+    @Args('featureId', { type: () => Int }) featureId: number,
+    @Args('testId', { type: () => Int }) testId: number,
     @Args('testCaseId', { type: () => Int }) testCaseId: number,
     @Args('tagId', { type: () => Int }) tagId: number,
   ): Promise<TagAssignMutationResponse> {
-    return this.tagsService.unassignTag(testCaseId, tagId);
+    return this.tagsService.unassignTag(featureId, testId, testCaseId, tagId);
   }
 
   /**

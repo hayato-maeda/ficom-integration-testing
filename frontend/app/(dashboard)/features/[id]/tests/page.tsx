@@ -350,7 +350,9 @@ export default function FeatureTestsPage() {
             <div>
               <CardTitle>テスト一覧</CardTitle>
               <CardDescription>
-                {tests.length > 0 ? `${tests.length}件のテストがこの機能に紐づいています` : 'この機能に紐づくテストはありません'}
+                {tests.length > 0
+                  ? `${tests.length}件のテストがこの機能に紐づいています`
+                  : 'この機能に紐づくテストはありません'}
               </CardDescription>
             </div>
             <Button size="sm" onClick={() => setAddTestDialogOpen(true)}>

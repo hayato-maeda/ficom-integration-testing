@@ -52,22 +52,32 @@ export class TestCasesResolver {
 
   /**
    * テストケース取得クエリ
+   * @param featureId - 機能ID
+   * @param testId - テストID
    * @param id - テストケースID
    * @returns テストケースまたはnull
    */
   @Query(() => TestCase, { nullable: true })
-  async testCase(@Args('id', { type: () => Int }) id: number): Promise<TestCase | null> {
-    return this.testCasesService.findOne(id);
+  async testCase(
+    @Args('featureId', { type: () => Int }) featureId: number,
+    @Args('testId', { type: () => Int }) testId: number,
+    @Args('id', { type: () => Int }) id: number,
+  ): Promise<TestCase | null> {
+    return this.testCasesService.findOne(featureId, testId, id);
   }
 
   /**
    * テストに属するテストケース取得クエリ
+   * @param featureId - 機能ID
    * @param testId - テストID
    * @returns テストケースの一覧
    */
   @Query(() => [TestCase])
-  async testCasesByTest(@Args('testId', { type: () => Int }) testId: number): Promise<TestCase[]> {
-    return this.testCasesService.findByTest(testId);
+  async testCasesByTest(
+    @Args('featureId', { type: () => Int }) featureId: number,
+    @Args('testId', { type: () => Int }) testId: number,
+  ): Promise<TestCase[]> {
+    return this.testCasesService.findByTest(featureId, testId);
   }
 
   /**
@@ -87,16 +97,20 @@ export class TestCasesResolver {
 
   /**
    * テストケース削除ミューテーション
+   * @param featureId - 機能ID
+   * @param testId - テストID
    * @param id - テストケースID
    * @param user - 現在のユーザー
    * @returns テストケースMutationレスポンス
    */
   @Mutation(() => TestCaseMutationResponse)
   async deleteTestCase(
+    @Args('featureId', { type: () => Int }) featureId: number,
+    @Args('testId', { type: () => Int }) testId: number,
     @Args('id', { type: () => Int }) id: number,
     @CurrentUser() user: User,
   ): Promise<TestCaseMutationResponse> {
-    return this.testCasesService.remove(id, user.id);
+    return this.testCasesService.remove(featureId, testId, id, user.id);
   }
 
   /**

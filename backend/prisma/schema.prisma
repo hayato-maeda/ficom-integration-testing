@@ -37,21 +37,23 @@ model User {
 /// 機能（Feature）に属するテストを管理します。
 /// 各テストは複数のテストケースを持ちます。
 /// ステータス: DRAFT（下書き）, IN_REVIEW（レビュー中）, APPROVED（承認済み）, REJECTED（却下）, ARCHIVED（アーカイブ）
+/// 複合主キー: (featureId, id) - 各Feature内でIDが1から開始
 model Test {
-  id        Int      @id @default(autoincrement())
-  featureId Int
-  name      String
+  featureId   Int
+  id          Int
+  name        String
   description String?  @db.Text
-  status    String   @default("DRAFT")
+  status      String   @default("DRAFT")
   createdById Int
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   // リレーション
   feature   Feature    @relation(fields: [featureId], references: [id], onDelete: Cascade)
   createdBy User       @relation("TestCreator", fields: [createdById], references: [id])
   testCases TestCase[]
 
+  @@id([featureId, id])
   @@map("tests")
 }
 
@@ -59,9 +61,11 @@ model Test {
 /// テスト（Test）に属する個別のテストケースを管理します。
 /// タイトル、説明、手順、期待結果、実績、ステータスなどの情報を持ちます。
 /// ステータス: DRAFT（下書き）, IN_REVIEW（レビュー中）, APPROVED（承認済み）, REJECTED（却下）, ARCHIVED（アーカイブ）
+/// 複合主キー: (featureId, testId, id) - 各Test内でIDが1から開始
 model TestCase {
-  id             Int      @id @default(autoincrement())
+  featureId      Int
   testId         Int
+  id             Int
   title          String
   description    String?
   steps          String   @db.Text
@@ -73,13 +77,14 @@ model TestCase {
   updatedAt      DateTime @updatedAt
 
   // リレーション
-  test      Test           @relation(fields: [testId], references: [id], onDelete: Cascade)
-  createdBy User           @relation("TestCaseCreator", fields: [createdById], references: [id])
+  test      Test          @relation(fields: [featureId, testId], references: [featureId, id], onDelete: Cascade)
+  createdBy User          @relation("TestCaseCreator", fields: [createdById], references: [id])
   tags      TestCaseTag[]
   files     File[]
   approvals Approval[]
   comments  Comment[]
 
+  @@id([featureId, testId, id])
   @@map("test_cases")
 }
 
@@ -101,15 +106,17 @@ model Tag {
 /// テストケースタグ中間テーブル
 /// テストケースとタグの多対多リレーションを管理します。
 model TestCaseTag {
+  featureId  Int
+  testId     Int
   testCaseId Int
   tagId      Int
   assignedAt DateTime @default(now())
 
   // リレーション
-  testCase TestCase @relation(fields: [testCaseId], references: [id], onDelete: Cascade)
+  testCase TestCase @relation(fields: [featureId, testId, testCaseId], references: [featureId, testId, id], onDelete: Cascade)
   tag      Tag      @relation(fields: [tagId], references: [id], onDelete: Cascade)
 
-  @@id([testCaseId, tagId])
+  @@id([featureId, testId, testCaseId, tagId])
   @@map("test_case_tags")
 }
 
@@ -122,12 +129,14 @@ model File {
   path       String
   mimeType   String
   size       Int
+  featureId  Int
+  testId     Int
   testCaseId Int
   uploadedBy Int
   createdAt  DateTime @default(now())
 
   // リレーション
-  testCase TestCase @relation(fields: [testCaseId], references: [id], onDelete: Cascade)
+  testCase TestCase @relation(fields: [featureId, testId, testCaseId], references: [featureId, testId, id], onDelete: Cascade)
   uploader User     @relation(fields: [uploadedBy], references: [id])
 
   @@map("files")
@@ -139,6 +148,8 @@ model File {
 /// ステータス: PENDING（承認待ち）, APPROVED（承認）, REJECTED（却下）
 model Approval {
   id         Int      @id @default(autoincrement())
+  featureId  Int
+  testId     Int
   testCaseId Int
   userId     Int
   status     String   @default("PENDING")
@@ -147,10 +158,10 @@ model Approval {
   updatedAt  DateTime @updatedAt
 
   // リレーション
-  testCase TestCase @relation(fields: [testCaseId], references: [id], onDelete: Cascade)
+  testCase TestCase @relation(fields: [featureId, testId, testCaseId], references: [featureId, testId, id], onDelete: Cascade)
   user     User     @relation(fields: [userId], references: [id])
 
-  @@unique([testCaseId, userId])
+  @@unique([featureId, testId, testCaseId, userId])
   @@map("approvals")
 }
 
@@ -160,13 +171,15 @@ model Approval {
 model Comment {
   id         Int      @id @default(autoincrement())
   content    String   @db.Text
+  featureId  Int
+  testId     Int
   testCaseId Int
   userId     Int
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
   // リレーション
-  testCase TestCase @relation(fields: [testCaseId], references: [id], onDelete: Cascade)
+  testCase TestCase @relation(fields: [featureId, testId, testCaseId], references: [featureId, testId, id], onDelete: Cascade)
   user     User     @relation(fields: [userId], references: [id])
 
   @@map("comments")

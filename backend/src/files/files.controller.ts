@@ -40,10 +40,13 @@ export class FilesController {
   /**
    * ファイルアップロード
    * @param file - アップロードされたファイル
+   * @param featureId - 機能ID
+   * @param testId - テストID
+   * @param testCaseId - テストケースID
    * @param user - 現在のユーザー
    * @returns アップロードされたファイル情報
    */
-  @Post('upload/:testCaseId')
+  @Post('upload/:featureId/:testId/:testCaseId')
   @UseInterceptors(
     FileInterceptor('file', {
       storage: diskStorage({
@@ -62,6 +65,8 @@ export class FilesController {
   )
   async uploadFile(
     @UploadedFile() file: Express.Multer.File,
+    @Param('featureId', ParseIntPipe) featureId: number,
+    @Param('testId', ParseIntPipe) testId: number,
     @Param('testCaseId', ParseIntPipe) testCaseId: number,
     @CurrentUser() user: User,
   ): Promise<File> {
@@ -70,6 +75,8 @@ export class FilesController {
         filename: file.originalname,
         size: file.size,
         mimeType: file.mimetype,
+        featureId,
+        testId,
         testCaseId,
         userId: user.id,
       },
@@ -81,6 +88,8 @@ export class FilesController {
       file.filename,
       file.mimetype,
       file.size,
+      featureId,
+      testId,
       testCaseId,
       user.id,
     );

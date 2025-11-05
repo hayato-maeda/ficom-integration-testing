@@ -144,8 +144,8 @@ export default function TestCasesPage() {
   });
 
   const { data: testData, loading: testLoading } = useQuery<{ test: Test | null }>(GET_TEST_QUERY, {
-    variables: { id: testId },
-    skip: isNaN(testId),
+    variables: { featureId, id: testId },
+    skip: isNaN(featureId) || isNaN(testId),
   });
 
   const {
@@ -155,8 +155,8 @@ export default function TestCasesPage() {
   } = useQuery<{
     testCasesByTest: TestCase[];
   }>(GET_TEST_CASES_BY_TEST_QUERY, {
-    variables: { testId },
-    skip: isNaN(testId),
+    variables: { featureId, testId },
+    skip: isNaN(featureId) || isNaN(testId),
   });
 
   const [createTestCase, { loading: createLoading }] = useMutation<{
@@ -219,6 +219,7 @@ export default function TestCasesPage() {
     try {
       const result = await createTestCase({
         variables: {
+          featureId,
           testId,
           title: values.title,
           description: values.description,
@@ -418,11 +419,9 @@ export default function TestCasesPage() {
                 <TableBody>
                   {testCases.map((testCase) => (
                     <TableRow
-                      key={testCase.id}
+                      key={`${testCase.featureId}-${testCase.testId}-${testCase.id}`}
                       className="cursor-pointer hover:bg-muted/50"
-                      onClick={() =>
-                        router.push(`/features/${featureId}/tests/${testId}/test-cases/${testCase.id}`)
-                      }
+                      onClick={() => router.push(`/features/${featureId}/tests/${testId}/test-cases/${testCase.id}`)}
                     >
                       <TableCell className="font-medium">{testCase.id}</TableCell>
                       <TableCell>
@@ -440,9 +439,9 @@ export default function TestCasesPage() {
                       </TableCell>
                       <TableCell>
                         <div className="flex flex-wrap gap-1">
-                          {testCase.tags.map((tag) => (
+                          {testCase.tags.map((tag, tagIndex) => (
                             <Badge
-                              key={tag.id}
+                              key={`${testCase.featureId}-${testCase.testId}-${testCase.id}-${tag.id}-${tagIndex}`}
                               variant="outline"
                               style={tag.color ? { borderColor: tag.color, color: tag.color } : undefined}
                             >

@@ -111,13 +111,15 @@ export const DELETE_TAG_MUTATION = gql`
  *
  * テストケースにタグを割り当てます。
  *
+ * @param {number} featureId - 機能ID
+ * @param {number} testId - テストID
  * @param {number} testCaseId - テストケースID
  * @param {number} tagId - タグID
  * @returns ミューテーションレスポンス
  */
 export const ASSIGN_TAG_MUTATION = gql`
-  mutation AssignTag($testCaseId: Int!, $tagId: Int!) {
-    assignTag(assignTagInput: { testCaseId: $testCaseId, tagId: $tagId }) {
+  mutation AssignTag($featureId: Int!, $testId: Int!, $testCaseId: Int!, $tagId: Int!) {
+    assignTag(assignTagInput: { featureId: $featureId, testId: $testId, testCaseId: $testCaseId, tagId: $tagId }) {
       isValid
       message
       data {
@@ -137,13 +139,15 @@ export const ASSIGN_TAG_MUTATION = gql`
  *
  * テストケースからタグの割り当てを解除します。
  *
+ * @param {number} featureId - 機能ID
+ * @param {number} testId - テストID
  * @param {number} testCaseId - テストケースID
  * @param {number} tagId - タグID
  * @returns ミューテーションレスポンス
  */
 export const UNASSIGN_TAG_MUTATION = gql`
-  mutation UnassignTag($testCaseId: Int!, $tagId: Int!) {
-    unassignTag(testCaseId: $testCaseId, tagId: $tagId) {
+  mutation UnassignTag($featureId: Int!, $testId: Int!, $testCaseId: Int!, $tagId: Int!) {
+    unassignTag(featureId: $featureId, testId: $testId, testCaseId: $testCaseId, tagId: $tagId) {
       isValid
       message
       data {

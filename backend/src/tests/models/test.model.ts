@@ -27,16 +27,17 @@ export type TestStatusType = (typeof TestStatus)[keyof typeof TestStatus];
  * テストエンティティ
  * 機能（Feature）に属するテストを表します。
  * 各テストは複数のテストケースを持ちます。
+ * 複合主キー: (featureId, id)
  */
 @ObjectType()
 export class Test {
-  /** テストID */
-  @Field(() => Int)
-  id: number;
-
-  /** 機能ID */
+  /** 機能ID (複合キーの一部) */
   @Field(() => Int)
   featureId: number;
+
+  /** テストID (複合キーの一部) */
+  @Field(() => Int)
+  id: number;
 
   /** テスト名 */
   @Field(() => String)

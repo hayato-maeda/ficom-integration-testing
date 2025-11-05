@@ -11,13 +11,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { GET_TEST_CASE_QUERY, UPDATE_TEST_CASE_MUTATION } from '@/lib/graphql/test-cases';
 import { MutationResponse, TestCase, TestCaseStatus } from '@/types';
 import { ArrowLeft, Loader2 } from 'lucide-react';
@@ -61,8 +55,8 @@ export default function TestCaseEditPage() {
   const testCaseId = parseInt(params.testCaseId as string, 10);
 
   const { data, loading: queryLoading } = useQuery<{ testCase: TestCase | null }>(GET_TEST_CASE_QUERY, {
-    variables: { id: testCaseId },
-    skip: isNaN(testCaseId),
+    variables: { featureId, testId, id: testCaseId },
+    skip: isNaN(featureId) || isNaN(testId) || isNaN(testCaseId),
   });
 
   const [updateTestCase, { loading: mutationLoading }] = useMutation<{
@@ -101,6 +95,8 @@ export default function TestCaseEditPage() {
     try {
       const result = await updateTestCase({
         variables: {
+          featureId,
+          testId,
           id: testCaseId,
           title: data.title,
           description: data.description || undefined,

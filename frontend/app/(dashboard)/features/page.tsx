@@ -8,13 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -122,11 +116,7 @@ export default function FeaturesPage() {
     if (sortColumn !== column) {
       return <ArrowUpDown className="ml-2 h-4 w-4" />;
     }
-    return sortDirection === 'asc' ? (
-      <ArrowUp className="ml-2 h-4 w-4" />
-    ) : (
-      <ArrowDown className="ml-2 h-4 w-4" />
-    );
+    return sortDirection === 'asc' ? <ArrowUp className="ml-2 h-4 w-4" /> : <ArrowDown className="ml-2 h-4 w-4" />;
   };
 
   // フィルタリングとソートされたテスト一覧を取得
@@ -247,7 +237,7 @@ export default function FeaturesPage() {
             <div className="md:col-span-1">
               <label className="text-sm font-medium">ステータス</label>
               <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="mt-1.5 min-w-[100px]">
+                <SelectTrigger className="mt-1.5 w-full">
                   <SelectValue placeholder="すべて" />
                 </SelectTrigger>
                 <SelectContent>
@@ -376,26 +366,19 @@ export default function FeaturesPage() {
                         )}
                       </TableCell>
                       <TableCell>
-                        <Badge variant={getStatusBadgeVariant(feature.status)}>
-                          {getStatusLabel(feature.status)}
-                        </Badge>
+                        <Badge variant={getStatusBadgeVariant(feature.status)}>{getStatusLabel(feature.status)}</Badge>
                       </TableCell>
                       <TableCell>
                         {feature.color ? (
                           <div className="flex items-center gap-2">
-                            <div
-                              className="h-6 w-6 rounded border"
-                              style={{ backgroundColor: feature.color }}
-                            />
+                            <div className="h-6 w-6 rounded border" style={{ backgroundColor: feature.color }} />
                             <span className="text-sm text-muted-foreground">{feature.color}</span>
                           </div>
                         ) : (
                           <p className="text-sm text-muted-foreground">-</p>
                         )}
                       </TableCell>
-                      <TableCell>
-                        {format(new Date(feature.createdAt), 'yyyy/MM/dd', { locale: ja })}
-                      </TableCell>
+                      <TableCell>{format(new Date(feature.createdAt), 'yyyy/MM/dd', { locale: ja })}</TableCell>
                       <TableCell>
                         <div className="flex items-center gap-1">
                           <Button
@@ -445,7 +428,11 @@ export default function FeaturesPage() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={deleteLoading}>キャンセル</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} disabled={deleteLoading} className="bg-destructive hover:bg-destructive/90">
+            <AlertDialogAction
+              onClick={handleDelete}
+              disabled={deleteLoading}
+              className="bg-destructive hover:bg-destructive/90"
+            >
               {deleteLoading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />

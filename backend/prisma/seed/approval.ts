@@ -4,9 +4,11 @@ export async function createApprovals(prisma: PrismaClient, testCases: TestCase[
   console.log('Creating approvals...');
 
   await Promise.all([
-    // Approvals for test case 1 (approved by 2 users)
+    // Approvals for test case 1 (approved by 2 users) - Feature1 Test1 TestCase1
     prisma.approval.create({
       data: {
+        featureId: testCases[0].featureId,
+        testId: testCases[0].testId,
         testCaseId: testCases[0].id,
         userId: users[3].id,
         status: 'APPROVED',
@@ -15,6 +17,8 @@ export async function createApprovals(prisma: PrismaClient, testCases: TestCase[
     }),
     prisma.approval.create({
       data: {
+        featureId: testCases[0].featureId,
+        testId: testCases[0].testId,
         testCaseId: testCases[0].id,
         userId: users[5].id,
         status: 'APPROVED',
@@ -22,9 +26,11 @@ export async function createApprovals(prisma: PrismaClient, testCases: TestCase[
       },
     }),
 
-    // Approvals for test case 2 (pending review)
+    // Approvals for test case 2 (pending review) - Feature1 Test1 TestCase2
     prisma.approval.create({
       data: {
+        featureId: testCases[1].featureId,
+        testId: testCases[1].testId,
         testCaseId: testCases[1].id,
         userId: users[3].id,
         status: 'PENDING',
@@ -32,15 +38,19 @@ export async function createApprovals(prisma: PrismaClient, testCases: TestCase[
     }),
     prisma.approval.create({
       data: {
+        featureId: testCases[1].featureId,
+        testId: testCases[1].testId,
         testCaseId: testCases[1].id,
         userId: users[5].id,
         status: 'PENDING',
       },
     }),
 
-    // Approval for test case 4 (rejected)
+    // Approval for test case 4 (rejected) - Feature1 Test2 TestCase1
     prisma.approval.create({
       data: {
+        featureId: testCases[3].featureId,
+        testId: testCases[3].testId,
         testCaseId: testCases[3].id,
         userId: users[3].id,
         status: 'REJECTED',
@@ -48,18 +58,22 @@ export async function createApprovals(prisma: PrismaClient, testCases: TestCase[
       },
     }),
 
-    // Approval for test case 5 (pending)
+    // Approval for test case 5 (pending) - Feature1 Test2 TestCase2
     prisma.approval.create({
       data: {
+        featureId: testCases[4].featureId,
+        testId: testCases[4].testId,
         testCaseId: testCases[4].id,
         userId: users[5].id,
         status: 'PENDING',
       },
     }),
 
-    // Approvals for test case 6 (approved)
+    // Approvals for test case 6 (approved) - Feature2 Test1 TestCase1
     prisma.approval.create({
       data: {
+        featureId: testCases[5].featureId,
+        testId: testCases[5].testId,
         testCaseId: testCases[5].id,
         userId: users[0].id,
         status: 'APPROVED',
@@ -67,9 +81,11 @@ export async function createApprovals(prisma: PrismaClient, testCases: TestCase[
       },
     }),
 
-    // Approval for test case 8 (pending)
+    // Approval for test case 8 (pending) - Feature2 Test1 TestCase3
     prisma.approval.create({
       data: {
+        featureId: testCases[7].featureId,
+        testId: testCases[7].testId,
         testCaseId: testCases[7].id,
         userId: users[3].id,
         status: 'PENDING',

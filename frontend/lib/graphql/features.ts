@@ -85,7 +85,9 @@ export const CREATE_FEATURE_MUTATION = gql`
  */
 export const UPDATE_FEATURE_MUTATION = gql`
   mutation UpdateFeature($id: Int!, $name: String, $description: String, $color: String, $status: String) {
-    updateFeature(updateFeatureInput: { id: $id, name: $name, description: $description, color: $color, status: $status }) {
+    updateFeature(
+      updateFeatureInput: { id: $id, name: $name, description: $description, color: $color, status: $status }
+    ) {
       isValid
       message
       data {
@@ -120,4 +122,3 @@ export const DELETE_FEATURE_MUTATION = gql`
     }
   }
 `;
-

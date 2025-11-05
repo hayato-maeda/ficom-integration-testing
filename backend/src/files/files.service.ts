@@ -19,11 +19,13 @@ export class FilesService {
   ) {}
 
   /**
-   * ファイル情報をデータベースに保存
+   * ファイル情報を保存
    * @param filename - ファイル名
    * @param path - ファイルパス
    * @param mimeType - MIMEタイプ
    * @param size - ファイルサイズ
+   * @param featureId - 機能ID
+   * @param testId - テストID
    * @param testCaseId - テストケースID
    * @param uploadedBy - アップロードユーザーID
    * @returns 保存されたファイル情報
@@ -33,6 +35,8 @@ export class FilesService {
     path: string,
     mimeType: string,
     size: number,
+    featureId: number,
+    testId: number,
     testCaseId: number,
     uploadedBy: number,
   ): Promise<File> {
@@ -42,6 +46,8 @@ export class FilesService {
         path,
         mimeType,
         size,
+        featureId,
+        testId,
         testCaseId,
         uploadedBy,
       },
@@ -54,6 +60,8 @@ export class FilesService {
         path,
         mimeType,
         size,
+        featureId,
+        testId,
         testCaseId,
         uploadedBy,
       },
@@ -71,7 +79,6 @@ export class FilesService {
 
     return file;
   }
-
   /**
    * ファイル一覧取得
    * @returns ファイルの一覧

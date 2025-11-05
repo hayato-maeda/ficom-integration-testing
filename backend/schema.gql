@@ -3,8 +3,10 @@
 # ------------------------------------------------------
 
 input AssignTagInput {
+  featureId: Int!
   tagId: Int!
   testCaseId: Int!
+  testId: Int!
 }
 
 type AuthMutationResponse {
@@ -32,6 +34,7 @@ input CreateTestCaseInput {
   actualResult: String
   description: String
   expectedResult: String!
+  featureId: Int!
   steps: String!
   testId: Int!
   title: String!
@@ -91,13 +94,13 @@ type Mutation {
   createTestCase(createTestCaseInput: CreateTestCaseInput!): TestCaseMutationResponse!
   deleteFeature(id: Int!): FeatureMutationResponse!
   deleteTag(id: Int!): TagMutationResponse!
-  deleteTest(id: Int!): TestMutationResponse!
-  deleteTestCase(id: Int!): TestCaseMutationResponse!
+  deleteTest(featureId: Int!, id: Int!): TestMutationResponse!
+  deleteTestCase(featureId: Int!, id: Int!, testId: Int!): TestCaseMutationResponse!
   login(loginInput: LoginInput!): AuthMutationResponse!
   logout: AuthMutationResponse!
   refreshToken: AuthMutationResponse!
   signUp(signUpInput: SignUpInput!): AuthMutationResponse!
-  unassignTag(tagId: Int!, testCaseId: Int!): TagAssignMutationResponse!
+  unassignTag(featureId: Int!, tagId: Int!, testCaseId: Int!, testId: Int!): TagAssignMutationResponse!
   updateFeature(updateFeatureInput: UpdateFeatureInput!): FeatureMutationResponse!
   updateTag(updateTagInput: UpdateTagInput!): TagMutationResponse!
   updateTest(updateTestInput: UpdateTestInput!): TestMutationResponse!
@@ -114,10 +117,10 @@ type Query {
   tag(id: Int!): Tag
   tags: [Tag!]!
   tagsByTestCase(testCaseId: Int!): [Tag!]!
-  test(id: Int!): Test
-  testCase(id: Int!): TestCase
+  test(featureId: Int!, id: Int!): Test
+  testCase(featureId: Int!, id: Int!, testId: Int!): TestCase
   testCases: [TestCase!]!
-  testCasesByTest(testId: Int!): [TestCase!]!
+  testCasesByTest(featureId: Int!, testId: Int!): [TestCase!]!
   tests: [Test!]!
   testsByFeature(featureId: Int!): [Test!]!
 }
@@ -167,6 +170,7 @@ type TestCase {
   createdById: Int!
   description: String
   expectedResult: String!
+  featureId: Int!
   files: [File!]
   id: Int!
   status: String!
@@ -208,14 +212,17 @@ input UpdateTestCaseInput {
   actualResult: String
   description: String
   expectedResult: String
+  featureId: Int!
   id: Int!
   status: String
   steps: String
+  testId: Int!
   title: String
 }
 
 input UpdateTestInput {
   description: String
+  featureId: Int!
   id: Int!
   name: String
   status: String

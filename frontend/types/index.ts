@@ -77,6 +77,7 @@ export interface Test {
 // テストケース型
 export interface TestCase {
   id: number;
+  featureId: number;
   testId: number;
   test?: Test;
   title: string;
@@ -127,6 +128,7 @@ export interface CreateTestInput {
 
 // テスト更新入力型
 export interface UpdateTestInput {
+  featureId: number;
   id: number;
   name?: string;
   description?: string;
@@ -135,6 +137,7 @@ export interface UpdateTestInput {
 
 // テストケース作成入力型
 export interface CreateTestCaseInput {
+  featureId: number;
   testId: number;
   title: string;
   description?: string;
@@ -145,6 +148,8 @@ export interface CreateTestCaseInput {
 
 // テストケース更新入力型
 export interface UpdateTestCaseInput {
+  featureId: number;
+  testId: number;
   id: number;
   title?: string;
   description?: string;

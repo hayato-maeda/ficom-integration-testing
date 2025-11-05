@@ -77,8 +77,8 @@ export default function TestCaseDetailPage() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
   const { data, loading, error } = useQuery<{ testCase: TestCase | null }>(GET_TEST_CASE_QUERY, {
-    variables: { id: testCaseId },
-    skip: isNaN(testCaseId),
+    variables: { featureId, testId, id: testCaseId },
+    skip: isNaN(featureId) || isNaN(testId) || isNaN(testCaseId),
   });
 
   const [deleteTestCase, { loading: deleteLoading }] = useMutation<{
@@ -90,7 +90,7 @@ export default function TestCaseDetailPage() {
   const handleDelete = async () => {
     try {
       const result = await deleteTestCase({
-        variables: { id: testCaseId },
+        variables: { featureId, testId, id: testCaseId },
       });
 
       if (result.data?.deleteTestCase.isValid) {
@@ -144,19 +144,12 @@ export default function TestCaseDetailPage() {
             <Button
               variant="outline"
               size="sm"
-              onClick={() =>
-                router.push(`/features/${featureId}/tests/${testId}/test-cases/${testCaseId}/edit`)
-              }
+              onClick={() => router.push(`/features/${featureId}/tests/${testId}/test-cases/${testCaseId}/edit`)}
             >
               <Pencil className="mr-2 h-4 w-4" />
               編集
             </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setDeleteDialogOpen(true)}
-              disabled={deleteLoading}
-            >
+            <Button variant="outline" size="sm" onClick={() => setDeleteDialogOpen(true)} disabled={deleteLoading}>
               <Trash2 className="mr-2 h-4 w-4" />
               削除
             </Button>
@@ -201,9 +194,7 @@ export default function TestCaseDetailPage() {
                 <div className="space-y-2">
                   <div className="flex items-center gap-3">
                     <CardTitle className="text-2xl">{testCase.title}</CardTitle>
-                    <Badge variant={getStatusBadgeVariant(testCase.status)}>
-                      {getStatusLabel(testCase.status)}
-                    </Badge>
+                    <Badge variant={getStatusBadgeVariant(testCase.status)}>{getStatusLabel(testCase.status)}</Badge>
                   </div>
                   <CardDescription>ID: {testCase.id}</CardDescription>
                 </div>
@@ -264,9 +255,9 @@ export default function TestCaseDetailPage() {
               <CardContent>
                 {testCase.tags.length > 0 ? (
                   <div className="flex flex-wrap gap-2">
-                    {testCase.tags.map((tag) => (
+                    {testCase.tags.map((tag, tagIndex) => (
                       <Badge
-                        key={tag.id}
+                        key={`${testCase.featureId}-${testCase.testId}-${testCase.id}-${tag.id}-${tagIndex}`}
                         variant="outline"
                         style={tag.color ? { borderColor: tag.color, color: tag.color } : undefined}
                       >

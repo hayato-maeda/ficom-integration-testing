@@ -39,13 +39,17 @@ export const GET_TEST_CASES_QUERY = gql`
  *
  * 指定されたIDのテストケースを取得します。
  *
+ * @param {number} featureId - 機能ID
+ * @param {number} testId - テストID
  * @param {number} id - テストケースID
  * @returns テストケースまたはnull
  */
 export const GET_TEST_CASE_QUERY = gql`
-  query GetTestCase($id: Int!) {
-    testCase(id: $id) {
+  query GetTestCase($featureId: Int!, $testId: Int!, $id: Int!) {
+    testCase(featureId: $featureId, testId: $testId, id: $id) {
       id
+      featureId
+      testId
       title
       description
       steps
@@ -72,9 +76,10 @@ export const GET_TEST_CASE_QUERY = gql`
  * Testに属するTestCase一覧取得クエリ
  */
 export const GET_TEST_CASES_BY_TEST_QUERY = gql`
-  query GetTestCasesByTest($testId: Int!) {
-    testCasesByTest(testId: $testId) {
+  query GetTestCasesByTest($featureId: Int!, $testId: Int!) {
+    testCasesByTest(featureId: $featureId, testId: $testId) {
       id
+      featureId
       testId
       title
       description
@@ -103,6 +108,7 @@ export const GET_TEST_CASES_BY_TEST_QUERY = gql`
  *
  * 新しいテストケースを作成します。
  *
+ * @param {number} featureId - 機能ID
  * @param {number} testId - テストID
  * @param {string} title - タイトル
  * @param {string} description - 説明（任意）
@@ -113,6 +119,7 @@ export const GET_TEST_CASES_BY_TEST_QUERY = gql`
  */
 export const CREATE_TEST_CASE_MUTATION = gql`
   mutation CreateTestCase(
+    $featureId: Int!
     $testId: Int!
     $title: String!
     $description: String
@@ -122,6 +129,7 @@ export const CREATE_TEST_CASE_MUTATION = gql`
   ) {
     createTestCase(
       createTestCaseInput: {
+        featureId: $featureId
         testId: $testId
         title: $title
         description: $description
@@ -134,6 +142,7 @@ export const CREATE_TEST_CASE_MUTATION = gql`
       message
       data {
         id
+        featureId
         testId
         title
         description
@@ -153,6 +162,8 @@ export const CREATE_TEST_CASE_MUTATION = gql`
  *
  * 既存のテストケースを更新します。
  *
+ * @param {number} featureId - 機能ID
+ * @param {number} testId - テストID
  * @param {number} id - テストケースID
  * @param {string} title - タイトル（任意）
  * @param {string} description - 説明（任意）
@@ -164,6 +175,8 @@ export const CREATE_TEST_CASE_MUTATION = gql`
  */
 export const UPDATE_TEST_CASE_MUTATION = gql`
   mutation UpdateTestCase(
+    $featureId: Int!
+    $testId: Int!
     $id: Int!
     $title: String
     $description: String
@@ -174,6 +187,8 @@ export const UPDATE_TEST_CASE_MUTATION = gql`
   ) {
     updateTestCase(
       updateTestCaseInput: {
+        featureId: $featureId
+        testId: $testId
         id: $id
         title: $title
         description: $description
@@ -187,6 +202,8 @@ export const UPDATE_TEST_CASE_MUTATION = gql`
       message
       data {
         id
+        featureId
+        testId
         title
         description
         steps
@@ -204,12 +221,14 @@ export const UPDATE_TEST_CASE_MUTATION = gql`
  *
  * 指定されたIDのテストケースを削除します。
  *
+ * @param {number} featureId - 機能ID
+ * @param {number} testId - テストID
  * @param {number} id - テストケースID
  * @returns ミューテーションレスポンス
  */
 export const DELETE_TEST_CASE_MUTATION = gql`
-  mutation DeleteTestCase($id: Int!) {
-    deleteTestCase(id: $id) {
+  mutation DeleteTestCase($featureId: Int!, $testId: Int!, $id: Int!) {
+    deleteTestCase(featureId: $featureId, testId: $testId, id: $id) {
       isValid
       message
       data {

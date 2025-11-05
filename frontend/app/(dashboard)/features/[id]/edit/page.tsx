@@ -11,18 +11,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import {
-  GET_FEATURE_QUERY,
-  GET_FEATURES_QUERY,
-  UPDATE_FEATURE_MUTATION,
-} from '@/lib/graphql/features';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { GET_FEATURE_QUERY, GET_FEATURES_QUERY, UPDATE_FEATURE_MUTATION } from '@/lib/graphql/features';
 import { MutationResponse, Feature, FeatureStatus } from '@/types';
 import { ArrowLeft, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -36,10 +26,7 @@ const featureFormSchema = z.object({
   color: z
     .string()
     .optional()
-    .refine(
-      (val) => !val || /^#[0-9A-Fa-f]{6}$/.test(val),
-      'カラーコードは#XXXXXXの形式で入力してください',
-    ),
+    .refine((val) => !val || /^#[0-9A-Fa-f]{6}$/.test(val), 'カラーコードは#XXXXXXの形式で入力してください'),
   status: z.string(),
 });
 
@@ -66,13 +53,10 @@ export default function FeatureEditPage() {
   const router = useRouter();
   const id = parseInt(params.id as string, 10);
 
-  const { data, loading: queryLoading } = useQuery<{ feature: Feature | null }>(
-    GET_FEATURE_QUERY,
-    {
-      variables: { id },
-      skip: isNaN(id),
-    }
-  );
+  const { data, loading: queryLoading } = useQuery<{ feature: Feature | null }>(GET_FEATURE_QUERY, {
+    variables: { id },
+    skip: isNaN(id),
+  });
 
   const [updateFeature, { loading: mutationLoading }] = useMutation<{
     updateFeature: MutationResponse<Feature>;
@@ -198,9 +182,7 @@ export default function FeatureEditPage() {
       <Card>
         <CardHeader>
           <CardTitle>編集</CardTitle>
-          <CardDescription>
-            {`テスト #${id} を編集します`}
-          </CardDescription>
+          <CardDescription>{`テスト #${id} を編集します`}</CardDescription>
         </CardHeader>
         <CardContent>
           <Form {...form}>
@@ -230,11 +212,7 @@ export default function FeatureEditPage() {
                   <FormItem>
                     <FormLabel>説明</FormLabel>
                     <FormControl>
-                      <Textarea
-                        placeholder="機能の説明を入力"
-                        className="min-h-[120px]"
-                        {...field}
-                      />
+                      <Textarea placeholder="機能の説明を入力" className="min-h-[120px]" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -264,9 +242,7 @@ export default function FeatureEditPage() {
                         />
                       </div>
                     </FormControl>
-                    <p className="text-sm text-muted-foreground">
-                      機能を識別するための色を選択してください
-                    </p>
+                    <p className="text-sm text-muted-foreground">機能を識別するための色を選択してください</p>
                     <FormMessage />
                   </FormItem>
                 )}

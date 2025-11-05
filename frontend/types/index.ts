@@ -7,21 +7,22 @@ export interface User {
   updatedAt: string;
 }
 
-// テストケースステータス
-export enum TestCaseStatus {
-  PENDING = 'PENDING',
-  PASSED = 'PASSED',
-  FAILED = 'FAILED',
-  SKIPPED = 'SKIPPED',
-}
+// テストケースステータス定数
+export const TestCaseStatus = {
+  /** 下書き */
+  DRAFT: 'DRAFT',
+  /** レビュー中 */
+  IN_REVIEW: 'IN_REVIEW',
+  /** 承認済み */
+  APPROVED: 'APPROVED',
+  /** 却下 */
+  REJECTED: 'REJECTED',
+  /** アーカイブ */
+  ARCHIVED: 'ARCHIVED',
+} as const;
 
-// テストケース優先度
-export enum TestCasePriority {
-  LOW = 'LOW',
-  MEDIUM = 'MEDIUM',
-  HIGH = 'HIGH',
-  CRITICAL = 'CRITICAL',
-}
+// テストケースステータスの型
+export type TestCaseStatusType = (typeof TestCaseStatus)[keyof typeof TestCaseStatus];
 
 // タグ型
 export interface Tag {
@@ -29,7 +30,6 @@ export interface Tag {
   name: string;
   color?: string;
   createdAt: string;
-  updatedAt: string;
 }
 
 // テストケース型
@@ -37,11 +37,10 @@ export interface TestCase {
   id: number;
   title: string;
   description?: string;
-  steps?: string;
-  expectedResult?: string;
+  steps: string;
+  expectedResult: string;
   actualResult?: string;
-  status: TestCaseStatus;
-  priority: TestCasePriority;
+  status: string;
   createdBy: User;
   tags: Tag[];
   createdAt: string;
@@ -78,21 +77,20 @@ export interface SignupInput {
 export interface CreateTestCaseInput {
   title: string;
   description?: string;
-  steps?: string;
-  expectedResult?: string;
-  status?: TestCaseStatus;
-  priority?: TestCasePriority;
+  steps: string;
+  expectedResult: string;
+  actualResult?: string;
 }
 
 // テストケース更新入力型
 export interface UpdateTestCaseInput {
+  id: number;
   title?: string;
   description?: string;
   steps?: string;
   expectedResult?: string;
   actualResult?: string;
-  status?: TestCaseStatus;
-  priority?: TestCasePriority;
+  status?: string;
 }
 
 // タグ作成入力型

@@ -16,9 +16,25 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { GET_TEST_CASE_QUERY, DELETE_TEST_CASE_MUTATION } from '@/lib/graphql/test-cases';
-import { MutationResponse, TestCase, TestCaseStatus } from '@/types';
-import { ArrowLeft, Loader2, Pencil, Trash2 } from 'lucide-react';
+import { GET_TAGS_QUERY, ASSIGN_TAG_MUTATION, UNASSIGN_TAG_MUTATION } from '@/lib/graphql/tags';
+import { MutationResponse, TestCase, TestCaseStatus, Tag } from '@/types';
+import { ArrowLeft, Loader2, Pencil, Trash2, Plus, X } from 'lucide-react';
 import { format } from 'date-fns';
 import { ja } from 'date-fns/locale/ja';
 import { toast } from 'sonner';
@@ -75,17 +91,39 @@ export default function TestCaseDetailPage() {
   const testId = parseInt(params.testId as string, 10);
   const testCaseId = parseInt(params.testCaseId as string, 10);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [addTagDialogOpen, setAddTagDialogOpen] = useState(false);
+  const [selectedTagId, setSelectedTagId] = useState<string>('');
 
   const { data, loading, error } = useQuery<{ testCase: TestCase | null }>(GET_TEST_CASE_QUERY, {
     variables: { featureId, testId, id: testCaseId },
     skip: isNaN(featureId) || isNaN(testId) || isNaN(testCaseId),
   });
 
+  const { data: tagsData } = useQuery<{ tags: Tag[] }>(GET_TAGS_QUERY);
+
   const [deleteTestCase, { loading: deleteLoading }] = useMutation<{
     deleteTestCase: MutationResponse<TestCase>;
   }>(DELETE_TEST_CASE_MUTATION);
 
+  const [assignTag, { loading: assignLoading }] = useMutation<{
+    assignTag: MutationResponse<null>;
+  }>(ASSIGN_TAG_MUTATION, {
+    refetchQueries: [{ query: GET_TEST_CASE_QUERY, variables: { featureId, testId, id: testCaseId } }],
+  });
+
+  const [unassignTag, { loading: unassignLoading }] = useMutation<{
+    unassignTag: MutationResponse<null>;
+  }>(UNASSIGN_TAG_MUTATION, {
+    refetchQueries: [{ query: GET_TEST_CASE_QUERY, variables: { featureId, testId, id: testCaseId } }],
+  });
+
   const testCase = data?.testCase;
+  const allTags = tagsData?.tags || [];
+
+  // 未割り当てのタグを取得
+  const unassignedTags = allTags.filter(
+    (tag) => !testCase?.tags?.some((t) => t.id === tag.id)
+  );
 
   const handleDelete = async () => {
     try {
@@ -112,6 +150,70 @@ export default function TestCaseDetailPage() {
       });
     } finally {
       setDeleteDialogOpen(false);
+    }
+  };
+
+  const handleAddTag = async () => {
+    if (!selectedTagId) return;
+
+    try {
+      const result = await assignTag({
+        variables: {
+          featureId,
+          testId,
+          testCaseId,
+          tagId: parseInt(selectedTagId, 10),
+        },
+      });
+
+      if (result.data?.assignTag.isValid) {
+        toast.success('タグを追加しました', {
+          id: 'assign-success',
+          style: { background: '#dcfce7', color: '#166534', border: '1px solid #bbf7d0' },
+        });
+        setAddTagDialogOpen(false);
+        setSelectedTagId('');
+      } else {
+        toast.error(result.data?.assignTag.message || 'タグの追加に失敗しました', {
+          id: 'assign-error',
+          style: { background: '#fee2e2', color: '#991b1b', border: '1px solid #fecaca' },
+        });
+      }
+    } catch (_error) {
+      toast.error('エラーが発生しました', {
+        id: 'assign-error',
+        style: { background: '#fee2e2', color: '#991b1b', border: '1px solid #fecaca' },
+      });
+    }
+  };
+
+  const handleRemoveTag = async (tagId: number) => {
+    try {
+      const result = await unassignTag({
+        variables: {
+          featureId,
+          testId,
+          testCaseId,
+          tagId,
+        },
+      });
+
+      if (result.data?.unassignTag.isValid) {
+        toast.success('タグを削除しました', {
+          id: 'unassign-success',
+          style: { background: '#dcfce7', color: '#166534', border: '1px solid #bbf7d0' },
+        });
+      } else {
+        toast.error(result.data?.unassignTag.message || 'タグの削除に失敗しました', {
+          id: 'unassign-error',
+          style: { background: '#fee2e2', color: '#991b1b', border: '1px solid #fecaca' },
+        });
+      }
+    } catch (_error) {
+      toast.error('エラーが発生しました', {
+        id: 'unassign-error',
+        style: { background: '#fee2e2', color: '#991b1b', border: '1px solid #fecaca' },
+      });
     }
   };
 
@@ -250,7 +352,18 @@ export default function TestCaseDetailPage() {
             {/* タグ */}
             <Card>
               <CardHeader>
-                <CardTitle>タグ</CardTitle>
+                <div className="flex items-center justify-between">
+                  <CardTitle>タグ</CardTitle>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setAddTagDialogOpen(true)}
+                    disabled={assignLoading || unassignLoading}
+                  >
+                    <Plus className="mr-2 h-4 w-4" />
+                    タグを追加
+                  </Button>
+                </div>
               </CardHeader>
               <CardContent>
                 {testCase.tags.length > 0 ? (
@@ -260,8 +373,18 @@ export default function TestCaseDetailPage() {
                         key={`${testCase.featureId}-${testCase.testId}-${testCase.id}-${tag.id}-${tagIndex}`}
                         variant="outline"
                         style={tag.color ? { borderColor: tag.color, color: tag.color } : undefined}
+                        className="pr-1"
                       >
                         {tag.name}
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="ml-1 h-4 w-4 p-0 hover:bg-transparent"
+                          onClick={() => handleRemoveTag(tag.id)}
+                          disabled={unassignLoading}
+                        >
+                          <X className="h-3 w-3" />
+                        </Button>
                       </Badge>
                     ))}
                   </div>
@@ -322,6 +445,56 @@ export default function TestCaseDetailPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* タグ追加ダイアログ */}
+      <Dialog open={addTagDialogOpen} onOpenChange={setAddTagDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>タグを追加</DialogTitle>
+            <DialogDescription>このテストケースに割り当てるタグを選択してください</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            {unassignedTags.length > 0 ? (
+              <div className="space-y-2">
+                <label className="text-sm font-medium">タグを選択</label>
+                <Select value={selectedTagId} onValueChange={setSelectedTagId}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="タグを選択してください" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {unassignedTags.map((tag) => (
+                      <SelectItem key={tag.id} value={tag.id.toString()}>
+                        <div className="flex items-center gap-2">
+                          {tag.color && <div className="h-3 w-3 rounded-full" style={{ backgroundColor: tag.color }} />}
+                          <span>{tag.name}</span>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground">すべてのタグが割り当て済みです</p>
+            )}
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setAddTagDialogOpen(false);
+                setSelectedTagId('');
+              }}
+              disabled={assignLoading}
+            >
+              キャンセル
+            </Button>
+            <Button onClick={handleAddTag} disabled={!selectedTagId || assignLoading}>
+              {assignLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              追加
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

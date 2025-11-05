@@ -340,20 +340,26 @@ export class TagsService {
 
   /**
    * テストケースに割り当てられているタグを取得
+   * @param featureId - 機能ID
+   * @param testId - テストID
    * @param testCaseId - テストケースID
    * @returns タグの一覧
    */
-  async getTagsByTestCase(testCaseId: number): Promise<Tag[]> {
-    this.logger.debug({ testCaseId }, 'Fetching tags for test case');
+  async getTagsByTestCase(featureId: number, testId: number, testCaseId: number): Promise<Tag[]> {
+    this.logger.debug({ featureId, testId, testCaseId }, 'Fetching tags for test case');
 
     const testCaseTags = await this.prismaService.testCaseTag.findMany({
-      where: { testCaseId },
+      where: {
+        featureId,
+        testId,
+        testCaseId,
+      },
       include: { tag: true },
     });
 
     const tags = testCaseTags.map((testCaseTag) => testCaseTag.tag);
 
-    this.logger.debug({ testCaseId, count: tags.length }, 'Tags fetched for test case');
+    this.logger.debug({ featureId, testId, testCaseId, count: tags.length }, 'Tags fetched for test case');
 
     return tags;
   }

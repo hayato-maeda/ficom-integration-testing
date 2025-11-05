@@ -122,14 +122,7 @@ export const ASSIGN_TAG_MUTATION = gql`
     assignTag(assignTagInput: { featureId: $featureId, testId: $testId, testCaseId: $testCaseId, tagId: $tagId }) {
       isValid
       message
-      data {
-        id
-        tags {
-          id
-          name
-          color
-        }
-      }
+      data
     }
   }
 `;
@@ -150,14 +143,7 @@ export const UNASSIGN_TAG_MUTATION = gql`
     unassignTag(featureId: $featureId, testId: $testId, testCaseId: $testCaseId, tagId: $tagId) {
       isValid
       message
-      data {
-        id
-        tags {
-          id
-          name
-          color
-        }
-      }
+      data
     }
   }
 `;

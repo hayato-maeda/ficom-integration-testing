@@ -116,7 +116,7 @@ type Query {
   me: User!
   tag(id: Int!): Tag
   tags: [Tag!]!
-  tagsByTestCase(testCaseId: Int!): [Tag!]!
+  tagsByTestCase(featureId: Int!, testCaseId: Int!, testId: Int!): [Tag!]!
   test(featureId: Int!, id: Int!): Test
   testCase(featureId: Int!, id: Int!, testId: Int!): TestCase
   testCases: [TestCase!]!

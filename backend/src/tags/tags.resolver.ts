@@ -105,11 +105,17 @@ export class TagsResolver {
 
   /**
    * テストケースに割り当てられているタグ取得クエリ
+   * @param featureId - 機能ID
+   * @param testId - テストID
    * @param testCaseId - テストケースID
    * @returns タグの一覧
    */
   @Query(() => [Tag])
-  async tagsByTestCase(@Args('testCaseId', { type: () => Int }) testCaseId: number): Promise<Tag[]> {
-    return this.tagsService.getTagsByTestCase(testCaseId);
+  async tagsByTestCase(
+    @Args('featureId', { type: () => Int }) featureId: number,
+    @Args('testId', { type: () => Int }) testId: number,
+    @Args('testCaseId', { type: () => Int }) testCaseId: number,
+  ): Promise<Tag[]> {
+    return this.tagsService.getTagsByTestCase(featureId, testId, testCaseId);
   }
 }

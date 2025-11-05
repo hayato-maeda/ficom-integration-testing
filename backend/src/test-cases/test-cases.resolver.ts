@@ -120,7 +120,7 @@ export class TestCasesResolver {
    */
   @ResolveField(() => [Tag])
   async tags(@Parent() testCase: TestCase): Promise<Tag[]> {
-    return this.tagsService.getTagsByTestCase(testCase.id);
+    return this.tagsService.getTagsByTestCase(testCase.featureId, testCase.testId, testCase.id);
   }
 
   /**

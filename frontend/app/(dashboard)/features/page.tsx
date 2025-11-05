@@ -205,7 +205,7 @@ export default function FeaturesPage() {
 
   // 行クリックで詳細ページへ遷移
   const handleRowClick = (featureId: number) => {
-    router.push(`/features/${featureId}/test-cases`);
+    router.push(`/features/${featureId}`);
   };
 
   return (

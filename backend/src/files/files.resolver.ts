@@ -34,11 +34,17 @@ export class FilesResolver {
 
   /**
    * テストケースに紐づくファイル一覧取得クエリ
+   * @param testCaseFeatureId - 機能ID
+   * @param testCaseTestId - テストID
    * @param testCaseId - テストケースID
    * @returns ファイルの一覧
    */
   @Query(() => [File])
-  async filesByTestCase(@Args('testCaseId', { type: () => Int }) testCaseId: number): Promise<File[]> {
-    return this.filesService.findByTestCase(testCaseId);
+  async filesByTestCase(
+    @Args('testCaseFeatureId', { type: () => Int }) testCaseFeatureId: number,
+    @Args('testCaseTestId', { type: () => Int }) testCaseTestId: number,
+    @Args('testCaseId', { type: () => Int }) testCaseId: number,
+  ): Promise<File[]> {
+    return this.filesService.findByTestCase(testCaseFeatureId, testCaseTestId, testCaseId);
   }
 }

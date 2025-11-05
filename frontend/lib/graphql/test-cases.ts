@@ -62,13 +62,6 @@ export const GET_TEST_CASE_QUERY = gql`
         name
         color
       }
-      features {
-        id
-        name
-        description
-        color
-        status
-      }
       createdAt
       updatedAt
     }

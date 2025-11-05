@@ -183,31 +183,4 @@ export class FeaturesService {
       data: existingFeature,
     };
   }
-
-  // ===================================================================
-  // 以下のメソッドは旧構造（TestCaseFeature）用なので非推奨です
-  // 新構造ではTestはFeatureに直接属し、TestCaseはTestに属します
-  // ===================================================================
-
-  /*
-  async assignFeature(assignFeatureInput: AssignFeatureInput): Promise<FeatureAssignMutationResponse> {
-    // 旧構造用のメソッド - 非推奨
-    throw new Error('This method is deprecated. Use the new Test structure instead.');
-  }
-
-  async unassignFeature(testCaseId: number, featureId: number): Promise<FeatureAssignMutationResponse> {
-    // 旧構造用のメソッド - 非推奨
-    throw new Error('This method is deprecated. Use the new Test structure instead.');
-  }
-
-  async getFeaturesByTestCase(testCaseId: number): Promise<Feature[]> {
-    // 旧構造用のメソッド - 非推奨
-    throw new Error('This method is deprecated. Use the new Test structure instead.');
-  }
-
-  async getTestCasesByFeature(featureId: number) {
-    // 旧構造用のメソッド - 非推奨
-    throw new Error('This method is deprecated. Use the new Test structure instead.');
-  }
-  */
 }

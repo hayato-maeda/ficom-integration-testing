@@ -2,8 +2,6 @@ import { UseGuards } from '@nestjs/common';
 import { Args, Int, Mutation, Parent, Query, ResolveField, Resolver } from '@nestjs/graphql';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { GqlSessionGuard } from '../auth/guards/gql-session.guard';
-import { Feature } from '../features/models/feature.model';
-import { FeaturesService } from '../features/features.service';
 import { FilesService } from '../files/files.service';
 import { File } from '../files/models/file.model';
 import { Tag } from '../tags/models/tag.model';
@@ -26,7 +24,6 @@ export class TestCasesResolver {
     private readonly testCasesService: TestCasesService,
     private readonly tagsService: TagsService,
     private readonly filesService: FilesService,
-    private readonly featuresService: FeaturesService,
   ) {}
 
   /**
@@ -111,17 +108,6 @@ export class TestCasesResolver {
   async tags(@Parent() testCase: TestCase): Promise<Tag[]> {
     return this.tagsService.getTagsByTestCase(testCase.id);
   }
-
-  // ===================================================================
-  // 旧構造用のフィールドリゾルバー - 非推奨
-  // 新構造ではTestCaseはTestに属し、TestがFeatureに属します
-  // ===================================================================
-  /*
-  @ResolveField(() => [Feature])
-  async features(@Parent() testCase: TestCase): Promise<Feature[]> {
-    return this.featuresService.getFeaturesByTestCase(testCase.id);
-  }
-  */
 
   /**
    * テストケースのファイルフィールドリゾルバー

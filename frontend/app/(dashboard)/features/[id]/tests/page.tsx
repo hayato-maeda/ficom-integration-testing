@@ -21,10 +21,20 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { GET_FEATURE_QUERY } from '@/lib/graphql/features';
-import { CREATE_TEST_MUTATION, GET_TESTS_BY_FEATURE_QUERY } from '@/lib/graphql/tests';
+import { CREATE_TEST_MUTATION, DELETE_TEST_MUTATION, GET_TESTS_BY_FEATURE_QUERY } from '@/lib/graphql/tests';
 import { Feature, Test, FeatureStatus, TestStatus, MutationResponse } from '@/types';
-import { ArrowLeft, Loader2, Pencil, Plus, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
+import { ArrowLeft, Loader2, Pencil, Plus, ArrowUpDown, ArrowUp, ArrowDown, Trash2, Edit } from 'lucide-react';
 import { format } from 'date-fns';
 import { ja } from 'date-fns/locale/ja';
 import { toast } from 'sonner';
@@ -115,6 +125,8 @@ export default function FeatureTestsPage() {
   const router = useRouter();
   const id = parseInt(params.id as string, 10);
   const [addTestDialogOpen, setAddTestDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [testToDelete, setTestToDelete] = useState<Test | null>(null);
 
   // ソート状態（初期値はIDの昇順）
   const [sortColumn, setSortColumn] = useState<'id' | 'name' | 'status' | 'createdBy' | 'createdAt'>('id');
@@ -153,6 +165,12 @@ export default function FeatureTestsPage() {
   const [createTest, { loading: createLoading }] = useMutation<{
     createTest: MutationResponse<Test>;
   }>(CREATE_TEST_MUTATION);
+
+  const [deleteTest, { loading: deleteLoading }] = useMutation<{
+    deleteTest: MutationResponse<Test>;
+  }>(DELETE_TEST_MUTATION, {
+    refetchQueries: [{ query: GET_TESTS_BY_FEATURE_QUERY, variables: { featureId: id } }],
+  });
 
   const feature = featureData?.feature;
   const loading = featureLoading || testsLoading;
@@ -236,6 +254,50 @@ export default function FeatureTestsPage() {
         id: 'error',
         style: { background: '#fee2e2', color: '#991b1b', border: '1px solid #fecaca' },
       });
+    }
+  };
+
+  const handleEditClick = (e: React.MouseEvent, test: Test) => {
+    e.stopPropagation();
+    router.push(`/features/${id}/tests/${test.id}/edit`);
+  };
+
+  const handleDeleteClick = (e: React.MouseEvent, test: Test) => {
+    e.stopPropagation();
+    setTestToDelete(test);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDelete = async () => {
+    if (!testToDelete) return;
+
+    try {
+      const result = await deleteTest({
+        variables: {
+          featureId: id,
+          id: testToDelete.id,
+        },
+      });
+
+      if (result.data?.deleteTest.isValid) {
+        toast.success('テストを削除しました', {
+          id: 'delete-success',
+          style: { background: '#dcfce7', color: '#166534', border: '1px solid #bbf7d0' },
+        });
+      } else {
+        toast.error(result.data?.deleteTest.message || '削除に失敗しました', {
+          id: 'delete-error',
+          style: { background: '#fee2e2', color: '#991b1b', border: '1px solid #fecaca' },
+        });
+      }
+    } catch (_error) {
+      toast.error('エラーが発生しました', {
+        id: 'delete-error',
+        style: { background: '#fee2e2', color: '#991b1b', border: '1px solid #fecaca' },
+      });
+    } finally {
+      setDeleteDialogOpen(false);
+      setTestToDelete(null);
     }
   };
 
@@ -416,6 +478,7 @@ export default function FeatureTestsPage() {
                         {getSortIcon('createdAt')}
                       </button>
                     </TableHead>
+                    <TableHead className="w-[100px]">操作</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -441,6 +504,25 @@ export default function FeatureTestsPage() {
                       </TableCell>
                       <TableCell>{test.createdBy.name}</TableCell>
                       <TableCell>{format(new Date(test.createdAt), 'yyyy/MM/dd', { locale: ja })}</TableCell>
+                      <TableCell>
+                        <div className="flex gap-1">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={(e) => handleEditClick(e, test)}
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={(e) => handleDeleteClick(e, test)}
+                            disabled={deleteLoading}
+                          >
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          </Button>
+                        </div>
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -508,6 +590,25 @@ export default function FeatureTestsPage() {
           </Form>
         </DialogContent>
       </Dialog>
+
+      {/* 削除確認ダイアログ */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>テストを削除しますか？</AlertDialogTitle>
+            <AlertDialogDescription>
+              この操作は取り消せません。テスト「{testToDelete?.name}」とそれに属するすべてのテストケースを完全に削除します。
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleteLoading}>キャンセル</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} disabled={deleteLoading}>
+              {deleteLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              削除
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

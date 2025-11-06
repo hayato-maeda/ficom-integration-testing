@@ -2,7 +2,7 @@
 
 import { useMutation, useQuery } from '@apollo/client/react';
 import { useParams, useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -24,10 +24,11 @@ import {
 import { GET_TEST_QUERY } from '@/lib/graphql/tests';
 import { CREATE_TEST_CASE_MUTATION, GET_TEST_CASES_BY_TEST_QUERY } from '@/lib/graphql/test-cases';
 import { Test, TestCase, TestStatus, TestCaseStatus, MutationResponse } from '@/types';
-import { ArrowLeft, Loader2, Pencil, Plus, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
+import { ArrowLeft, Loader2, Pencil, Plus, ArrowUpDown, ArrowUp, ArrowDown, X, Image as ImageIcon } from 'lucide-react';
 import { format } from 'date-fns';
 import { ja } from 'date-fns/locale/ja';
 import { toast } from 'sonner';
+import { uploadFile } from '@/lib/api/files';
 
 /**
  * テストステータスバッジのスタイルを取得
@@ -123,6 +124,10 @@ export default function TestCasesPage() {
   const [sortColumn, setSortColumn] = useState<'id' | 'title' | 'status' | 'createdBy' | 'createdAt'>('id');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
 
+  // クリップボードから貼り付けた画像を一時保存
+  const [pendingImages, setPendingImages] = useState<Array<{ file: File; preview: string }>>([]);
+  const actualResultTextareaRef = useRef<HTMLTextAreaElement>(null);
+
   // テストケース作成フォームのスキーマ
   const testCaseFormSchema = z.object({
     title: z.string().min(1, 'タイトルを入力してください'),
@@ -215,8 +220,49 @@ export default function TestCasesPage() {
 
   const testCases = getSortedTestCases();
 
+  /**
+   * Ctrl+Vでクリップボードから画像を貼り付け
+   */
+  const handlePaste = (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+    const items = e.clipboardData?.items;
+    if (!items) return;
+
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i];
+      if (item.type.startsWith('image/')) {
+        e.preventDefault();
+        const file = item.getAsFile();
+        if (file) {
+          // プレビュー用のData URLを作成
+          const reader = new FileReader();
+          reader.onload = (event) => {
+            const preview = event.target?.result as string;
+            setPendingImages((prev) => [...prev, { file, preview }]);
+            toast.success(`画像を追加しました: ${file.name || '貼り付けた画像'}`, {
+              id: 'image-added',
+              style: { background: '#dcfce7', color: '#166534', border: '1px solid #bbf7d0' },
+            });
+          };
+          reader.readAsDataURL(file);
+        }
+      }
+    }
+  };
+
+  /**
+   * 貼り付けた画像を削除
+   */
+  const removePendingImage = (index: number) => {
+    setPendingImages((prev) => prev.filter((_, i) => i !== index));
+    toast.success('画像を削除しました', {
+      id: 'image-removed',
+      style: { background: '#dcfce7', color: '#166534', border: '1px solid #bbf7d0' },
+    });
+  };
+
   const handleAddTestCase = async (values: z.infer<typeof testCaseFormSchema>) => {
     try {
+      // まずテストケースを作成
       const result = await createTestCase({
         variables: {
           featureId,
@@ -230,12 +276,38 @@ export default function TestCasesPage() {
       });
 
       if (result.data?.createTestCase.isValid) {
-        toast.success('テストケースを作成しました', {
-          id: 'create-success',
-          style: { background: '#dcfce7', color: '#166534', border: '1px solid #bbf7d0' },
-        });
+        const createdTestCase = result.data.createTestCase.data;
+        if (!createdTestCase) {
+          throw new Error('テストケースの作成に失敗しました');
+        }
+
+        const testCaseId = createdTestCase.id;
+
+        // 貼り付けた画像がある場合、アップロード
+        if (pendingImages.length > 0) {
+          toast.info('画像をアップロード中...', {
+            id: 'uploading-images',
+            style: { background: '#dbeafe', color: '#1e40af', border: '1px solid #bfdbfe' },
+          });
+
+          for (const { file } of pendingImages) {
+            await uploadFile(file, featureId, testId, testCaseId);
+          }
+
+          toast.success(`テストケースと${pendingImages.length}件の画像を作成しました`, {
+            id: 'create-success',
+            style: { background: '#dcfce7', color: '#166534', border: '1px solid #bbf7d0' },
+          });
+        } else {
+          toast.success('テストケースを作成しました', {
+            id: 'create-success',
+            style: { background: '#dcfce7', color: '#166534', border: '1px solid #bbf7d0' },
+          });
+        }
+
         setAddTestCaseDialogOpen(false);
         form.reset();
+        setPendingImages([]);
         refetch();
       } else {
         toast.error(result.data?.createTestCase.message || 'テストケースの作成に失敗しました', {
@@ -533,9 +605,44 @@ export default function TestCasesPage() {
                   <FormItem>
                     <FormLabel>実績結果（任意）</FormLabel>
                     <FormControl>
-                      <Textarea placeholder="実績結果を入力" className="min-h-[80px]" {...field} />
+                      <Textarea
+                        placeholder="実績結果を入力 (Ctrl+Vで画像を貼り付けできます)"
+                        className="min-h-[80px]"
+                        {...field}
+                        ref={actualResultTextareaRef}
+                        onPaste={handlePaste}
+                      />
                     </FormControl>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Ctrl+Vで画像を貼り付けると、テストケース作成時に自動的にアップロードされます
+                    </p>
                     <FormMessage />
+
+                    {/* 貼り付けた画像のプレビュー */}
+                    {pendingImages.length > 0 && (
+                      <div className="mt-4 rounded-lg border p-4 bg-muted/30">
+                        <div className="flex items-center gap-2 mb-3">
+                          <ImageIcon className="h-4 w-4 text-muted-foreground" />
+                          <h4 className="text-sm font-medium">貼り付けた画像 ({pendingImages.length}件)</h4>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2">
+                          {pendingImages.map((item, index) => (
+                            <div key={index} className="relative group rounded-md border overflow-hidden">
+                              <img src={item.preview} alt={`貼り付けた画像 ${index + 1}`} className="w-full h-32 object-cover" />
+                              <Button
+                                type="button"
+                                variant="destructive"
+                                size="icon"
+                                className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                                onClick={() => removePendingImage(index)}
+                              >
+                                <X className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </FormItem>
                 )}
               />

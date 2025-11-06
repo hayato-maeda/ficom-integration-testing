@@ -2,7 +2,7 @@
 
 import { useMutation, useQuery } from '@apollo/client/react';
 import { useParams, useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { JSX, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -339,7 +339,7 @@ export default function TestCaseDetailPage() {
           key={`image-${fileId}-${match.index}`}
           src={getImageUrl(fileId)}
           alt={`Image ${fileId}`}
-          className="max-w-full h-auto my-2 rounded border cursor-pointer"
+          className="max-w-md h-auto my-2 rounded border cursor-pointer"
           onClick={() => handleImageClick(fileId, `Image ${fileId}`)}
         />
       );

@@ -16,6 +16,7 @@ import { GET_TEST_CASE_QUERY, UPDATE_TEST_CASE_MUTATION } from '@/lib/graphql/te
 import { MutationResponse, TestCase, TestCaseStatus } from '@/types';
 import { ArrowLeft, Loader2, Image, FileIcon } from 'lucide-react';
 import { toast } from 'sonner';
+import { uploadFile } from '@/lib/api/files';
 
 /**
  * テストケース編集フォームのスキーマ
@@ -72,7 +73,7 @@ export default function TestCaseEditPage() {
   // テキストエリアのrefを管理
   const actualResultTextareaRef = useRef<HTMLTextAreaElement>(null);
 
-  const { data, loading: queryLoading } = useQuery<{ testCase: TestCase | null }>(GET_TEST_CASE_QUERY, {
+  const { data, loading: queryLoading, refetch } = useQuery<{ testCase: TestCase | null }>(GET_TEST_CASE_QUERY, {
     variables: { featureId, testId, id: testCaseId },
     skip: isNaN(featureId) || isNaN(testId) || isNaN(testCaseId),
   });
@@ -175,6 +176,66 @@ export default function TestCaseEditPage() {
       id: 'insert-image-tag',
       style: { background: '#dcfce7', color: '#166534', border: '1px solid #bbf7d0' },
     });
+  };
+
+  /**
+   * Ctrl+Vでクリップボードから画像を貼り付け
+   */
+  const handlePaste = async (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+    const items = e.clipboardData?.items;
+    if (!items) return;
+
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i];
+      if (item.type.startsWith('image/')) {
+        e.preventDefault();
+        const file = item.getAsFile();
+        if (file) {
+          try {
+            toast.info('画像をアップロード中...', {
+              id: 'uploading-image',
+              style: { background: '#dbeafe', color: '#1e40af', border: '1px solid #bfdbfe' },
+            });
+
+            // ファイルをアップロード
+            const uploadedFile = await uploadFile(file, featureId, testId, testCaseId);
+
+            // アップロード成功後、画像タグをカーソル位置に挿入
+            const textarea = actualResultTextareaRef.current;
+            if (textarea) {
+              const imageTag = `[[image:${uploadedFile.id}]]`;
+              const currentValue = form.getValues('actualResult') || '';
+              const selectionStart = textarea.selectionStart;
+              const selectionEnd = textarea.selectionEnd;
+
+              const newValue =
+                currentValue.substring(0, selectionStart) + imageTag + currentValue.substring(selectionEnd);
+
+              form.setValue('actualResult', newValue);
+
+              setTimeout(() => {
+                const newPosition = selectionStart + imageTag.length;
+                textarea.setSelectionRange(newPosition, newPosition);
+                textarea.focus();
+              }, 0);
+            }
+
+            // ファイル一覧を更新
+            await refetch();
+
+            toast.success('画像をアップロードして挿入しました', {
+              id: 'upload-success',
+              style: { background: '#dcfce7', color: '#166534', border: '1px solid #bbf7d0' },
+            });
+          } catch (error) {
+            toast.error(error instanceof Error ? error.message : '画像のアップロードに失敗しました', {
+              id: 'upload-error',
+              style: { background: '#fee2e2', color: '#991b1b', border: '1px solid #fecaca' },
+            });
+          }
+        }
+      }
+    }
   };
 
   if (isNaN(featureId) || isNaN(testId) || isNaN(testCaseId)) {
@@ -325,14 +386,15 @@ export default function TestCaseEditPage() {
                     <FormLabel>実績結果</FormLabel>
                     <FormControl>
                       <Textarea
-                        placeholder="実際の結果を入力（任意）"
+                        placeholder="実際の結果を入力（任意）Ctrl+Vで画像を貼り付けできます"
                         className="min-h-[100px]"
                         {...field}
                         ref={actualResultTextareaRef}
+                        onPaste={handlePaste}
                       />
                     </FormControl>
                     <p className="text-xs text-muted-foreground mt-1">
-                      画像を挿入するには、下の画像一覧から「挿入」ボタンをクリックしてください
+                      Ctrl+Vで画像を直接貼り付けるか、下の画像一覧から「挿入」ボタンをクリックしてください
                     </p>
                     <FormMessage />
 

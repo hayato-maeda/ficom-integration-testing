@@ -206,8 +206,8 @@ export default function FeaturesPage() {
           <h1 className="text-3xl font-bold tracking-tight">テスト一覧</h1>
           <p className="text-muted-foreground">テストの管理とテストケースの整理</p>
         </div>
-        <Button onClick={() => router.push('/features/new')}>
-          <Plus className="mr-2 h-4 w-4" />
+        <Button onClick={() => router.push('/features/new')} className="mt-1.5 justify-center">
+          <Plus className="h-4 w-4" />
           新規作成
         </Button>
       </div>

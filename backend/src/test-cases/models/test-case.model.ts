@@ -1,4 +1,5 @@
 import { Field, Int, ObjectType } from '@nestjs/graphql';
+import { Approval } from '../../approvals/models/approval.model';
 import { File } from '../../files/models/file.model';
 import { Tag } from '../../tags/models/tag.model';
 import { Test } from '../../tests/models/test.model';
@@ -87,6 +88,10 @@ export class TestCase {
   /** ファイル */
   @Field(() => [File], { nullable: true })
   files?: File[];
+
+  /** 承認履歴 */
+  @Field(() => [Approval], { nullable: true })
+  approvals?: Approval[];
 
   /** 作成日時 */
   @Field(() => Date)

@@ -79,6 +79,22 @@ export const GET_TEST_CASE_QUERY = gql`
         }
         createdAt
       }
+      approvals {
+        id
+        featureId
+        testId
+        testCaseId
+        userId
+        user {
+          id
+          name
+          email
+        }
+        status
+        comment
+        createdAt
+        updatedAt
+      }
       createdAt
       updatedAt
     }

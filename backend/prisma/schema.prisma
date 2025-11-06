@@ -161,7 +161,6 @@ model Approval {
   testCase TestCase @relation(fields: [featureId, testId, testCaseId], references: [featureId, testId, id], onDelete: Cascade)
   user     User     @relation(fields: [userId], references: [id])
 
-  @@unique([featureId, testId, testCaseId, userId])
   @@map("approvals")
 }
 

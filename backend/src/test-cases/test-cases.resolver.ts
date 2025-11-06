@@ -1,5 +1,7 @@
 import { UseGuards } from '@nestjs/common';
 import { Args, Int, Mutation, Parent, Query, ResolveField, Resolver } from '@nestjs/graphql';
+import { Approval } from '../approvals/models/approval.model';
+import { ApprovalsService } from '../approvals/approvals.service';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { GqlSessionGuard } from '../auth/guards/gql-session.guard';
 import { FilesService } from '../files/files.service';
@@ -24,6 +26,7 @@ export class TestCasesResolver {
     private readonly testCasesService: TestCasesService,
     private readonly tagsService: TagsService,
     private readonly filesService: FilesService,
+    private readonly approvalsService: ApprovalsService,
   ) {}
 
   /**
@@ -131,5 +134,15 @@ export class TestCasesResolver {
   @ResolveField(() => [File])
   async files(@Parent() testCase: TestCase): Promise<File[]> {
     return this.filesService.findByTestCase(testCase.featureId, testCase.testId, testCase.id);
+  }
+
+  /**
+   * テストケースの承認履歴フィールドリゾルバー
+   * @param testCase - 親のテストケースオブジェクト
+   * @returns 承認履歴の一覧
+   */
+  @ResolveField(() => [Approval])
+  async approvals(@Parent() testCase: TestCase): Promise<Approval[]> {
+    return this.approvalsService.findByTestCase(testCase.featureId, testCase.testId, testCase.id);
   }
 }

@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { ApprovalsModule } from '../approvals/approvals.module';
 import { FeaturesModule } from '../features/features.module';
 import { FilesModule } from '../files/files.module';
 import { PrismaModule } from '../prisma/prisma.module';
@@ -11,7 +12,7 @@ import { TestCasesService } from './test-cases.service';
  * テストケース管理機能を提供します。
  */
 @Module({
-  imports: [PrismaModule, TagsModule, FeaturesModule, FilesModule],
+  imports: [PrismaModule, TagsModule, FeaturesModule, FilesModule, ApprovalsModule],
   providers: [TestCasesResolver, TestCasesService],
   exports: [TestCasesService],
 })

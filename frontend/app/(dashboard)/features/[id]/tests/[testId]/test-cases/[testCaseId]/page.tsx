@@ -28,9 +28,28 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { GET_TEST_CASE_QUERY, DELETE_TEST_CASE_MUTATION } from '@/lib/graphql/test-cases';
 import { GET_TAGS_QUERY, ASSIGN_TAG_MUTATION, UNASSIGN_TAG_MUTATION } from '@/lib/graphql/tags';
+import {
+  CREATE_APPROVAL_MUTATION,
+  UPDATE_APPROVAL_MUTATION,
+  DELETE_APPROVAL_MUTATION,
+} from '@/lib/graphql/approvals';
 import { uploadFile, downloadFile, deleteFile } from '@/lib/api/files';
-import { MutationResponse, TestCase, TestCaseStatus, Tag } from '@/types';
-import { ArrowLeft, Loader2, Pencil, Trash2, Plus, X, Upload, Download, FileIcon } from 'lucide-react';
+import { MutationResponse, TestCase, TestCaseStatus, Tag, Approval, ApprovalStatus } from '@/types';
+import { useAuth } from '@/contexts/auth-context';
+import {
+  ArrowLeft,
+  Loader2,
+  Pencil,
+  Trash2,
+  Plus,
+  X,
+  Upload,
+  Download,
+  FileIcon,
+  CheckCircle2,
+  XCircle,
+} from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
 import { format } from 'date-fns';
 import { ja } from 'date-fns/locale/ja';
 import { toast } from 'sonner';
@@ -98,6 +117,7 @@ const getImageUrl = (fileId: number) => {
 export default function TestCaseDetailPage() {
   const params = useParams();
   const router = useRouter();
+  const { user } = useAuth();
   const featureId = parseInt(params.id as string, 10);
   const testId = parseInt(params.testId as string, 10);
   const testCaseId = parseInt(params.testCaseId as string, 10);
@@ -108,6 +128,14 @@ export default function TestCaseDetailPage() {
   const [deletingFileId, setDeletingFileId] = useState<number | null>(null);
   const [previewImageId, setPreviewImageId] = useState<number | null>(null);
   const [previewImageUrl, setPreviewImageUrl] = useState<string>('');
+  const [approvalDialogOpen, setApprovalDialogOpen] = useState(false);
+  const [approvalStatus, setApprovalStatus] = useState<'APPROVED' | 'REJECTED'>('APPROVED');
+  const [approvalComment, setApprovalComment] = useState('');
+  const [editingApprovalId, setEditingApprovalId] = useState<number | null>(null);
+  const [editingComment, setEditingComment] = useState('');
+  const [deleteApprovalDialogOpen, setDeleteApprovalDialogOpen] = useState(false);
+  const [deletingApprovalId, setDeletingApprovalId] = useState<number | null>(null);
+  const [approvalsDisplayCount, setApprovalsDisplayCount] = useState(5);
 
   const { data, loading, error, refetch } = useQuery<{ testCase: TestCase | null }>(GET_TEST_CASE_QUERY, {
     variables: { featureId, testId, id: testCaseId },
@@ -129,6 +157,24 @@ export default function TestCaseDetailPage() {
   const [unassignTag, { loading: unassignLoading }] = useMutation<{
     unassignTag: MutationResponse<null>;
   }>(UNASSIGN_TAG_MUTATION, {
+    refetchQueries: [{ query: GET_TEST_CASE_QUERY, variables: { featureId, testId, id: testCaseId } }],
+  });
+
+  const [createApproval, { loading: approvalLoading }] = useMutation<{
+    createApproval: MutationResponse<Approval>;
+  }>(CREATE_APPROVAL_MUTATION, {
+    refetchQueries: [{ query: GET_TEST_CASE_QUERY, variables: { featureId, testId, id: testCaseId } }],
+  });
+
+  const [updateApproval, { loading: updateApprovalLoading }] = useMutation<{
+    updateApproval: MutationResponse<Approval>;
+  }>(UPDATE_APPROVAL_MUTATION, {
+    refetchQueries: [{ query: GET_TEST_CASE_QUERY, variables: { featureId, testId, id: testCaseId } }],
+  });
+
+  const [deleteApproval, { loading: deleteApprovalLoading }] = useMutation<{
+    deleteApproval: MutationResponse<Approval>;
+  }>(DELETE_APPROVAL_MUTATION, {
     refetchQueries: [{ query: GET_TEST_CASE_QUERY, variables: { featureId, testId, id: testCaseId } }],
   });
 
@@ -299,6 +345,121 @@ export default function TestCaseDetailPage() {
     }
   };
 
+  const handleApproval = async () => {
+    try {
+      const result = await createApproval({
+        variables: {
+          input: {
+            featureId,
+            testId,
+            testCaseId,
+            status: approvalStatus,
+            comment: approvalComment || undefined,
+          },
+        },
+      });
+
+      if (result.data?.createApproval.isValid) {
+        toast.success(approvalStatus === 'APPROVED' ? '承認しました' : '却下しました', {
+          id: 'approval-success',
+          style: { background: '#dcfce7', color: '#166534', border: '1px solid #bbf7d0' },
+        });
+        setApprovalDialogOpen(false);
+        setApprovalComment('');
+      } else {
+        toast.error(result.data?.createApproval.message || '承認処理に失敗しました', {
+          id: 'approval-error',
+          style: { background: '#fee2e2', color: '#991b1b', border: '1px solid #fecaca' },
+        });
+      }
+    } catch (error) {
+      toast.error('エラーが発生しました', {
+        id: 'approval-error',
+        style: { background: '#fee2e2', color: '#991b1b', border: '1px solid #fecaca' },
+      });
+    }
+  };
+
+  const openApprovalDialog = (status: 'APPROVED' | 'REJECTED') => {
+    setApprovalStatus(status);
+    setApprovalDialogOpen(true);
+  };
+
+  const openEditApprovalDialog = (approval: Approval) => {
+    setEditingApprovalId(approval.id);
+    setEditingComment(approval.comment || '');
+  };
+
+  const handleUpdateApproval = async () => {
+    if (editingApprovalId === null) return;
+
+    try {
+      const result = await updateApproval({
+        variables: {
+          input: {
+            id: editingApprovalId,
+            comment: editingComment || undefined,
+          },
+        },
+      });
+
+      if (result.data?.updateApproval.isValid) {
+        toast.success('コメントを更新しました', {
+          id: 'update-approval-success',
+          style: { background: '#dcfce7', color: '#166534', border: '1px solid #bbf7d0' },
+        });
+        setEditingApprovalId(null);
+        setEditingComment('');
+      } else {
+        toast.error(result.data?.updateApproval.message || 'コメントの更新に失敗しました', {
+          id: 'update-approval-error',
+          style: { background: '#fee2e2', color: '#991b1b', border: '1px solid #fecaca' },
+        });
+      }
+    } catch (error) {
+      toast.error('エラーが発生しました', {
+        id: 'update-approval-error',
+        style: { background: '#fee2e2', color: '#991b1b', border: '1px solid #fecaca' },
+      });
+    }
+  };
+
+  const openDeleteApprovalDialog = (approvalId: number) => {
+    setDeletingApprovalId(approvalId);
+    setDeleteApprovalDialogOpen(true);
+  };
+
+  const handleDeleteApproval = async () => {
+    if (deletingApprovalId === null) return;
+
+    try {
+      const result = await deleteApproval({
+        variables: {
+          id: deletingApprovalId,
+        },
+      });
+
+      if (result.data?.deleteApproval.isValid) {
+        toast.success('承認を削除しました', {
+          id: 'delete-approval-success',
+          style: { background: '#dcfce7', color: '#166534', border: '1px solid #bbf7d0' },
+        });
+        setDeleteApprovalDialogOpen(false);
+        setDeletingApprovalId(null);
+      } else {
+        toast.error(result.data?.deleteApproval.message || '承認の削除に失敗しました', {
+          id: 'delete-approval-error',
+          style: { background: '#fee2e2', color: '#991b1b', border: '1px solid #fecaca' },
+        });
+      }
+    } catch (error) {
+      toast.error('エラーが発生しました', {
+        id: 'delete-approval-error',
+        style: { background: '#fee2e2', color: '#991b1b', border: '1px solid #fecaca' },
+      });
+    }
+  };
+
   const handleImageClick = (fileId: number, filename: string) => {
     setPreviewImageId(fileId);
     setPreviewImageUrl(getImageUrl(fileId));
@@ -380,6 +541,24 @@ export default function TestCaseDetailPage() {
         </Button>
         {testCase && (
           <div className="flex gap-2">
+            <Button
+              variant="default"
+              size="sm"
+              onClick={() => openApprovalDialog('APPROVED')}
+              disabled={approvalLoading}
+            >
+              <CheckCircle2 className="mr-2 h-4 w-4" />
+              承認
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => openApprovalDialog('REJECTED')}
+              disabled={approvalLoading}
+            >
+              <XCircle className="mr-2 h-4 w-4" />
+              却下
+            </Button>
             <Button
               variant="outline"
               size="sm"
@@ -662,6 +841,109 @@ export default function TestCaseDetailPage() {
               )}
             </CardContent>
           </Card>
+
+          {/* 承認履歴 */}
+          <Card>
+            <CardHeader>
+              <CardTitle>承認履歴</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {testCase.approvals && testCase.approvals.length > 0 ? (
+                <div className="space-y-3">
+                  {testCase.approvals.slice(0, approvalsDisplayCount).map((approval) => {
+                    const isEdited = new Date(approval.updatedAt).getTime() > new Date(approval.createdAt).getTime();
+                    const isOwnApproval = user?.id === approval.userId;
+
+                    return (
+                      <div key={approval.id} className="rounded-lg border p-4 space-y-2">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <div>
+                              <p className="text-sm font-medium">{approval.user.name}</p>
+                              <p className="text-xs text-muted-foreground">{approval.user.email}</p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Badge
+                              variant={approval.status === ApprovalStatus.APPROVED ? 'default' : 'destructive'}
+                            >
+                              {approval.status === ApprovalStatus.APPROVED ? '承認' : '却下'}
+                            </Badge>
+                            {isEdited && (
+                              <Badge variant="outline" className="text-xs">
+                                編集済み
+                              </Badge>
+                            )}
+                            {isOwnApproval && (
+                              <>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-7 w-7"
+                                  onClick={() => openEditApprovalDialog(approval)}
+                                  title="コメントを編集"
+                                >
+                                  <Pencil className="h-3 w-3" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-7 w-7"
+                                  onClick={() => openDeleteApprovalDialog(approval.id)}
+                                  title="承認を削除"
+                                >
+                                  <Trash2 className="h-3 w-3 text-destructive" />
+                                </Button>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                        {approval.comment && (
+                          <div className="pt-2 border-t">
+                            <p className="text-sm text-muted-foreground whitespace-pre-wrap">{approval.comment}</p>
+                          </div>
+                        )}
+                        <div className="text-xs text-muted-foreground">
+                          {format(new Date(approval.createdAt), 'yyyy年MM月dd日 HH:mm', { locale: ja })}
+                          {isEdited && (
+                            <span className="ml-2">
+                              (編集: {format(new Date(approval.updatedAt), 'yyyy年MM月dd日 HH:mm', { locale: ja })})
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                  {testCase.approvals.length > approvalsDisplayCount && (
+                    <div className="pt-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="w-full"
+                        onClick={() => setApprovalsDisplayCount(approvalsDisplayCount + 5)}
+                      >
+                        さらに表示 ({testCase.approvals.length - approvalsDisplayCount}件)
+                      </Button>
+                    </div>
+                  )}
+                  {approvalsDisplayCount > 5 && approvalsDisplayCount >= testCase.approvals.length && (
+                    <div className="pt-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="w-full"
+                        onClick={() => setApprovalsDisplayCount(5)}
+                      >
+                        閉じる
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">承認履歴はありません</p>
+              )}
+            </CardContent>
+          </Card>
         </div>
       )}
 
@@ -763,6 +1045,119 @@ export default function TestCaseDetailPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* 承認/却下ダイアログ */}
+      <Dialog open={approvalDialogOpen} onOpenChange={setApprovalDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{approvalStatus === 'APPROVED' ? 'テストケースを承認' : 'テストケースを却下'}</DialogTitle>
+            <DialogDescription>
+              {approvalStatus === 'APPROVED'
+                ? 'このテストケースを承認します。コメントを入力してください（任意）。'
+                : 'このテストケースを却下します。却下理由をコメントに入力してください（任意）。'}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">コメント（任意）</label>
+              <Textarea
+                placeholder="コメントを入力してください"
+                value={approvalComment}
+                onChange={(e) => setApprovalComment(e.target.value)}
+                rows={4}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setApprovalDialogOpen(false);
+                setApprovalComment('');
+              }}
+              disabled={approvalLoading}
+            >
+              キャンセル
+            </Button>
+            <Button
+              onClick={handleApproval}
+              disabled={approvalLoading}
+              variant={approvalStatus === 'APPROVED' ? 'default' : 'destructive'}
+            >
+              {approvalLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {approvalStatus === 'APPROVED' ? '承認する' : '却下する'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* コメント編集ダイアログ */}
+      <Dialog open={editingApprovalId !== null} onOpenChange={() => setEditingApprovalId(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>コメントを編集</DialogTitle>
+            <DialogDescription>承認コメントを編集します。</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">コメント（任意）</label>
+              <Textarea
+                placeholder="コメントを入力してください"
+                value={editingComment}
+                onChange={(e) => setEditingComment(e.target.value)}
+                rows={4}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setEditingApprovalId(null);
+                setEditingComment('');
+              }}
+              disabled={updateApprovalLoading}
+            >
+              キャンセル
+            </Button>
+            <Button onClick={handleUpdateApproval} disabled={updateApprovalLoading}>
+              {updateApprovalLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              更新する
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* 承認削除確認ダイアログ */}
+      <AlertDialog open={deleteApprovalDialogOpen} onOpenChange={setDeleteApprovalDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>承認を削除しますか？</AlertDialogTitle>
+            <AlertDialogDescription>
+              この操作は取り消せません。承認履歴を完全に削除します。
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel
+              disabled={deleteApprovalLoading}
+              onClick={() => {
+                setDeleteApprovalDialogOpen(false);
+                setDeletingApprovalId(null);
+              }}
+            >
+              キャンセル
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteApproval}
+              disabled={deleteApprovalLoading}
+              className="bg-destructive hover:bg-destructive/90"
+            >
+              {deleteApprovalLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              削除
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

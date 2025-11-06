@@ -22,7 +22,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { GET_TEST_QUERY } from '@/lib/graphql/tests';
-import { CREATE_TEST_CASE_MUTATION, GET_TEST_CASES_BY_TEST_QUERY } from '@/lib/graphql/test-cases';
+import { CREATE_TEST_CASE_MUTATION, GET_TEST_CASES_BY_TEST_QUERY, UPDATE_TEST_CASE_MUTATION } from '@/lib/graphql/test-cases';
 import { Test, TestCase, TestStatus, TestCaseStatus, MutationResponse } from '@/types';
 import { ArrowLeft, Loader2, Pencil, Plus, ArrowUpDown, ArrowUp, ArrowDown, X, Image as ImageIcon } from 'lucide-react';
 import { format } from 'date-fns';
@@ -168,6 +168,10 @@ export default function TestCasesPage() {
     createTestCase: MutationResponse<TestCase>;
   }>(CREATE_TEST_CASE_MUTATION);
 
+  const [updateTestCase] = useMutation<{
+    updateTestCase: MutationResponse<TestCase>;
+  }>(UPDATE_TEST_CASE_MUTATION);
+
   const test = testData?.test;
   const loading = testLoading || testCasesLoading;
 
@@ -290,9 +294,28 @@ export default function TestCasesPage() {
             style: { background: '#dbeafe', color: '#1e40af', border: '1px solid #bfdbfe' },
           });
 
+          // 画像をアップロードしてfileIdを取得
+          const uploadedFileIds: number[] = [];
           for (const { file } of pendingImages) {
-            await uploadFile(file, featureId, testId, testCaseId);
+            const uploadedFile = await uploadFile(file, featureId, testId, testCaseId);
+            uploadedFileIds.push(uploadedFile.id);
           }
+
+          // 実績結果に画像タグを追加
+          const imageTags = uploadedFileIds.map((fileId) => `[[image:${fileId}]]`).join('\n');
+          const updatedActualResult = values.actualResult
+            ? `${values.actualResult}\n\n${imageTags}`
+            : imageTags;
+
+          // テストケースを更新して画像タグを実績結果に反映
+          await updateTestCase({
+            variables: {
+              featureId,
+              testId,
+              id: testCaseId,
+              actualResult: updatedActualResult,
+            },
+          });
 
           toast.success(`テストケースと${pendingImages.length}件の画像を作成しました`, {
             id: 'create-success',

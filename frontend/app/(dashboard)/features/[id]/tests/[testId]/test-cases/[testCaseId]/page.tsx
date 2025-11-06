@@ -24,13 +24,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { GET_TEST_CASE_QUERY, DELETE_TEST_CASE_MUTATION } from '@/lib/graphql/test-cases';
 import { GET_TAGS_QUERY, ASSIGN_TAG_MUTATION, UNASSIGN_TAG_MUTATION } from '@/lib/graphql/tags';
 import { uploadFile, downloadFile, deleteFile } from '@/lib/api/files';
@@ -141,9 +135,7 @@ export default function TestCaseDetailPage() {
   const allTags = tagsData?.tags || [];
 
   // 未割り当てのタグを取得
-  const unassignedTags = allTags.filter(
-    (tag) => !testCase?.tags?.some((t) => t.id === tag.id)
-  );
+  const unassignedTags = allTags.filter((tag) => !testCase?.tags?.some((t) => t.id === tag.id));
 
   const handleDelete = async () => {
     try {
@@ -328,7 +320,7 @@ export default function TestCaseDetailPage() {
       if (match.index > lastIndex) {
         const textPart = text.substring(lastIndex, match.index);
         parts.push(
-          ...textPart.split('\n').flatMap((line, i) => (i > 0 ? [<br key={`br-${lastIndex}-${i}`} />, line] : [line]))
+          ...textPart.split('\n').flatMap((line, i) => (i > 0 ? [<br key={`br-${lastIndex}-${i}`} />, line] : [line])),
         );
       }
 
@@ -341,7 +333,7 @@ export default function TestCaseDetailPage() {
           alt={`Image ${fileId}`}
           className="max-w-md h-auto my-2 rounded border cursor-pointer"
           onClick={() => handleImageClick(fileId, `Image ${fileId}`)}
-        />
+        />,
       );
 
       lastIndex = imagePattern.lastIndex;
@@ -351,7 +343,7 @@ export default function TestCaseDetailPage() {
     if (lastIndex < text.length) {
       const textPart = text.substring(lastIndex);
       parts.push(
-        ...textPart.split('\n').flatMap((line, i) => (i > 0 ? [<br key={`br-${lastIndex}-${i}`} />, line] : [line]))
+        ...textPart.split('\n').flatMap((line, i) => (i > 0 ? [<br key={`br-${lastIndex}-${i}`} />, line] : [line])),
       );
     }
 
@@ -742,16 +734,21 @@ export default function TestCaseDetailPage() {
 
       {/* 画像プレビューダイアログ */}
       <Dialog open={previewImageId !== null} onOpenChange={() => setPreviewImageId(null)}>
-        <DialogContent className="max-w-[90vw] max-h-[95vh]">
-          <DialogHeader>
+        <DialogContent className="max-w-[98vw] max-h-[98vh] p-2">
+          <DialogHeader className="pb-2">
             <DialogTitle>画像プレビュー</DialogTitle>
           </DialogHeader>
-          <div className="flex items-center justify-center p-4 overflow-auto">
+          <div className="flex items-center justify-center overflow-auto" style={{ maxHeight: 'calc(98vh - 120px)' }}>
             {previewImageUrl && (
-              <img src={previewImageUrl} alt="Preview" className="max-w-full max-h-[80vh] object-contain" />
+              <img
+                src={previewImageUrl}
+                alt="Preview"
+                className="w-auto h-auto"
+                style={{ maxWidth: '100%', maxHeight: '100%' }}
+              />
             )}
           </div>
-          <DialogFooter>
+          <DialogFooter className="pt-2">
             <Button variant="outline" onClick={() => setPreviewImageId(null)}>
               閉じる
             </Button>

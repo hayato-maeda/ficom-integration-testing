@@ -49,6 +49,20 @@ export interface Tag {
   createdAt: string;
 }
 
+// ファイル型
+export interface File {
+  id: number;
+  filename: string;
+  path: string;
+  mimeType: string;
+  size: number;
+  featureId: number;
+  testId: number;
+  testCaseId: number;
+  uploader: User;
+  createdAt: string;
+}
+
 // 機能型（前方宣言）
 export interface Feature {
   id: number;
@@ -88,6 +102,7 @@ export interface TestCase {
   status: string;
   createdBy: User;
   tags: Tag[];
+  files?: File[];
   createdAt: string;
   updatedAt: string;
 }

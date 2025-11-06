@@ -66,6 +66,19 @@ export const GET_TEST_CASE_QUERY = gql`
         name
         color
       }
+      files {
+        id
+        filename
+        path
+        mimeType
+        size
+        uploader {
+          id
+          name
+          email
+        }
+        createdAt
+      }
       createdAt
       updatedAt
     }

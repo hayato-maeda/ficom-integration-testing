@@ -130,6 +130,6 @@ export class TestCasesResolver {
    */
   @ResolveField(() => [File])
   async files(@Parent() testCase: TestCase): Promise<File[]> {
-    return this.filesService.findByTestCase(testCase.id);
+    return this.filesService.findByTestCase(testCase.featureId, testCase.testId, testCase.id);
   }
 }

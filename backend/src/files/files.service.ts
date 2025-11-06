@@ -132,14 +132,20 @@ export class FilesService {
 
   /**
    * テストケースに紐づくファイル一覧取得
+   * @param featureId - 機能ID
+   * @param testId - テストID
    * @param testCaseId - テストケースID
    * @returns ファイルの一覧
    */
-  async findByTestCase(testCaseId: number): Promise<File[]> {
-    this.logger.info({ testCaseId }, 'Fetching files for test case');
+  async findByTestCase(featureId: number, testId: number, testCaseId: number): Promise<File[]> {
+    this.logger.info({ featureId, testId, testCaseId }, 'Fetching files for test case');
 
     return this.prismaService.file.findMany({
-      where: { testCaseId },
+      where: {
+        featureId,
+        testId,
+        testCaseId,
+      },
       include: {
         testCase: {
           include: {

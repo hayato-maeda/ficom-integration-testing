@@ -52,9 +52,11 @@ export class FilesController {
       storage: diskStorage({
         destination: join(process.cwd(), 'uploads'),
         filename: (_req, file, callback) => {
+          // ファイル名をUTF-8で正しくデコード
+          const originalFilename = Buffer.from(file.originalname, 'latin1').toString('utf8');
           const uuid = randomUUID();
-          const ext = extname(file.originalname);
-          const filename = `${file.originalname.replace(ext, '')}-${uuid}${ext}`;
+          const ext = extname(originalFilename);
+          const filename = `${originalFilename.replace(ext, '')}-${uuid}${ext}`;
           callback(null, filename);
         },
       }),
@@ -70,9 +72,12 @@ export class FilesController {
     @Param('testCaseId', ParseIntPipe) testCaseId: number,
     @CurrentUser() user: User,
   ): Promise<File> {
+    // ファイル名をUTF-8で正しくデコード
+    const originalFilename = Buffer.from(file.originalname, 'latin1').toString('utf8');
+
     this.logger.info(
       {
-        filename: file.originalname,
+        filename: originalFilename,
         size: file.size,
         mimeType: file.mimetype,
         featureId,
@@ -84,7 +89,7 @@ export class FilesController {
     );
 
     const uploadedFile = await this.filesService.create(
-      file.originalname,
+      originalFilename,
       file.filename,
       file.mimetype,
       file.size,
@@ -100,6 +105,26 @@ export class FilesController {
   }
 
   /**
+   * ファイル表示（プレビュー用）
+   * @param id - ファイルID
+   * @param res - Expressレスポンスオブジェクト
+   */
+  @Get(':id/view')
+  async viewFile(@Param('id', ParseIntPipe) id: number, @Res() res: Response): Promise<void> {
+    this.logger.info({ fileId: id }, 'File view requested');
+
+    const file = await this.filesService.findOne(id);
+    const filePath = await this.filesService.getFilePath(id);
+
+    res.setHeader('Content-Type', file.mimeType);
+    res.setHeader('Cache-Control', 'public, max-age=31536000');
+
+    this.logger.info({ fileId: id, filename: file.filename }, 'Sending file for view');
+
+    res.sendFile(filePath);
+  }
+
+  /**
    * ファイルダウンロード
    * @param id - ファイルID
    * @param res - Expressレスポンスオブジェクト
@@ -111,8 +136,11 @@ export class FilesController {
     const file = await this.filesService.findOne(id);
     const filePath = await this.filesService.getFilePath(id);
 
+    // 日本語ファイル名をRFC 5987形式でエンコード
+    const encodedFilename = encodeURIComponent(file.filename);
+
     res.setHeader('Content-Type', file.mimeType);
-    res.setHeader('Content-Disposition', `attachment; filename="${file.filename}"`);
+    res.setHeader('Content-Disposition', `attachment; filename*=UTF-8''${encodedFilename}`);
 
     this.logger.info({ fileId: id, filename: file.filename }, 'Sending file for download');
 

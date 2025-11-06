@@ -112,7 +112,7 @@ type Query {
   features: [Feature!]!
   file(id: Int!): File!
   files: [File!]!
-  filesByTestCase(testCaseId: Int!): [File!]!
+  filesByTestCase(featureId: Int!, testCaseId: Int!, testId: Int!): [File!]!
   me: User!
   tag(id: Int!): Tag
   tags: [Tag!]!

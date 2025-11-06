@@ -3,6 +3,7 @@
 import { useMutation, useQuery } from '@apollo/client/react';
 import { useParams, useRouter } from 'next/navigation';
 import { JSX, useState } from 'react';
+import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -327,12 +328,15 @@ export default function TestCaseDetailPage() {
       // 画像を追加
       const fileId = parseInt(match[1], 10);
       parts.push(
-        <img
+        <Image
           key={`image-${fileId}-${match.index}`}
           src={getImageUrl(fileId)}
           alt={`Image ${fileId}`}
+          width={448}
+          height={300}
           className="max-w-md h-auto my-2 rounded border cursor-pointer"
           onClick={() => handleImageClick(fileId, `Image ${fileId}`)}
+          unoptimized
         />,
       );
 
@@ -601,13 +605,15 @@ export default function TestCaseDetailPage() {
                         <div className="flex items-center gap-3 flex-1 min-w-0">
                           {isImage ? (
                             <div
-                              className="w-16 h-16 flex-shrink-0 rounded overflow-hidden cursor-pointer border"
+                              className="w-16 h-16 flex-shrink-0 rounded overflow-hidden cursor-pointer border relative"
                               onClick={() => handleImageClick(file.id, file.filename)}
                             >
-                              <img
+                              <Image
                                 src={getImageUrl(file.id)}
                                 alt={file.filename}
-                                className="w-full h-full object-cover"
+                                fill
+                                className="object-cover"
+                                unoptimized
                               />
                             </div>
                           ) : (
@@ -738,13 +744,15 @@ export default function TestCaseDetailPage() {
           <DialogHeader className="pb-2">
             <DialogTitle>画像プレビュー</DialogTitle>
           </DialogHeader>
-          <div className="flex items-center justify-center overflow-auto" style={{ maxHeight: 'calc(98vh - 120px)' }}>
+          <div className="flex items-center justify-center overflow-auto relative" style={{ maxHeight: 'calc(98vh - 120px)', width: '100%' }}>
             {previewImageUrl && (
-              <img
+              <Image
                 src={previewImageUrl}
                 alt="Preview"
-                className="w-auto h-auto"
-                style={{ maxWidth: '100%', maxHeight: '100%' }}
+                width={1920}
+                height={1080}
+                className="w-auto h-auto max-w-full max-h-full object-contain"
+                unoptimized
               />
             )}
           </div>

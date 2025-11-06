@@ -3,6 +3,7 @@
 import { useMutation, useQuery } from '@apollo/client/react';
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
+import NextImage from 'next/image';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -414,11 +415,13 @@ export default function TestCaseEditPage() {
                                 className="flex items-center gap-3 rounded-md border bg-background p-2 hover:bg-accent/50"
                               >
                                 {isImage ? (
-                                  <div className="w-12 h-12 flex-shrink-0 rounded overflow-hidden border">
-                                    <img
+                                  <div className="w-12 h-12 flex-shrink-0 rounded overflow-hidden border relative">
+                                    <NextImage
                                       src={getImageUrl(file.id)}
                                       alt={file.filename}
-                                      className="w-full h-full object-cover"
+                                      fill
+                                      className="object-cover"
+                                      unoptimized
                                     />
                                   </div>
                                 ) : (

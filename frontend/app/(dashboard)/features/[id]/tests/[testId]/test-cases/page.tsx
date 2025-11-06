@@ -3,6 +3,7 @@
 import { useMutation, useQuery } from '@apollo/client/react';
 import { useParams, useRouter } from 'next/navigation';
 import { useState, useRef } from 'react';
+import NextImage from 'next/image';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -650,13 +651,19 @@ export default function TestCasesPage() {
                         </div>
                         <div className="grid grid-cols-2 gap-2">
                           {pendingImages.map((item, index) => (
-                            <div key={index} className="relative group rounded-md border overflow-hidden">
-                              <img src={item.preview} alt={`貼り付けた画像 ${index + 1}`} className="w-full h-32 object-cover" />
+                            <div key={index} className="relative group rounded-md border overflow-hidden h-32">
+                              <NextImage
+                                src={item.preview}
+                                alt={`貼り付けた画像 ${index + 1}`}
+                                fill
+                                className="object-cover"
+                                unoptimized
+                              />
                               <Button
                                 type="button"
                                 variant="destructive"
                                 size="icon"
-                                className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                                className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity z-10"
                                 onClick={() => removePendingImage(index)}
                               >
                                 <X className="h-4 w-4" />

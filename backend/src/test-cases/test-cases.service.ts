@@ -238,9 +238,13 @@ export class TestCasesService {
       };
     }
 
-    // 更新データの準備（複合キーとundefinedのフィールドは除外）
+    // 更新データの準備（複合キーとundefinedのフィールドは除外、空文字列はnullに変換）
     const { featureId: _featureId, testId: _testId, id: _id, ...updateFields } = updateTestCaseInput;
-    const updateData = Object.fromEntries(Object.entries(updateFields).filter(([_, value]) => value !== undefined));
+    const updateData = Object.fromEntries(
+      Object.entries(updateFields)
+        .filter(([_, value]) => value !== undefined)
+        .map(([key, value]) => [key, value === '' ? null : value]),
+    );
 
     const testCase = await this.prismaService.testCase.update({
       where: {

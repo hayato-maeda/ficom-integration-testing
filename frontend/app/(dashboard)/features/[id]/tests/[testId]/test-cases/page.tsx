@@ -242,7 +242,31 @@ export default function TestCasesPage() {
           const reader = new FileReader();
           reader.onload = (event) => {
             const preview = event.target?.result as string;
+            const imageIndex = pendingImages.length;
             setPendingImages((prev) => [...prev, { file, preview }]);
+
+            // テキストエリアに画像プレースホルダーを挿入
+            const textarea = actualResultTextareaRef.current;
+            if (textarea) {
+              const imagePlaceholder = `[[image:pending-${imageIndex}]]`;
+              const currentValue = form.getValues('actualResult') || '';
+              const selectionStart = textarea.selectionStart;
+              const selectionEnd = textarea.selectionEnd;
+
+              const newValue =
+                currentValue.substring(0, selectionStart) +
+                imagePlaceholder +
+                currentValue.substring(selectionEnd);
+
+              form.setValue('actualResult', newValue);
+
+              setTimeout(() => {
+                const newPosition = selectionStart + imagePlaceholder.length;
+                textarea.setSelectionRange(newPosition, newPosition);
+                textarea.focus();
+              }, 0);
+            }
+
             toast.success(`画像を追加しました: ${file.name || '貼り付けた画像'}`, {
               id: 'image-added',
               style: { background: '#dcfce7', color: '#166534', border: '1px solid #bbf7d0' },
@@ -302,11 +326,13 @@ export default function TestCasesPage() {
             uploadedFileIds.push(uploadedFile.id);
           }
 
-          // 実績結果に画像タグを追加
-          const imageTags = uploadedFileIds.map((fileId) => `[[image:${fileId}]]`).join('\n');
-          const updatedActualResult = values.actualResult
-            ? `${values.actualResult}\n\n${imageTags}`
-            : imageTags;
+          // プレースホルダーを実際の画像IDに置き換え
+          let updatedActualResult = values.actualResult || '';
+          uploadedFileIds.forEach((fileId, index) => {
+            const placeholder = `[[image:pending-${index}]]`;
+            const imageTag = `[[image:${fileId}]]`;
+            updatedActualResult = updatedActualResult.replace(placeholder, imageTag);
+          });
 
           // テストケースを更新して画像タグを実績結果に反映
           await updateTestCase({

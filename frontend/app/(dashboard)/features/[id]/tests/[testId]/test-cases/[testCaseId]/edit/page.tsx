@@ -119,10 +119,10 @@ export default function TestCaseEditPage() {
           testId,
           id: testCaseId,
           title: data.title,
-          description: data.description || undefined,
+          description: data.description || '',
           steps: data.steps,
           expectedResult: data.expectedResult,
-          actualResult: data.actualResult || undefined,
+          actualResult: data.actualResult || '',
           status: data.status,
         },
       });
@@ -220,9 +220,6 @@ export default function TestCaseEditPage() {
                 textarea.focus();
               }, 0);
             }
-
-            // ファイル一覧を更新
-            await refetch();
 
             toast.success('画像をアップロードして挿入しました', {
               id: 'upload-success',

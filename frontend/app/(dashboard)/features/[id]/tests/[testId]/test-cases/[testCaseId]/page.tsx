@@ -33,8 +33,14 @@ import {
   UPDATE_APPROVAL_MUTATION,
   DELETE_APPROVAL_MUTATION,
 } from '@/lib/graphql/approvals';
+import {
+  CREATE_COMMENT_MUTATION,
+  UPDATE_COMMENT_MUTATION,
+  DELETE_COMMENT_MUTATION,
+  GET_COMMENTS_BY_TEST_CASE_QUERY,
+} from '@/lib/graphql/comments';
 import { uploadFile, downloadFile, deleteFile } from '@/lib/api/files';
-import { MutationResponse, TestCase, TestCaseStatus, Tag, Approval, ApprovalStatus } from '@/types';
+import { MutationResponse, TestCase, TestCaseStatus, Tag, Approval, ApprovalStatus, Comment } from '@/types';
 import { useAuth } from '@/contexts/auth-context';
 import {
   ArrowLeft,
@@ -53,6 +59,11 @@ import { Textarea } from '@/components/ui/textarea';
 import { format } from 'date-fns';
 import { ja } from 'date-fns/locale/ja';
 import { toast } from 'sonner';
+
+/**
+ * 統合コメント型（ApprovalまたはComment）
+ */
+type UnifiedComment = (Approval & { itemType: 'approval' }) | (Comment & { itemType: 'comment' });
 
 /**
  * ステータスバッジのスタイルを取得
@@ -135,7 +146,12 @@ export default function TestCaseDetailPage() {
   const [editingComment, setEditingComment] = useState('');
   const [deleteApprovalDialogOpen, setDeleteApprovalDialogOpen] = useState(false);
   const [deletingApprovalId, setDeletingApprovalId] = useState<number | null>(null);
-  const [approvalsDisplayCount, setApprovalsDisplayCount] = useState(5);
+  const [commentContent, setCommentContent] = useState('');
+  const [editingCommentId, setEditingCommentId] = useState<number | null>(null);
+  const [editingCommentContent, setEditingCommentContent] = useState('');
+  const [deleteCommentDialogOpen, setDeleteCommentDialogOpen] = useState(false);
+  const [deletingCommentId, setDeletingCommentId] = useState<number | null>(null);
+  const [unifiedCommentsDisplayCount, setUnifiedCommentsDisplayCount] = useState(5);
 
   const { data, loading, error, refetch } = useQuery<{ testCase: TestCase | null }>(GET_TEST_CASE_QUERY, {
     variables: { featureId, testId, id: testCaseId },
@@ -163,23 +179,65 @@ export default function TestCaseDetailPage() {
   const [createApproval, { loading: approvalLoading }] = useMutation<{
     createApproval: MutationResponse<Approval>;
   }>(CREATE_APPROVAL_MUTATION, {
-    refetchQueries: [{ query: GET_TEST_CASE_QUERY, variables: { featureId, testId, id: testCaseId } }],
+    onCompleted: () => {
+      refetch();
+      refetchComments();
+    },
   });
 
   const [updateApproval, { loading: updateApprovalLoading }] = useMutation<{
     updateApproval: MutationResponse<Approval>;
   }>(UPDATE_APPROVAL_MUTATION, {
-    refetchQueries: [{ query: GET_TEST_CASE_QUERY, variables: { featureId, testId, id: testCaseId } }],
+    onCompleted: () => {
+      refetch();
+      refetchComments();
+    },
   });
 
   const [deleteApproval, { loading: deleteApprovalLoading }] = useMutation<{
     deleteApproval: MutationResponse<Approval>;
   }>(DELETE_APPROVAL_MUTATION, {
-    refetchQueries: [{ query: GET_TEST_CASE_QUERY, variables: { featureId, testId, id: testCaseId } }],
+    onCompleted: () => {
+      refetch();
+      refetchComments();
+    },
+  });
+
+  const { data: commentsData, refetch: refetchComments } = useQuery<{ commentsByTestCase: Comment[] }>(
+    GET_COMMENTS_BY_TEST_CASE_QUERY,
+    {
+      variables: { featureId, testId, testCaseId },
+      skip: isNaN(featureId) || isNaN(testId) || isNaN(testCaseId),
+    },
+  );
+
+  const [createComment, { loading: createCommentLoading }] = useMutation<{
+    createComment: MutationResponse<Comment>;
+  }>(CREATE_COMMENT_MUTATION, {
+    onCompleted: () => refetchComments(),
+  });
+
+  const [updateComment, { loading: updateCommentLoading }] = useMutation<{
+    updateComment: MutationResponse<Comment>;
+  }>(UPDATE_COMMENT_MUTATION, {
+    onCompleted: () => refetchComments(),
+  });
+
+  const [deleteComment, { loading: deleteCommentLoading }] = useMutation<{
+    deleteComment: MutationResponse<Comment>;
+  }>(DELETE_COMMENT_MUTATION, {
+    onCompleted: () => refetchComments(),
   });
 
   const testCase = data?.testCase;
   const allTags = tagsData?.tags || [];
+  const comments = commentsData?.commentsByTestCase || [];
+
+  // 承認とコメントを統合してソート
+  const unifiedComments: UnifiedComment[] = [
+    ...(testCase?.approvals || []).map((approval) => ({ ...approval, itemType: 'approval' as const })),
+    ...(comments || []).map((comment) => ({ ...comment, itemType: 'comment' as const })),
+  ].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
   // 未割り当てのタグを取得
   const unassignedTags = allTags.filter((tag) => !testCase?.tags?.some((t) => t.id === tag.id));
@@ -455,6 +513,116 @@ export default function TestCaseDetailPage() {
     } catch (error) {
       toast.error('エラーが発生しました', {
         id: 'delete-approval-error',
+        style: { background: '#fee2e2', color: '#991b1b', border: '1px solid #fecaca' },
+      });
+    }
+  };
+
+  const handleCreateComment = async () => {
+    if (!commentContent.trim()) return;
+
+    try {
+      const result = await createComment({
+        variables: {
+          createCommentInput: {
+            content: commentContent,
+            featureId,
+            testId,
+            testCaseId,
+          },
+        },
+      });
+
+      if (result.data?.createComment.isValid) {
+        toast.success('コメントを投稿しました', {
+          id: 'create-comment-success',
+          style: { background: '#dcfce7', color: '#166534', border: '1px solid #bbf7d0' },
+        });
+        setCommentContent('');
+      } else {
+        toast.error(result.data?.createComment.message || 'コメントの投稿に失敗しました', {
+          id: 'create-comment-error',
+          style: { background: '#fee2e2', color: '#991b1b', border: '1px solid #fecaca' },
+        });
+      }
+    } catch (error) {
+      toast.error('エラーが発生しました', {
+        id: 'create-comment-error',
+        style: { background: '#fee2e2', color: '#991b1b', border: '1px solid #fecaca' },
+      });
+    }
+  };
+
+  const openEditCommentDialog = (comment: Comment) => {
+    setEditingCommentId(comment.id);
+    setEditingCommentContent(comment.content);
+  };
+
+  const handleUpdateComment = async () => {
+    if (editingCommentId === null || !editingCommentContent.trim()) return;
+
+    try {
+      const result = await updateComment({
+        variables: {
+          updateCommentInput: {
+            id: editingCommentId,
+            content: editingCommentContent,
+          },
+        },
+      });
+
+      if (result.data?.updateComment.isValid) {
+        toast.success('コメントを更新しました', {
+          id: 'update-comment-success',
+          style: { background: '#dcfce7', color: '#166534', border: '1px solid #bbf7d0' },
+        });
+        setEditingCommentId(null);
+        setEditingCommentContent('');
+      } else {
+        toast.error(result.data?.updateComment.message || 'コメントの更新に失敗しました', {
+          id: 'update-comment-error',
+          style: { background: '#fee2e2', color: '#991b1b', border: '1px solid #fecaca' },
+        });
+      }
+    } catch (error) {
+      toast.error('エラーが発生しました', {
+        id: 'update-comment-error',
+        style: { background: '#fee2e2', color: '#991b1b', border: '1px solid #fecaca' },
+      });
+    }
+  };
+
+  const openDeleteCommentDialog = (commentId: number) => {
+    setDeletingCommentId(commentId);
+    setDeleteCommentDialogOpen(true);
+  };
+
+  const handleDeleteComment = async () => {
+    if (deletingCommentId === null) return;
+
+    try {
+      const result = await deleteComment({
+        variables: {
+          id: deletingCommentId,
+        },
+      });
+
+      if (result.data?.deleteComment.isValid) {
+        toast.success('コメントを削除しました', {
+          id: 'delete-comment-success',
+          style: { background: '#dcfce7', color: '#166534', border: '1px solid #bbf7d0' },
+        });
+        setDeleteCommentDialogOpen(false);
+        setDeletingCommentId(null);
+      } else {
+        toast.error(result.data?.deleteComment.message || 'コメントの削除に失敗しました', {
+          id: 'delete-comment-error',
+          style: { background: '#fee2e2', color: '#991b1b', border: '1px solid #fecaca' },
+        });
+      }
+    } catch (error) {
+      toast.error('エラーが発生しました', {
+        id: 'delete-comment-error',
         style: { background: '#fee2e2', color: '#991b1b', border: '1px solid #fecaca' },
       });
     }
@@ -842,106 +1010,153 @@ export default function TestCaseDetailPage() {
             </CardContent>
           </Card>
 
-          {/* 承認履歴 */}
+          {/* コメント（承認履歴含む） */}
           <Card>
             <CardHeader>
-              <CardTitle>承認履歴</CardTitle>
+              <CardTitle>コメント</CardTitle>
             </CardHeader>
             <CardContent>
-              {testCase.approvals && testCase.approvals.length > 0 ? (
-                <div className="space-y-3">
-                  {testCase.approvals.slice(0, approvalsDisplayCount).map((approval) => {
-                    const isEdited = new Date(approval.updatedAt).getTime() > new Date(approval.createdAt).getTime();
-                    const isOwnApproval = user?.id === approval.userId;
+              <div className="space-y-4">
+                {/* コメント入力欄 */}
+                <div className="space-y-2">
+                  <Textarea
+                    placeholder="コメントを入力してください"
+                    value={commentContent}
+                    onChange={(e) => setCommentContent(e.target.value)}
+                    rows={3}
+                  />
+                  <div className="flex justify-end">
+                    <Button
+                      onClick={handleCreateComment}
+                      disabled={!commentContent.trim() || createCommentLoading}
+                      size="sm"
+                    >
+                      {createCommentLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                      投稿
+                    </Button>
+                  </div>
+                </div>
 
-                    return (
-                      <div key={approval.id} className="rounded-lg border p-4 space-y-2">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-3">
-                            <div>
-                              <p className="text-sm font-medium">{approval.user.name}</p>
-                              <p className="text-xs text-muted-foreground">{approval.user.email}</p>
+                {/* 統合コメント一覧（承認履歴含む） */}
+                {unifiedComments.length > 0 ? (
+                  <div className="space-y-3">
+                    {unifiedComments.slice(0, unifiedCommentsDisplayCount).map((item) => {
+                      const isEdited = new Date(item.updatedAt).getTime() > new Date(item.createdAt).getTime();
+                      const isOwnItem = user?.id === item.userId;
+
+                      return (
+                        <div
+                          key={`${item.itemType}-${item.id}`}
+                          className="rounded-lg border p-4 space-y-2"
+                        >
+                          <div className="flex items-start justify-between">
+                            <div className="flex items-center gap-3">
+                              <div>
+                                <p className="text-sm font-medium">{item.user.name}</p>
+                                <p className="text-xs text-muted-foreground">{item.user.email}</p>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              {/* 承認/却下バッジ */}
+                              {item.itemType === 'approval' && (
+                                <Badge
+                                  variant={
+                                    item.status === ApprovalStatus.APPROVED ? 'default' : 'destructive'
+                                  }
+                                >
+                                  {item.status === ApprovalStatus.APPROVED ? '承認' : '却下'}
+                                </Badge>
+                              )}
+                              {/* 編集済みバッジ */}
+                              {isEdited && (
+                                <Badge variant="outline" className="text-xs">
+                                  編集済み
+                                </Badge>
+                              )}
+                              {/* 編集・削除ボタン */}
+                              {isOwnItem && (
+                                <>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-7 w-7"
+                                    onClick={() =>
+                                      item.itemType === 'approval'
+                                        ? openEditApprovalDialog(item)
+                                        : openEditCommentDialog(item)
+                                    }
+                                    title={item.itemType === 'approval' ? 'コメントを編集' : 'コメントを編集'}
+                                  >
+                                    <Pencil className="h-3 w-3" />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-7 w-7"
+                                    onClick={() =>
+                                      item.itemType === 'approval'
+                                        ? openDeleteApprovalDialog(item.id)
+                                        : openDeleteCommentDialog(item.id)
+                                    }
+                                    title={item.itemType === 'approval' ? '承認を削除' : 'コメントを削除'}
+                                  >
+                                    <Trash2 className="h-3 w-3 text-destructive" />
+                                  </Button>
+                                </>
+                              )}
                             </div>
                           </div>
-                          <div className="flex items-center gap-2">
-                            <Badge
-                              variant={approval.status === ApprovalStatus.APPROVED ? 'default' : 'destructive'}
-                            >
-                              {approval.status === ApprovalStatus.APPROVED ? '承認' : '却下'}
-                            </Badge>
-                            {isEdited && (
-                              <Badge variant="outline" className="text-xs">
-                                編集済み
-                              </Badge>
-                            )}
-                            {isOwnApproval && (
-                              <>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-7 w-7"
-                                  onClick={() => openEditApprovalDialog(approval)}
-                                  title="コメントを編集"
-                                >
-                                  <Pencil className="h-3 w-3" />
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-7 w-7"
-                                  onClick={() => openDeleteApprovalDialog(approval.id)}
-                                  title="承認を削除"
-                                >
-                                  <Trash2 className="h-3 w-3 text-destructive" />
-                                </Button>
-                              </>
-                            )}
-                          </div>
-                        </div>
-                        {approval.comment && (
-                          <div className="pt-2 border-t">
-                            <p className="text-sm text-muted-foreground whitespace-pre-wrap">{approval.comment}</p>
-                          </div>
-                        )}
-                        <div className="text-xs text-muted-foreground">
-                          {format(new Date(approval.createdAt), 'yyyy年MM月dd日 HH:mm', { locale: ja })}
-                          {isEdited && (
-                            <span className="ml-2">
-                              (編集: {format(new Date(approval.updatedAt), 'yyyy年MM月dd日 HH:mm', { locale: ja })})
-                            </span>
+                          {/* コメント内容 */}
+                          {((item.itemType === 'approval' && item.comment) || item.itemType === 'comment') && (
+                            <div className="pt-2 border-t">
+                              <p className="text-sm whitespace-pre-wrap">
+                                {item.itemType === 'approval' ? item.comment : item.content}
+                              </p>
+                            </div>
                           )}
+                          {/* タイムスタンプ */}
+                          <div className="text-xs text-muted-foreground">
+                            {format(new Date(item.createdAt), 'yyyy年MM月dd日 HH:mm', { locale: ja })}
+                            {isEdited && (
+                              <span className="ml-2">
+                                (編集: {format(new Date(item.updatedAt), 'yyyy年MM月dd日 HH:mm', { locale: ja })})
+                              </span>
+                            )}
+                          </div>
                         </div>
+                      );
+                    })}
+                    {/* さらに表示ボタン */}
+                    {unifiedComments.length > unifiedCommentsDisplayCount && (
+                      <div className="pt-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="w-full"
+                          onClick={() => setUnifiedCommentsDisplayCount(unifiedCommentsDisplayCount + 5)}
+                        >
+                          さらに表示 ({unifiedComments.length - unifiedCommentsDisplayCount}件)
+                        </Button>
                       </div>
-                    );
-                  })}
-                  {testCase.approvals.length > approvalsDisplayCount && (
-                    <div className="pt-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="w-full"
-                        onClick={() => setApprovalsDisplayCount(approvalsDisplayCount + 5)}
-                      >
-                        さらに表示 ({testCase.approvals.length - approvalsDisplayCount}件)
-                      </Button>
-                    </div>
-                  )}
-                  {approvalsDisplayCount > 5 && approvalsDisplayCount >= testCase.approvals.length && (
-                    <div className="pt-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="w-full"
-                        onClick={() => setApprovalsDisplayCount(5)}
-                      >
-                        閉じる
-                      </Button>
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <p className="text-sm text-muted-foreground">承認履歴はありません</p>
-              )}
+                    )}
+                    {/* 閉じるボタン */}
+                    {unifiedCommentsDisplayCount > 5 && unifiedCommentsDisplayCount >= unifiedComments.length && (
+                      <div className="pt-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="w-full"
+                          onClick={() => setUnifiedCommentsDisplayCount(5)}
+                        >
+                          閉じる
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground">コメントはありません</p>
+                )}
+              </div>
             </CardContent>
           </Card>
         </div>
@@ -1153,6 +1368,74 @@ export default function TestCaseDetailPage() {
               className="bg-destructive hover:bg-destructive/90"
             >
               {deleteApprovalLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              削除
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* コメント編集ダイアログ */}
+      <Dialog open={editingCommentId !== null} onOpenChange={() => setEditingCommentId(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>コメントを編集</DialogTitle>
+            <DialogDescription>コメントを編集します。</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">コメント</label>
+              <Textarea
+                placeholder="コメントを入力してください"
+                value={editingCommentContent}
+                onChange={(e) => setEditingCommentContent(e.target.value)}
+                rows={4}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setEditingCommentId(null);
+                setEditingCommentContent('');
+              }}
+              disabled={updateCommentLoading}
+            >
+              キャンセル
+            </Button>
+            <Button onClick={handleUpdateComment} disabled={!editingCommentContent.trim() || updateCommentLoading}>
+              {updateCommentLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              更新する
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* コメント削除確認ダイアログ */}
+      <AlertDialog open={deleteCommentDialogOpen} onOpenChange={setDeleteCommentDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>コメントを削除しますか？</AlertDialogTitle>
+            <AlertDialogDescription>
+              この操作は取り消せません。コメントを完全に削除します。
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel
+              disabled={deleteCommentLoading}
+              onClick={() => {
+                setDeleteCommentDialogOpen(false);
+                setDeletingCommentId(null);
+              }}
+            >
+              キャンセル
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteComment}
+              disabled={deleteCommentLoading}
+              className="bg-destructive hover:bg-destructive/90"
+            >
+              {deleteCommentLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               削除
             </AlertDialogAction>
           </AlertDialogFooter>

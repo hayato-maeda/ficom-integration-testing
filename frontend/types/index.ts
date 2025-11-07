@@ -90,6 +90,19 @@ export interface Approval {
   updatedAt: string;
 }
 
+// コメント型
+export interface Comment {
+  id: number;
+  content: string;
+  featureId: number;
+  testId: number;
+  testCaseId: number;
+  userId: number;
+  user: User;
+  createdAt: string;
+  updatedAt: string;
+}
+
 // 機能型（前方宣言）
 export interface Feature {
   id: number;
@@ -131,6 +144,7 @@ export interface TestCase {
   tags: Tag[];
   files?: File[];
   approvals?: Approval[];
+  comments?: Comment[];
   createdAt: string;
   updatedAt: string;
 }

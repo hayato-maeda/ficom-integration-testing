@@ -105,7 +105,7 @@ export default function FeatureEditPage() {
           id: 'update-success',
           style: { background: '#dcfce7', color: '#166534', border: '1px solid #bbf7d0' },
         });
-        router.push(`/features/${id}/test-cases`);
+        router.push(`/features/${id}/tests`);
       } else {
         toast.error(result.data?.updateFeature.message || '更新に失敗しました', {
           id: 'update-error',
@@ -172,7 +172,7 @@ export default function FeatureEditPage() {
     <div className="space-y-6">
       {/* ヘッダー */}
       <div className="flex items-center justify-between">
-        <Button variant="ghost" onClick={() => router.push(`/features/${id}/test-cases`)}>
+        <Button variant="ghost" onClick={() => router.push(`/features/${id}/tests`)}>
           <ArrowLeft className="mr-2 h-4 w-4" />
           詳細に戻る
         </Button>
@@ -279,7 +279,7 @@ export default function FeatureEditPage() {
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={() => router.push(`/features/${id}/test-cases`)}
+                  onClick={() => router.push(`/features/${id}/tests`)}
                   disabled={mutationLoading}
                 >
                   キャンセル

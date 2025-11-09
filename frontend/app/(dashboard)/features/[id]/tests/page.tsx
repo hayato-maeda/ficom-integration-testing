@@ -42,7 +42,7 @@ import {
 import { GET_FEATURE_QUERY } from '@/lib/graphql/features';
 import { CREATE_TEST_MUTATION, DELETE_TEST_MUTATION, GET_TESTS_BY_FEATURE_QUERY } from '@/lib/graphql/tests';
 import { Feature, Test, FeatureStatus, TestStatus, MutationResponse } from '@/types';
-import { ArrowLeft, Loader2, Pencil, Plus, ArrowUpDown, ArrowUp, ArrowDown, Trash2, Edit } from 'lucide-react';
+import { ArrowLeft, Loader2, Pencil, Plus, ArrowUpDown, ArrowUp, ArrowDown, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { ja } from 'date-fns/locale/ja';
 import { toast } from 'sonner';
@@ -532,7 +532,7 @@ export default function FeatureTestsPage() {
                             size="icon"
                             onClick={(e) => handleEditClick(e, test)}
                           >
-                            <Edit className="h-4 w-4" />
+                            <Pencil className="h-4 w-4" />
                           </Button>
                           <Button
                             variant="ghost"

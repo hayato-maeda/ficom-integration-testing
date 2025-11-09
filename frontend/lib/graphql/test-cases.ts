@@ -56,6 +56,15 @@ export const GET_TEST_CASE_QUERY = gql`
       expectedResult
       actualResult
       status
+      test {
+        id
+        featureId
+        name
+        feature {
+          id
+          name
+        }
+      }
       createdBy {
         id
         name

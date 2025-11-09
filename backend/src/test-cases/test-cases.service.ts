@@ -142,6 +142,11 @@ export class TestCasesService {
       },
       include: {
         createdBy: true,
+        test: {
+          include: {
+            feature: true,
+          },
+        },
       },
     });
 

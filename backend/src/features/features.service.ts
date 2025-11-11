@@ -2,9 +2,8 @@ import { Injectable } from '@nestjs/common';
 import { PinoLogger } from 'nestjs-pino';
 import { FEATURES_MESSAGES } from '../common/messages/features.messages';
 import { PrismaService } from '../prisma/prisma.service';
-import { AssignFeatureInput } from './dto/assign-feature.input';
 import { CreateFeatureInput } from './dto/create-feature.input';
-import { FeatureAssignMutationResponse, FeatureMutationResponse } from './dto/feature-mutation.response';
+import { FeatureMutationResponse } from './dto/feature-mutation.response';
 import { UpdateFeatureInput } from './dto/update-feature.input';
 import { Feature } from './models/feature.model';
 

@@ -17,6 +17,25 @@ export interface AuthContextType {
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 /**
+ * 認証Contextを使用するためのカスタムフック
+ *
+ * @throws AuthProviderが見つからない場合にエラーをスロー
+ * @returns 認証Context
+ *
+ * @example
+ * ```tsx
+ * const { user, isAuthenticated, login, logout } = useAuth();
+ * ```
+ */
+export const useAuth = (): AuthContextType => {
+  const context = React.useContext(AuthContext);
+  if (!context) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
+};
+
+/**
  * 認証機能を提供するContextプロバイダー
  *
  * アプリケーション全体で認証状態を管理し、ログイン・サインアップ・ログアウト

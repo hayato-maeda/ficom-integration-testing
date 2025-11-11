@@ -27,11 +27,56 @@ export class TestCasesService {
    * @returns テストケースMutationレスポンス
    */
   async create(createTestCaseInput: CreateTestCaseInput, userId: number): Promise<TestCaseMutationResponse> {
-    this.logger.info({ userId, title: createTestCaseInput.title, testId: createTestCaseInput.testId }, 'Creating test case');
+    this.logger.info(
+      {
+        userId,
+        title: createTestCaseInput.title,
+        featureId: createTestCaseInput.featureId,
+        testId: createTestCaseInput.testId,
+      },
+      'Creating test case',
+    );
+
+    // 親Testが存在するか確認
+    const test = await this.prismaService.test.findUnique({
+      where: {
+        featureId_id: {
+          featureId: createTestCaseInput.featureId,
+          id: createTestCaseInput.testId,
+        },
+      },
+    });
+
+    if (!test) {
+      this.logger.warn(
+        { featureId: createTestCaseInput.featureId, testId: createTestCaseInput.testId },
+        'Parent test not found',
+      );
+      return {
+        isValid: false,
+        message: `Test not found with featureId: ${createTestCaseInput.featureId}, testId: ${createTestCaseInput.testId}`,
+        data: null,
+      };
+    }
+
+    // 次のIDを取得（同じTest内での最大ID + 1）
+    const maxTestCase = await this.prismaService.testCase.findFirst({
+      where: {
+        featureId: createTestCaseInput.featureId,
+        testId: createTestCaseInput.testId,
+      },
+      orderBy: {
+        id: 'desc',
+      },
+    });
+
+    const nextId = (maxTestCase?.id ?? 0) + 1;
 
     const testCase = await this.prismaService.testCase.create({
       data: {
+        featureId: createTestCaseInput.featureId,
         testId: createTestCaseInput.testId,
+        id: nextId,
         title: createTestCaseInput.title,
         description: createTestCaseInput.description,
         steps: createTestCaseInput.steps,
@@ -44,7 +89,10 @@ export class TestCasesService {
       },
     });
 
-    this.logger.info({ testCaseId: testCase.id, testId: createTestCaseInput.testId, userId }, 'Test case created successfully');
+    this.logger.info(
+      { testCaseId: testCase.id, featureId: createTestCaseInput.featureId, testId: createTestCaseInput.testId, userId },
+      'Test case created successfully',
+    );
 
     return {
       isValid: true,
@@ -76,16 +124,29 @@ export class TestCasesService {
 
   /**
    * 特定のテストケースを取得
+   * @param featureId - 機能ID
+   * @param testId - テストID
    * @param id - テストケースID
    * @returns テストケースまたはnull
    */
-  async findOne(id: number): Promise<TestCase | null> {
-    this.logger.debug({ testCaseId: id }, 'Fetching test case');
+  async findOne(featureId: number, testId: number, id: number): Promise<TestCase | null> {
+    this.logger.debug({ featureId, testId, testCaseId: id }, 'Fetching test case');
 
     const testCase = await this.prismaService.testCase.findUnique({
-      where: { id },
+      where: {
+        featureId_testId_id: {
+          featureId,
+          testId,
+          id,
+        },
+      },
       include: {
         createdBy: true,
+        test: {
+          include: {
+            feature: true,
+          },
+        },
       },
     });
 
@@ -96,23 +157,24 @@ export class TestCasesService {
 
   /**
    * テストに属するテストケースを取得
+   * @param featureId - 機能ID
    * @param testId - テストID
    * @returns テストケースの一覧
    */
-  async findByTest(testId: number): Promise<TestCase[]> {
-    this.logger.debug({ testId }, 'Fetching test cases by test');
+  async findByTest(featureId: number, testId: number): Promise<TestCase[]> {
+    this.logger.debug({ featureId, testId }, 'Fetching test cases by test');
 
     const testCases = await this.prismaService.testCase.findMany({
-      where: { testId },
+      where: { featureId, testId },
       include: {
         createdBy: true,
       },
       orderBy: {
-        createdAt: 'desc',
+        id: 'asc',
       },
     });
 
-    this.logger.debug({ testId, count: testCases.length }, 'Test cases fetched for test');
+    this.logger.debug({ featureId, testId, count: testCases.length }, 'Test cases fetched for test');
 
     return testCases;
   }
@@ -124,18 +186,39 @@ export class TestCasesService {
    * @returns テストケースMutationレスポンス
    */
   async update(updateTestCaseInput: UpdateTestCaseInput, userId: number): Promise<TestCaseMutationResponse> {
-    this.logger.info({ testCaseId: updateTestCaseInput.id, userId }, 'Updating test case');
+    this.logger.info(
+      {
+        featureId: updateTestCaseInput.featureId,
+        testId: updateTestCaseInput.testId,
+        testCaseId: updateTestCaseInput.id,
+        userId,
+      },
+      'Updating test case',
+    );
 
     // テストケースの存在確認
     const existingTestCase = await this.prismaService.testCase.findUnique({
-      where: { id: updateTestCaseInput.id },
+      where: {
+        featureId_testId_id: {
+          featureId: updateTestCaseInput.featureId,
+          testId: updateTestCaseInput.testId,
+          id: updateTestCaseInput.id,
+        },
+      },
     });
 
     if (!existingTestCase) {
-      this.logger.warn({ testCaseId: updateTestCaseInput.id }, 'Test case not found for update');
+      this.logger.warn(
+        {
+          featureId: updateTestCaseInput.featureId,
+          testId: updateTestCaseInput.testId,
+          testCaseId: updateTestCaseInput.id,
+        },
+        'Test case not found for update',
+      );
       return {
         isValid: false,
-        message: TEST_CASES_MESSAGES.TEST_CASE_NOT_FOUND(updateTestCaseInput.id),
+        message: `Test case not found with featureId: ${updateTestCaseInput.featureId}, testId: ${updateTestCaseInput.testId}, id: ${updateTestCaseInput.id}`,
         data: null,
       };
     }
@@ -143,7 +226,13 @@ export class TestCasesService {
     // 作成者のみ更新可能
     if (existingTestCase.createdById !== userId) {
       this.logger.warn(
-        { testCaseId: updateTestCaseInput.id, userId, createdById: existingTestCase.createdById },
+        {
+          featureId: updateTestCaseInput.featureId,
+          testId: updateTestCaseInput.testId,
+          testCaseId: updateTestCaseInput.id,
+          userId,
+          createdById: existingTestCase.createdById,
+        },
         'Unauthorized update attempt',
       );
 
@@ -154,19 +243,32 @@ export class TestCasesService {
       };
     }
 
-    // 更新データの準備（idを除外し、undefinedのフィールドは除外）
-    const { id: _id, ...updateFields } = updateTestCaseInput;
-    const updateData = Object.fromEntries(Object.entries(updateFields).filter(([_, value]) => value !== undefined));
+    // 更新データの準備（複合キーとundefinedのフィールドは除外、空文字列はnullに変換）
+    const { featureId: _featureId, testId: _testId, id: _id, ...updateFields } = updateTestCaseInput;
+    const updateData = Object.fromEntries(
+      Object.entries(updateFields)
+        .filter(([_, value]) => value !== undefined)
+        .map(([key, value]) => [key, value === '' ? null : value]),
+    );
 
     const testCase = await this.prismaService.testCase.update({
-      where: { id: updateTestCaseInput.id },
+      where: {
+        featureId_testId_id: {
+          featureId: updateTestCaseInput.featureId,
+          testId: updateTestCaseInput.testId,
+          id: updateTestCaseInput.id,
+        },
+      },
       data: updateData,
       include: {
         createdBy: true,
       },
     });
 
-    this.logger.info({ testCaseId: testCase.id, userId }, 'Test case updated successfully');
+    this.logger.info(
+      { featureId: testCase.featureId, testId: testCase.testId, testCaseId: testCase.id, userId },
+      'Test case updated successfully',
+    );
 
     return {
       isValid: true,
@@ -177,26 +279,34 @@ export class TestCasesService {
 
   /**
    * テストケースを削除
+   * @param featureId - 機能ID
+   * @param testId - テストID
    * @param id - テストケースID
    * @param userId - 削除を行うユーザーID
    * @returns テストケースMutationレスポンス
    */
-  async remove(id: number, userId: number): Promise<TestCaseMutationResponse> {
-    this.logger.info({ testCaseId: id, userId }, 'Deleting test case');
+  async remove(featureId: number, testId: number, id: number, userId: number): Promise<TestCaseMutationResponse> {
+    this.logger.info({ featureId, testId, testCaseId: id, userId }, 'Deleting test case');
 
     // テストケースの存在確認
     const existingTestCase = await this.prismaService.testCase.findUnique({
-      where: { id },
+      where: {
+        featureId_testId_id: {
+          featureId,
+          testId,
+          id,
+        },
+      },
       include: {
         createdBy: true,
       },
     });
 
     if (!existingTestCase) {
-      this.logger.warn({ testCaseId: id }, 'Test case not found for deletion');
+      this.logger.warn({ featureId, testId, testCaseId: id }, 'Test case not found for deletion');
       return {
         isValid: false,
-        message: TEST_CASES_MESSAGES.TEST_CASE_NOT_FOUND(id),
+        message: `Test case not found with featureId: ${featureId}, testId: ${testId}, id: ${id}`,
         data: null,
       };
     }
@@ -204,7 +314,7 @@ export class TestCasesService {
     // 作成者のみ削除可能
     if (existingTestCase.createdById !== userId) {
       this.logger.warn(
-        { testCaseId: id, userId, createdById: existingTestCase.createdById },
+        { featureId, testId, testCaseId: id, userId, createdById: existingTestCase.createdById },
         'Unauthorized delete attempt',
       );
       return {
@@ -215,10 +325,16 @@ export class TestCasesService {
     }
 
     await this.prismaService.testCase.delete({
-      where: { id },
+      where: {
+        featureId_testId_id: {
+          featureId,
+          testId,
+          id,
+        },
+      },
     });
 
-    this.logger.info({ testCaseId: id, userId }, 'Test case deleted successfully');
+    this.logger.info({ featureId, testId, testCaseId: id, userId }, 'Test case deleted successfully');
 
     return {
       isValid: true,

@@ -1,4 +1,4 @@
-import { PrismaClient, Feature } from '@prisma/client';
+import { Feature, PrismaClient } from '@prisma/client';
 
 export async function createFeatures(prisma: PrismaClient): Promise<Feature[]> {
   console.log('Creating features...');

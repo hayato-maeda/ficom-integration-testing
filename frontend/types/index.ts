@@ -49,6 +49,60 @@ export interface Tag {
   createdAt: string;
 }
 
+// ファイル型
+export interface File {
+  id: number;
+  filename: string;
+  path: string;
+  mimeType: string;
+  size: number;
+  featureId: number;
+  testId: number;
+  testCaseId: number;
+  uploader: User;
+  createdAt: string;
+}
+
+// 承認ステータス定数
+export const ApprovalStatus = {
+  /** 承認待ち */
+  PENDING: 'PENDING',
+  /** 承認済み */
+  APPROVED: 'APPROVED',
+  /** 却下 */
+  REJECTED: 'REJECTED',
+} as const;
+
+// 承認ステータスの型
+export type ApprovalStatusType = (typeof ApprovalStatus)[keyof typeof ApprovalStatus];
+
+// 承認型
+export interface Approval {
+  id: number;
+  featureId: number;
+  testId: number;
+  testCaseId: number;
+  userId: number;
+  user: User;
+  status: string;
+  comment?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// コメント型
+export interface Comment {
+  id: number;
+  content: string;
+  featureId: number;
+  testId: number;
+  testCaseId: number;
+  userId: number;
+  user: User;
+  createdAt: string;
+  updatedAt: string;
+}
+
 // 機能型（前方宣言）
 export interface Feature {
   id: number;
@@ -77,6 +131,7 @@ export interface Test {
 // テストケース型
 export interface TestCase {
   id: number;
+  featureId: number;
   testId: number;
   test?: Test;
   title: string;
@@ -87,6 +142,9 @@ export interface TestCase {
   status: string;
   createdBy: User;
   tags: Tag[];
+  files?: File[];
+  approvals?: Approval[];
+  comments?: Comment[];
   createdAt: string;
   updatedAt: string;
 }
@@ -127,6 +185,7 @@ export interface CreateTestInput {
 
 // テスト更新入力型
 export interface UpdateTestInput {
+  featureId: number;
   id: number;
   name?: string;
   description?: string;
@@ -135,6 +194,7 @@ export interface UpdateTestInput {
 
 // テストケース作成入力型
 export interface CreateTestCaseInput {
+  featureId: number;
   testId: number;
   title: string;
   description?: string;
@@ -145,6 +205,8 @@ export interface CreateTestCaseInput {
 
 // テストケース更新入力型
 export interface UpdateTestCaseInput {
+  featureId: number;
+  testId: number;
   id: number;
   title?: string;
   description?: string;

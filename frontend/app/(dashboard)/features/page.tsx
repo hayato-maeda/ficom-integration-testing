@@ -7,14 +7,14 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbList,
+  BreadcrumbPage,
+} from '@/components/ui/breadcrumb';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -122,11 +122,7 @@ export default function FeaturesPage() {
     if (sortColumn !== column) {
       return <ArrowUpDown className="ml-2 h-4 w-4" />;
     }
-    return sortDirection === 'asc' ? (
-      <ArrowUp className="ml-2 h-4 w-4" />
-    ) : (
-      <ArrowDown className="ml-2 h-4 w-4" />
-    );
+    return sortDirection === 'asc' ? <ArrowUp className="ml-2 h-4 w-4" /> : <ArrowDown className="ml-2 h-4 w-4" />;
   };
 
   // フィルタリングとソートされたテスト一覧を取得
@@ -210,14 +206,23 @@ export default function FeaturesPage() {
 
   return (
     <div className="space-y-6">
+      {/* パンくずリスト */}
+      <Breadcrumb>
+        <BreadcrumbList>
+          <BreadcrumbItem>
+            <BreadcrumbPage>機能一覧</BreadcrumbPage>
+          </BreadcrumbItem>
+        </BreadcrumbList>
+      </Breadcrumb>
+
       {/* ページヘッダー */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">テスト一覧</h1>
           <p className="text-muted-foreground">テストの管理とテストケースの整理</p>
         </div>
-        <Button onClick={() => router.push('/features/new')}>
-          <Plus className="mr-2 h-4 w-4" />
+        <Button onClick={() => router.push('/features/new')} className="mt-1.5 justify-center">
+          <Plus className="h-4 w-4" />
           新規作成
         </Button>
       </div>
@@ -228,9 +233,9 @@ export default function FeaturesPage() {
           <CardTitle>検索・フィルタリング</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-10 md:items-end">
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-7 md:grid-cols-10 md:items-end xl:grid-cols-10 2xl:grid-cols-10">
             {/* 検索 */}
-            <div className="md:col-span-8">
+            <div className="md:col-span-6 lg:col-span-5 xl:col-span-8 2xl:col-span-8">
               <label className="text-sm font-medium">検索</label>
               <div className="relative mt-1.5">
                 <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -244,10 +249,10 @@ export default function FeaturesPage() {
             </div>
 
             {/* ステータスフィルター */}
-            <div className="md:col-span-1">
+            <div className="md:col-span-2 lg:col-span-1 xl:col-span-1 2xl:col-span-1">
               <label className="text-sm font-medium">ステータス</label>
               <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="mt-1.5 min-w-[100px]">
+                <SelectTrigger className="mt-1.5 w-full justify-center">
                   <SelectValue placeholder="すべて" />
                 </SelectTrigger>
                 <SelectContent>
@@ -262,9 +267,9 @@ export default function FeaturesPage() {
             </div>
 
             {/* クリアボタン */}
-            <div className="md:col-span-1">
-              <Button variant="outline" onClick={clearFilters} className="mt-1.5 w-full">
-                <X className="mr-2 h-4 w-4" />
+            <div className="md:col-span-2 lg:col-span-1 xl:col-span-1 2xl:col-span-1">
+              <Button variant="outline" onClick={clearFilters} className="mt-1.5 w-full justify-center">
+                <X className="h-4 w-4" />
                 クリア
               </Button>
             </div>
@@ -376,26 +381,19 @@ export default function FeaturesPage() {
                         )}
                       </TableCell>
                       <TableCell>
-                        <Badge variant={getStatusBadgeVariant(feature.status)}>
-                          {getStatusLabel(feature.status)}
-                        </Badge>
+                        <Badge variant={getStatusBadgeVariant(feature.status)}>{getStatusLabel(feature.status)}</Badge>
                       </TableCell>
                       <TableCell>
                         {feature.color ? (
                           <div className="flex items-center gap-2">
-                            <div
-                              className="h-6 w-6 rounded border"
-                              style={{ backgroundColor: feature.color }}
-                            />
+                            <div className="h-6 w-6 rounded border" style={{ backgroundColor: feature.color }} />
                             <span className="text-sm text-muted-foreground">{feature.color}</span>
                           </div>
                         ) : (
                           <p className="text-sm text-muted-foreground">-</p>
                         )}
                       </TableCell>
-                      <TableCell>
-                        {format(new Date(feature.createdAt), 'yyyy/MM/dd', { locale: ja })}
-                      </TableCell>
+                      <TableCell>{format(new Date(feature.createdAt), 'yyyy/MM/dd', { locale: ja })}</TableCell>
                       <TableCell>
                         <div className="flex items-center gap-1">
                           <Button
@@ -445,7 +443,11 @@ export default function FeaturesPage() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={deleteLoading}>キャンセル</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} disabled={deleteLoading} className="bg-destructive hover:bg-destructive/90">
+            <AlertDialogAction
+              onClick={handleDelete}
+              disabled={deleteLoading}
+              className="bg-destructive hover:bg-destructive/90"
+            >
               {deleteLoading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />

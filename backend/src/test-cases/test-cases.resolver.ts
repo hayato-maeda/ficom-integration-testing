@@ -1,5 +1,7 @@
 import { UseGuards } from '@nestjs/common';
 import { Args, Int, Mutation, Parent, Query, ResolveField, Resolver } from '@nestjs/graphql';
+import { ApprovalsService } from '../approvals/approvals.service';
+import { Approval } from '../approvals/models/approval.model';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { GqlSessionGuard } from '../auth/guards/gql-session.guard';
 import { FilesService } from '../files/files.service';
@@ -24,6 +26,7 @@ export class TestCasesResolver {
     private readonly testCasesService: TestCasesService,
     private readonly tagsService: TagsService,
     private readonly filesService: FilesService,
+    private readonly approvalsService: ApprovalsService,
   ) {}
 
   /**
@@ -52,22 +55,32 @@ export class TestCasesResolver {
 
   /**
    * テストケース取得クエリ
+   * @param featureId - 機能ID
+   * @param testId - テストID
    * @param id - テストケースID
    * @returns テストケースまたはnull
    */
   @Query(() => TestCase, { nullable: true })
-  async testCase(@Args('id', { type: () => Int }) id: number): Promise<TestCase | null> {
-    return this.testCasesService.findOne(id);
+  async testCase(
+    @Args('featureId', { type: () => Int }) featureId: number,
+    @Args('testId', { type: () => Int }) testId: number,
+    @Args('id', { type: () => Int }) id: number,
+  ): Promise<TestCase | null> {
+    return this.testCasesService.findOne(featureId, testId, id);
   }
 
   /**
    * テストに属するテストケース取得クエリ
+   * @param featureId - 機能ID
    * @param testId - テストID
    * @returns テストケースの一覧
    */
   @Query(() => [TestCase])
-  async testCasesByTest(@Args('testId', { type: () => Int }) testId: number): Promise<TestCase[]> {
-    return this.testCasesService.findByTest(testId);
+  async testCasesByTest(
+    @Args('featureId', { type: () => Int }) featureId: number,
+    @Args('testId', { type: () => Int }) testId: number,
+  ): Promise<TestCase[]> {
+    return this.testCasesService.findByTest(featureId, testId);
   }
 
   /**
@@ -87,16 +100,20 @@ export class TestCasesResolver {
 
   /**
    * テストケース削除ミューテーション
+   * @param featureId - 機能ID
+   * @param testId - テストID
    * @param id - テストケースID
    * @param user - 現在のユーザー
    * @returns テストケースMutationレスポンス
    */
   @Mutation(() => TestCaseMutationResponse)
   async deleteTestCase(
+    @Args('featureId', { type: () => Int }) featureId: number,
+    @Args('testId', { type: () => Int }) testId: number,
     @Args('id', { type: () => Int }) id: number,
     @CurrentUser() user: User,
   ): Promise<TestCaseMutationResponse> {
-    return this.testCasesService.remove(id, user.id);
+    return this.testCasesService.remove(featureId, testId, id, user.id);
   }
 
   /**
@@ -106,7 +123,7 @@ export class TestCasesResolver {
    */
   @ResolveField(() => [Tag])
   async tags(@Parent() testCase: TestCase): Promise<Tag[]> {
-    return this.tagsService.getTagsByTestCase(testCase.id);
+    return this.tagsService.getTagsByTestCase(testCase.featureId, testCase.testId, testCase.id);
   }
 
   /**
@@ -116,6 +133,16 @@ export class TestCasesResolver {
    */
   @ResolveField(() => [File])
   async files(@Parent() testCase: TestCase): Promise<File[]> {
-    return this.filesService.findByTestCase(testCase.id);
+    return this.filesService.findByTestCase(testCase.featureId, testCase.testId, testCase.id);
+  }
+
+  /**
+   * テストケースの承認履歴フィールドリゾルバー
+   * @param testCase - 親のテストケースオブジェクト
+   * @returns 承認履歴の一覧
+   */
+  @ResolveField(() => [Approval])
+  async approvals(@Parent() testCase: TestCase): Promise<Approval[]> {
+    return this.approvalsService.findByTestCase(testCase.featureId, testCase.testId, testCase.id);
   }
 }

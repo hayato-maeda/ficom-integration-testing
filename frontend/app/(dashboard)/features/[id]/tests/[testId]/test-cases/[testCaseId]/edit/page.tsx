@@ -2,26 +2,30 @@
 
 import { useMutation, useQuery } from '@apollo/client/react';
 import { useParams, useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import NextImage from 'next/image';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from '@/components/ui/breadcrumb';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { GET_TEST_CASE_QUERY, UPDATE_TEST_CASE_MUTATION } from '@/lib/graphql/test-cases';
 import { MutationResponse, TestCase, TestCaseStatus } from '@/types';
-import { ArrowLeft, Loader2 } from 'lucide-react';
+import { ArrowLeft, Loader2, Image, FileIcon } from 'lucide-react';
 import { toast } from 'sonner';
+import { uploadFile } from '@/lib/api/files';
 
 /**
  * テストケース編集フォームのスキーマ
@@ -49,6 +53,21 @@ const statusOptions = [
 ];
 
 /**
+ * 画像ファイルかどうかを判定
+ */
+const isImageFile = (mimeType: string) => {
+  return mimeType.startsWith('image/');
+};
+
+/**
+ * 画像URLを取得
+ */
+const getImageUrl = (fileId: number) => {
+  const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+  return `${API_BASE_URL}/files/${fileId}/view`;
+};
+
+/**
  * テストケース編集ページ
  *
  * 既存のテストケースを編集するためのフォームを提供します。
@@ -60,9 +79,12 @@ export default function TestCaseEditPage() {
   const testId = parseInt(params.testId as string, 10);
   const testCaseId = parseInt(params.testCaseId as string, 10);
 
-  const { data, loading: queryLoading } = useQuery<{ testCase: TestCase | null }>(GET_TEST_CASE_QUERY, {
-    variables: { id: testCaseId },
-    skip: isNaN(testCaseId),
+  // テキストエリアのrefを管理
+  const actualResultTextareaRef = useRef<HTMLTextAreaElement>(null);
+
+  const { data, loading: queryLoading, refetch } = useQuery<{ testCase: TestCase | null }>(GET_TEST_CASE_QUERY, {
+    variables: { featureId, testId, id: testCaseId },
+    skip: isNaN(featureId) || isNaN(testId) || isNaN(testCaseId),
   });
 
   const [updateTestCase, { loading: mutationLoading }] = useMutation<{
@@ -101,12 +123,14 @@ export default function TestCaseEditPage() {
     try {
       const result = await updateTestCase({
         variables: {
+          featureId,
+          testId,
           id: testCaseId,
           title: data.title,
-          description: data.description || undefined,
+          description: data.description || '',
           steps: data.steps,
           expectedResult: data.expectedResult,
-          actualResult: data.actualResult || undefined,
+          actualResult: data.actualResult || '',
           status: data.status,
         },
       });
@@ -128,6 +152,95 @@ export default function TestCaseEditPage() {
         id: 'update-error',
         style: { background: '#fee2e2', color: '#991b1b', border: '1px solid #fecaca' },
       });
+    }
+  };
+
+  /**
+   * 画像タグをカーソル位置に挿入
+   */
+  const insertImageTag = (fileId: number) => {
+    const textarea = actualResultTextareaRef.current;
+    if (!textarea) return;
+
+    const imageTag = `[[image:${fileId}]]`;
+    const currentValue = form.getValues('actualResult') || '';
+    const selectionStart = textarea.selectionStart;
+    const selectionEnd = textarea.selectionEnd;
+
+    // カーソル位置にタグを挿入
+    const newValue =
+      currentValue.substring(0, selectionStart) + imageTag + currentValue.substring(selectionEnd);
+
+    // フォームの値を更新
+    form.setValue('actualResult', newValue);
+
+    // カーソル位置を調整（タグの後ろに移動）
+    setTimeout(() => {
+      const newPosition = selectionStart + imageTag.length;
+      textarea.setSelectionRange(newPosition, newPosition);
+      textarea.focus();
+    }, 0);
+
+    toast.success('画像タグを挿入しました', {
+      id: 'insert-image-tag',
+      style: { background: '#dcfce7', color: '#166534', border: '1px solid #bbf7d0' },
+    });
+  };
+
+  /**
+   * Ctrl+Vでクリップボードから画像を貼り付け
+   */
+  const handlePaste = async (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+    const items = e.clipboardData?.items;
+    if (!items) return;
+
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i];
+      if (item.type.startsWith('image/')) {
+        e.preventDefault();
+        const file = item.getAsFile();
+        if (file) {
+          try {
+            toast.info('画像をアップロード中...', {
+              id: 'uploading-image',
+              style: { background: '#dbeafe', color: '#1e40af', border: '1px solid #bfdbfe' },
+            });
+
+            // ファイルをアップロード
+            const uploadedFile = await uploadFile(file, featureId, testId, testCaseId);
+
+            // アップロード成功後、画像タグをカーソル位置に挿入
+            const textarea = actualResultTextareaRef.current;
+            if (textarea) {
+              const imageTag = `[[image:${uploadedFile.id}]]`;
+              const currentValue = form.getValues('actualResult') || '';
+              const selectionStart = textarea.selectionStart;
+              const selectionEnd = textarea.selectionEnd;
+
+              const newValue =
+                currentValue.substring(0, selectionStart) + imageTag + currentValue.substring(selectionEnd);
+
+              form.setValue('actualResult', newValue);
+
+              setTimeout(() => {
+                const newPosition = selectionStart + imageTag.length;
+                textarea.setSelectionRange(newPosition, newPosition);
+                textarea.focus();
+              }, 0);
+            }
+
+            toast.success('画像をアップロードして挿入しました', {
+              id: 'upload-success',
+              style: { background: '#dcfce7', color: '#166534', border: '1px solid #bbf7d0' },
+            });
+          } catch (error) {
+            toast.error(error instanceof Error ? error.message : '画像のアップロードに失敗しました', {
+              id: 'upload-error',
+              style: { background: '#fee2e2', color: '#991b1b', border: '1px solid #fecaca' },
+            });
+          }
+        }
+      }
     }
   };
 
@@ -184,6 +297,39 @@ export default function TestCaseEditPage() {
 
   return (
     <div className="space-y-6">
+      {/* パンくずリスト */}
+      {testCase?.test?.feature && (
+        <Breadcrumb>
+          <BreadcrumbList>
+            <BreadcrumbItem>
+              <BreadcrumbLink href="/features">機能一覧</BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator />
+            <BreadcrumbItem>
+              <BreadcrumbLink href={`/features/${featureId}/tests`}>
+                {testCase.test.feature.name}
+              </BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator />
+            <BreadcrumbItem>
+              <BreadcrumbLink href={`/features/${featureId}/tests/${testId}/test-cases`}>
+                {testCase.test.name}
+              </BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator />
+            <BreadcrumbItem>
+              <BreadcrumbLink href={`/features/${featureId}/tests/${testId}/test-cases/${testCaseId}`}>
+                {testCase.title}
+              </BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator />
+            <BreadcrumbItem>
+              <BreadcrumbPage>編集</BreadcrumbPage>
+            </BreadcrumbItem>
+          </BreadcrumbList>
+        </Breadcrumb>
+      )}
+
       {/* ヘッダー */}
       <div className="flex items-center justify-between">
         <Button
@@ -278,9 +424,71 @@ export default function TestCaseEditPage() {
                   <FormItem>
                     <FormLabel>実績結果</FormLabel>
                     <FormControl>
-                      <Textarea placeholder="実際の結果を入力（任意）" className="min-h-[100px]" {...field} />
+                      <Textarea
+                        placeholder="実際の結果を入力（任意）Ctrl+Vで画像を貼り付けできます"
+                        className="min-h-[100px]"
+                        {...field}
+                        ref={actualResultTextareaRef}
+                        onPaste={handlePaste}
+                      />
                     </FormControl>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Ctrl+Vで画像を直接貼り付けるか、下の画像一覧から「挿入」ボタンをクリックしてください
+                    </p>
                     <FormMessage />
+
+                    {/* 添付画像一覧 */}
+                    {testCase?.files && testCase.files.length > 0 && (
+                      <div className="mt-4 rounded-lg border p-4 bg-muted/30">
+                        <div className="flex items-center gap-2 mb-3">
+                          <Image className="h-4 w-4 text-muted-foreground" />
+                          <h4 className="text-sm font-medium">添付ファイル（画像を挿入）</h4>
+                        </div>
+                        <div className="grid grid-cols-1 gap-2">
+                          {testCase.files.map((file) => {
+                            const isImage = isImageFile(file.mimeType);
+                            return (
+                              <div
+                                key={file.id}
+                                className="flex items-center gap-3 rounded-md border bg-background p-2 hover:bg-accent/50"
+                              >
+                                {isImage ? (
+                                  <div className="w-12 h-12 flex-shrink-0 rounded overflow-hidden border relative">
+                                    <NextImage
+                                      src={getImageUrl(file.id)}
+                                      alt={file.filename}
+                                      fill
+                                      className="object-cover"
+                                      unoptimized
+                                    />
+                                  </div>
+                                ) : (
+                                  <div className="w-12 h-12 flex-shrink-0 rounded border flex items-center justify-center bg-muted">
+                                    <FileIcon className="h-6 w-6 text-muted-foreground" />
+                                  </div>
+                                )}
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-sm font-medium truncate">{file.filename}</p>
+                                  <p className="text-xs text-muted-foreground">
+                                    {(file.size / 1024).toFixed(2)} KB
+                                  </p>
+                                </div>
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => insertImageTag(file.id)}
+                                  className="flex-shrink-0"
+                                >
+                                  <Image className="mr-2 h-4 w-4" />
+                                  挿入
+                                </Button>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
                   </FormItem>
                 )}
               />

@@ -24,7 +24,7 @@ export interface JwtPayload {
  * @returns JWT トークン or null
  */
 const extractJwtFromSession = (req: Request): string | null => {
-  if (req.session && req.session.accessToken) {
+  if (req?.session?.accessToken) {
     return req.session.accessToken;
   }
   return null;

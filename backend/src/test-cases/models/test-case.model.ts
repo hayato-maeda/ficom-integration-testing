@@ -1,4 +1,5 @@
 import { Field, Int, ObjectType } from '@nestjs/graphql';
+import { Approval } from '../../approvals/models/approval.model';
 import { File } from '../../files/models/file.model';
 import { Tag } from '../../tags/models/tag.model';
 import { Test } from '../../tests/models/test.model';
@@ -28,16 +29,21 @@ export type TestCaseStatusType = (typeof TestCaseStatus)[keyof typeof TestCaseSt
 /**
  * テストケースエンティティ
  * 結合テストの内容を表します。
+ * 複合主キー: (featureId, testId, id)
  */
 @ObjectType()
 export class TestCase {
-  /** テストケースID */
+  /** 機能ID (複合キーの一部) */
   @Field(() => Int)
-  id: number;
+  featureId: number;
 
-  /** テストID */
+  /** テストID (複合キーの一部) */
   @Field(() => Int)
   testId: number;
+
+  /** テストケースID (複合キーの一部) */
+  @Field(() => Int)
+  id: number;
 
   /** テスト（リレーション） */
   @Field(() => Test, { nullable: true })
@@ -82,6 +88,10 @@ export class TestCase {
   /** ファイル */
   @Field(() => [File], { nullable: true })
   files?: File[];
+
+  /** 承認履歴 */
+  @Field(() => [Approval], { nullable: true })
+  approvals?: Approval[];
 
   /** 作成日時 */
   @Field(() => Date)

@@ -10,10 +10,11 @@ import { GraphQLModule } from '@nestjs/graphql';
 import { LoggerModule } from 'nestjs-pino';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { ApprovalsModule } from './approvals/approvals.module';
 import { AuthModule } from './auth/auth.module';
 import { SessionMiddleware } from './auth/middleware/session.middleware';
+import { CommentsModule } from './comments/comments.module';
 import { pinoLoggerConfig } from './common/logger/pino-logger.config';
-// import { LoggerModule } from './common/logger/logger.module';
 import { FeaturesModule } from './features/features.module';
 import { FilesModule } from './files/files.module';
 import { PrismaModule } from './prisma/prisma.module';
@@ -50,6 +51,8 @@ const isNotProduction = !isProduction;
     FeaturesModule,
     TestsModule,
     FilesModule,
+    ApprovalsModule,
+    CommentsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

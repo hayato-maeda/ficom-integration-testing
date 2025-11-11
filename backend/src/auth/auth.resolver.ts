@@ -1,9 +1,7 @@
 import { UseGuards } from '@nestjs/common';
 import { Args, Mutation, Query, Resolver } from '@nestjs/graphql';
-import type { IronSession } from 'iron-session';
 import { User } from '../users/models/user.model';
 import { AuthService } from './auth.service';
-import type { SessionData } from './config/session.config';
 import { CurrentUser } from './decorators/current-user.decorator';
 import { Session } from './decorators/session.decorator';
 import { AuthMutationResponse } from './dto/auth-mutation.response';
@@ -29,7 +27,7 @@ export class AuthResolver {
   @Mutation(() => AuthMutationResponse)
   async signUp(
     @Args('signUpInput', { type: () => SignUpInput }) signUpInput: SignUpInput,
-    @Session() session: IronSession<SessionData>,
+    @Session() session: Session,
   ): Promise<AuthMutationResponse> {
     const result = await this.authService.signUp(signUpInput);
 
@@ -67,7 +65,7 @@ export class AuthResolver {
   @Mutation(() => AuthMutationResponse)
   async login(
     @Args('loginInput', { type: () => LoginInput }) loginInput: LoginInput,
-    @Session() session: IronSession<SessionData>,
+    @Session() session: Session,
   ): Promise<AuthMutationResponse> {
     const result = await this.authService.login(loginInput);
 
@@ -103,7 +101,7 @@ export class AuthResolver {
    * @returns 認証Mutationレスポンス
    */
   @Mutation(() => AuthMutationResponse)
-  async refreshToken(@Session() session: IronSession<SessionData>): Promise<AuthMutationResponse> {
+  async refreshToken(@Session() session: Session): Promise<AuthMutationResponse> {
     // セッションからリフレッシュトークンを取得
     const refreshToken = session.refreshToken;
 
@@ -148,7 +146,7 @@ export class AuthResolver {
    * @returns 成功メッセージ
    */
   @Mutation(() => AuthMutationResponse)
-  async logout(@Session() session: IronSession<SessionData>): Promise<AuthMutationResponse> {
+  async logout(@Session() session: Session): Promise<AuthMutationResponse> {
     // セッションを破棄
     session.destroy();
 

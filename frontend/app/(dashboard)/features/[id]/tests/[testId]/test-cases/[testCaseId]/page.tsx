@@ -2,10 +2,19 @@
 
 import { useMutation, useQuery } from '@apollo/client/react';
 import { useParams, useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { JSX, useState } from 'react';
+import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from '@/components/ui/breadcrumb';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -16,12 +25,53 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { GET_TEST_CASE_QUERY, DELETE_TEST_CASE_MUTATION } from '@/lib/graphql/test-cases';
-import { MutationResponse, TestCase, TestCaseStatus } from '@/types';
-import { ArrowLeft, Loader2, Pencil, Trash2 } from 'lucide-react';
+import { GET_TAGS_QUERY, ASSIGN_TAG_MUTATION, UNASSIGN_TAG_MUTATION } from '@/lib/graphql/tags';
+import {
+  CREATE_APPROVAL_MUTATION,
+  UPDATE_APPROVAL_MUTATION,
+  DELETE_APPROVAL_MUTATION,
+} from '@/lib/graphql/approvals';
+import {
+  CREATE_COMMENT_MUTATION,
+  UPDATE_COMMENT_MUTATION,
+  DELETE_COMMENT_MUTATION,
+  GET_COMMENTS_BY_TEST_CASE_QUERY,
+} from '@/lib/graphql/comments';
+import { uploadFile, downloadFile, deleteFile } from '@/lib/api/files';
+import { MutationResponse, TestCase, TestCaseStatus, Tag, Approval, ApprovalStatus, Comment } from '@/types';
+import { useAuth } from '@/contexts/auth-context';
+import {
+  ArrowLeft,
+  Loader2,
+  Pencil,
+  Trash2,
+  Plus,
+  X,
+  Upload,
+  Download,
+  FileIcon,
+  CheckCircle2,
+  XCircle,
+} from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
 import { format } from 'date-fns';
 import { ja } from 'date-fns/locale/ja';
 import { toast } from 'sonner';
+
+/**
+ * 統合コメント型（ApprovalまたはComment）
+ */
+type UnifiedComment = (Approval & { itemType: 'approval' }) | (Comment & { itemType: 'comment' });
 
 /**
  * ステータスバッジのスタイルを取得
@@ -63,6 +113,21 @@ const getStatusLabel = (status: string) => {
 };
 
 /**
+ * ファイルが画像かどうかを判定
+ */
+const isImageFile = (mimeType: string) => {
+  return mimeType.startsWith('image/');
+};
+
+/**
+ * 画像ファイルのURLを取得
+ */
+const getImageUrl = (fileId: number) => {
+  const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+  return `${API_BASE_URL}/files/${fileId}/view`;
+};
+
+/**
  * テストケース詳細ページ
  *
  * テストケースの詳細情報を表示します。
@@ -71,26 +136,124 @@ const getStatusLabel = (status: string) => {
 export default function TestCaseDetailPage() {
   const params = useParams();
   const router = useRouter();
+  const { user } = useAuth();
   const featureId = parseInt(params.id as string, 10);
   const testId = parseInt(params.testId as string, 10);
   const testCaseId = parseInt(params.testCaseId as string, 10);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [addTagDialogOpen, setAddTagDialogOpen] = useState(false);
+  const [selectedTagId, setSelectedTagId] = useState<string>('');
+  const [uploadingFile, setUploadingFile] = useState(false);
+  const [deletingFileId, setDeletingFileId] = useState<number | null>(null);
+  const [previewImageId, setPreviewImageId] = useState<number | null>(null);
+  const [previewImageUrl, setPreviewImageUrl] = useState<string>('');
+  const [approvalDialogOpen, setApprovalDialogOpen] = useState(false);
+  const [approvalStatus, setApprovalStatus] = useState<'APPROVED' | 'REJECTED'>('APPROVED');
+  const [approvalComment, setApprovalComment] = useState('');
+  const [editingApprovalId, setEditingApprovalId] = useState<number | null>(null);
+  const [editingComment, setEditingComment] = useState('');
+  const [deleteApprovalDialogOpen, setDeleteApprovalDialogOpen] = useState(false);
+  const [deletingApprovalId, setDeletingApprovalId] = useState<number | null>(null);
+  const [commentContent, setCommentContent] = useState('');
+  const [editingCommentId, setEditingCommentId] = useState<number | null>(null);
+  const [editingCommentContent, setEditingCommentContent] = useState('');
+  const [deleteCommentDialogOpen, setDeleteCommentDialogOpen] = useState(false);
+  const [deletingCommentId, setDeletingCommentId] = useState<number | null>(null);
+  const [unifiedCommentsDisplayCount, setUnifiedCommentsDisplayCount] = useState(5);
 
-  const { data, loading, error } = useQuery<{ testCase: TestCase | null }>(GET_TEST_CASE_QUERY, {
-    variables: { id: testCaseId },
-    skip: isNaN(testCaseId),
+  const { data, loading, error, refetch } = useQuery<{ testCase: TestCase | null }>(GET_TEST_CASE_QUERY, {
+    variables: { featureId, testId, id: testCaseId },
+    skip: isNaN(featureId) || isNaN(testId) || isNaN(testCaseId),
   });
+
+  const { data: tagsData } = useQuery<{ tags: Tag[] }>(GET_TAGS_QUERY);
 
   const [deleteTestCase, { loading: deleteLoading }] = useMutation<{
     deleteTestCase: MutationResponse<TestCase>;
   }>(DELETE_TEST_CASE_MUTATION);
 
+  const [assignTag, { loading: assignLoading }] = useMutation<{
+    assignTag: MutationResponse<null>;
+  }>(ASSIGN_TAG_MUTATION, {
+    refetchQueries: [{ query: GET_TEST_CASE_QUERY, variables: { featureId, testId, id: testCaseId } }],
+  });
+
+  const [unassignTag, { loading: unassignLoading }] = useMutation<{
+    unassignTag: MutationResponse<null>;
+  }>(UNASSIGN_TAG_MUTATION, {
+    refetchQueries: [{ query: GET_TEST_CASE_QUERY, variables: { featureId, testId, id: testCaseId } }],
+  });
+
+  const [createApproval, { loading: approvalLoading }] = useMutation<{
+    createApproval: MutationResponse<Approval>;
+  }>(CREATE_APPROVAL_MUTATION, {
+    onCompleted: () => {
+      refetch();
+      refetchComments();
+    },
+  });
+
+  const [updateApproval, { loading: updateApprovalLoading }] = useMutation<{
+    updateApproval: MutationResponse<Approval>;
+  }>(UPDATE_APPROVAL_MUTATION, {
+    onCompleted: () => {
+      refetch();
+      refetchComments();
+    },
+  });
+
+  const [deleteApproval, { loading: deleteApprovalLoading }] = useMutation<{
+    deleteApproval: MutationResponse<Approval>;
+  }>(DELETE_APPROVAL_MUTATION, {
+    onCompleted: () => {
+      refetch();
+      refetchComments();
+    },
+  });
+
+  const { data: commentsData, refetch: refetchComments } = useQuery<{ commentsByTestCase: Comment[] }>(
+    GET_COMMENTS_BY_TEST_CASE_QUERY,
+    {
+      variables: { featureId, testId, testCaseId },
+      skip: isNaN(featureId) || isNaN(testId) || isNaN(testCaseId),
+    },
+  );
+
+  const [createComment, { loading: createCommentLoading }] = useMutation<{
+    createComment: MutationResponse<Comment>;
+  }>(CREATE_COMMENT_MUTATION, {
+    onCompleted: () => refetchComments(),
+  });
+
+  const [updateComment, { loading: updateCommentLoading }] = useMutation<{
+    updateComment: MutationResponse<Comment>;
+  }>(UPDATE_COMMENT_MUTATION, {
+    onCompleted: () => refetchComments(),
+  });
+
+  const [deleteComment, { loading: deleteCommentLoading }] = useMutation<{
+    deleteComment: MutationResponse<Comment>;
+  }>(DELETE_COMMENT_MUTATION, {
+    onCompleted: () => refetchComments(),
+  });
+
   const testCase = data?.testCase;
+  const allTags = tagsData?.tags || [];
+  const comments = commentsData?.commentsByTestCase || [];
+
+  // 承認とコメントを統合してソート
+  const unifiedComments: UnifiedComment[] = [
+    ...(testCase?.approvals || []).map((approval) => ({ ...approval, itemType: 'approval' as const })),
+    ...(comments || []).map((comment) => ({ ...comment, itemType: 'comment' as const })),
+  ].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+  // 未割り当てのタグを取得
+  const unassignedTags = allTags.filter((tag) => !testCase?.tags?.some((t) => t.id === tag.id));
 
   const handleDelete = async () => {
     try {
       const result = await deleteTestCase({
-        variables: { id: testCaseId },
+        variables: { featureId, testId, id: testCaseId },
       });
 
       if (result.data?.deleteTestCase.isValid) {
@@ -115,6 +278,419 @@ export default function TestCaseDetailPage() {
     }
   };
 
+  const handleAddTag = async () => {
+    if (!selectedTagId) return;
+
+    try {
+      const result = await assignTag({
+        variables: {
+          featureId,
+          testId,
+          testCaseId,
+          tagId: parseInt(selectedTagId, 10),
+        },
+      });
+
+      if (result.data?.assignTag.isValid) {
+        toast.success('タグを追加しました', {
+          id: 'assign-success',
+          style: { background: '#dcfce7', color: '#166534', border: '1px solid #bbf7d0' },
+        });
+        setAddTagDialogOpen(false);
+        setSelectedTagId('');
+      } else {
+        toast.error(result.data?.assignTag.message || 'タグの追加に失敗しました', {
+          id: 'assign-error',
+          style: { background: '#fee2e2', color: '#991b1b', border: '1px solid #fecaca' },
+        });
+      }
+    } catch (_error) {
+      toast.error('エラーが発生しました', {
+        id: 'assign-error',
+        style: { background: '#fee2e2', color: '#991b1b', border: '1px solid #fecaca' },
+      });
+    }
+  };
+
+  const handleRemoveTag = async (tagId: number) => {
+    try {
+      const result = await unassignTag({
+        variables: {
+          featureId,
+          testId,
+          testCaseId,
+          tagId,
+        },
+      });
+
+      if (result.data?.unassignTag.isValid) {
+        toast.success('タグを削除しました', {
+          id: 'unassign-success',
+          style: { background: '#dcfce7', color: '#166534', border: '1px solid #bbf7d0' },
+        });
+      } else {
+        toast.error(result.data?.unassignTag.message || 'タグの削除に失敗しました', {
+          id: 'unassign-error',
+          style: { background: '#fee2e2', color: '#991b1b', border: '1px solid #fecaca' },
+        });
+      }
+    } catch (_error) {
+      toast.error('エラーが発生しました', {
+        id: 'unassign-error',
+        style: { background: '#fee2e2', color: '#991b1b', border: '1px solid #fecaca' },
+      });
+    }
+  };
+
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // ファイルサイズチェック (10MB)
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error('ファイルサイズは10MB以下にしてください', {
+        id: 'file-size-error',
+        style: { background: '#fee2e2', color: '#991b1b', border: '1px solid #fecaca' },
+      });
+      event.target.value = '';
+      return;
+    }
+
+    setUploadingFile(true);
+    try {
+      await uploadFile(file, featureId, testId, testCaseId);
+      toast.success('ファイルをアップロードしました', {
+        id: 'upload-success',
+        style: { background: '#dcfce7', color: '#166534', border: '1px solid #bbf7d0' },
+      });
+      // データを再取得
+      await refetch();
+      event.target.value = '';
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'ファイルのアップロードに失敗しました', {
+        id: 'upload-error',
+        style: { background: '#fee2e2', color: '#991b1b', border: '1px solid #fecaca' },
+      });
+    } finally {
+      setUploadingFile(false);
+    }
+  };
+
+  const handleFileDownload = async (fileId: number, filename: string) => {
+    try {
+      await downloadFile(fileId, filename);
+      toast.success('ファイルをダウンロードしました', {
+        id: 'download-success',
+        style: { background: '#dcfce7', color: '#166534', border: '1px solid #bbf7d0' },
+      });
+    } catch (error) {
+      toast.error('ファイルのダウンロードに失敗しました', {
+        id: 'download-error',
+        style: { background: '#fee2e2', color: '#991b1b', border: '1px solid #fecaca' },
+      });
+    }
+  };
+
+  const handleFileDelete = async (fileId: number) => {
+    setDeletingFileId(fileId);
+    try {
+      await deleteFile(fileId);
+      toast.success('ファイルを削除しました', {
+        id: 'delete-file-success',
+        style: { background: '#dcfce7', color: '#166534', border: '1px solid #bbf7d0' },
+      });
+      // データを再取得
+      await refetch();
+    } catch (error) {
+      toast.error('ファイルの削除に失敗しました', {
+        id: 'delete-file-error',
+        style: { background: '#fee2e2', color: '#991b1b', border: '1px solid #fecaca' },
+      });
+    } finally {
+      setDeletingFileId(null);
+    }
+  };
+
+  const handleApproval = async () => {
+    try {
+      const result = await createApproval({
+        variables: {
+          input: {
+            featureId,
+            testId,
+            testCaseId,
+            status: approvalStatus,
+            comment: approvalComment || undefined,
+          },
+        },
+      });
+
+      if (result.data?.createApproval.isValid) {
+        toast.success(approvalStatus === 'APPROVED' ? '承認しました' : '却下しました', {
+          id: 'approval-success',
+          style: { background: '#dcfce7', color: '#166534', border: '1px solid #bbf7d0' },
+        });
+        setApprovalDialogOpen(false);
+        setApprovalComment('');
+      } else {
+        toast.error(result.data?.createApproval.message || '承認処理に失敗しました', {
+          id: 'approval-error',
+          style: { background: '#fee2e2', color: '#991b1b', border: '1px solid #fecaca' },
+        });
+      }
+    } catch (error) {
+      toast.error('エラーが発生しました', {
+        id: 'approval-error',
+        style: { background: '#fee2e2', color: '#991b1b', border: '1px solid #fecaca' },
+      });
+    }
+  };
+
+  const openApprovalDialog = (status: 'APPROVED' | 'REJECTED') => {
+    setApprovalStatus(status);
+    setApprovalDialogOpen(true);
+  };
+
+  const openEditApprovalDialog = (approval: Approval) => {
+    setEditingApprovalId(approval.id);
+    setEditingComment(approval.comment || '');
+  };
+
+  const handleUpdateApproval = async () => {
+    if (editingApprovalId === null) return;
+
+    try {
+      const result = await updateApproval({
+        variables: {
+          input: {
+            id: editingApprovalId,
+            comment: editingComment || undefined,
+          },
+        },
+      });
+
+      if (result.data?.updateApproval.isValid) {
+        toast.success('コメントを更新しました', {
+          id: 'update-approval-success',
+          style: { background: '#dcfce7', color: '#166534', border: '1px solid #bbf7d0' },
+        });
+        setEditingApprovalId(null);
+        setEditingComment('');
+      } else {
+        toast.error(result.data?.updateApproval.message || 'コメントの更新に失敗しました', {
+          id: 'update-approval-error',
+          style: { background: '#fee2e2', color: '#991b1b', border: '1px solid #fecaca' },
+        });
+      }
+    } catch (error) {
+      toast.error('エラーが発生しました', {
+        id: 'update-approval-error',
+        style: { background: '#fee2e2', color: '#991b1b', border: '1px solid #fecaca' },
+      });
+    }
+  };
+
+  const openDeleteApprovalDialog = (approvalId: number) => {
+    setDeletingApprovalId(approvalId);
+    setDeleteApprovalDialogOpen(true);
+  };
+
+  const handleDeleteApproval = async () => {
+    if (deletingApprovalId === null) return;
+
+    try {
+      const result = await deleteApproval({
+        variables: {
+          id: deletingApprovalId,
+        },
+      });
+
+      if (result.data?.deleteApproval.isValid) {
+        toast.success('承認を削除しました', {
+          id: 'delete-approval-success',
+          style: { background: '#dcfce7', color: '#166534', border: '1px solid #bbf7d0' },
+        });
+        setDeleteApprovalDialogOpen(false);
+        setDeletingApprovalId(null);
+      } else {
+        toast.error(result.data?.deleteApproval.message || '承認の削除に失敗しました', {
+          id: 'delete-approval-error',
+          style: { background: '#fee2e2', color: '#991b1b', border: '1px solid #fecaca' },
+        });
+      }
+    } catch (error) {
+      toast.error('エラーが発生しました', {
+        id: 'delete-approval-error',
+        style: { background: '#fee2e2', color: '#991b1b', border: '1px solid #fecaca' },
+      });
+    }
+  };
+
+  const handleCreateComment = async () => {
+    if (!commentContent.trim()) return;
+
+    try {
+      const result = await createComment({
+        variables: {
+          createCommentInput: {
+            content: commentContent,
+            featureId,
+            testId,
+            testCaseId,
+          },
+        },
+      });
+
+      if (result.data?.createComment.isValid) {
+        toast.success('コメントを投稿しました', {
+          id: 'create-comment-success',
+          style: { background: '#dcfce7', color: '#166534', border: '1px solid #bbf7d0' },
+        });
+        setCommentContent('');
+      } else {
+        toast.error(result.data?.createComment.message || 'コメントの投稿に失敗しました', {
+          id: 'create-comment-error',
+          style: { background: '#fee2e2', color: '#991b1b', border: '1px solid #fecaca' },
+        });
+      }
+    } catch (error) {
+      toast.error('エラーが発生しました', {
+        id: 'create-comment-error',
+        style: { background: '#fee2e2', color: '#991b1b', border: '1px solid #fecaca' },
+      });
+    }
+  };
+
+  const openEditCommentDialog = (comment: Comment) => {
+    setEditingCommentId(comment.id);
+    setEditingCommentContent(comment.content);
+  };
+
+  const handleUpdateComment = async () => {
+    if (editingCommentId === null || !editingCommentContent.trim()) return;
+
+    try {
+      const result = await updateComment({
+        variables: {
+          updateCommentInput: {
+            id: editingCommentId,
+            content: editingCommentContent,
+          },
+        },
+      });
+
+      if (result.data?.updateComment.isValid) {
+        toast.success('コメントを更新しました', {
+          id: 'update-comment-success',
+          style: { background: '#dcfce7', color: '#166534', border: '1px solid #bbf7d0' },
+        });
+        setEditingCommentId(null);
+        setEditingCommentContent('');
+      } else {
+        toast.error(result.data?.updateComment.message || 'コメントの更新に失敗しました', {
+          id: 'update-comment-error',
+          style: { background: '#fee2e2', color: '#991b1b', border: '1px solid #fecaca' },
+        });
+      }
+    } catch (error) {
+      toast.error('エラーが発生しました', {
+        id: 'update-comment-error',
+        style: { background: '#fee2e2', color: '#991b1b', border: '1px solid #fecaca' },
+      });
+    }
+  };
+
+  const openDeleteCommentDialog = (commentId: number) => {
+    setDeletingCommentId(commentId);
+    setDeleteCommentDialogOpen(true);
+  };
+
+  const handleDeleteComment = async () => {
+    if (deletingCommentId === null) return;
+
+    try {
+      const result = await deleteComment({
+        variables: {
+          id: deletingCommentId,
+        },
+      });
+
+      if (result.data?.deleteComment.isValid) {
+        toast.success('コメントを削除しました', {
+          id: 'delete-comment-success',
+          style: { background: '#dcfce7', color: '#166534', border: '1px solid #bbf7d0' },
+        });
+        setDeleteCommentDialogOpen(false);
+        setDeletingCommentId(null);
+      } else {
+        toast.error(result.data?.deleteComment.message || 'コメントの削除に失敗しました', {
+          id: 'delete-comment-error',
+          style: { background: '#fee2e2', color: '#991b1b', border: '1px solid #fecaca' },
+        });
+      }
+    } catch (error) {
+      toast.error('エラーが発生しました', {
+        id: 'delete-comment-error',
+        style: { background: '#fee2e2', color: '#991b1b', border: '1px solid #fecaca' },
+      });
+    }
+  };
+
+  const handleImageClick = (fileId: number, filename: string) => {
+    setPreviewImageId(fileId);
+    setPreviewImageUrl(getImageUrl(fileId));
+  };
+
+  /**
+   * テキスト内の画像記法を解析してReactノードに変換
+   * [[image:fileId]] を <img> タグに変換
+   */
+  const renderTextWithImages = (text: string | undefined | null) => {
+    if (!text) return null;
+
+    const parts: (string | JSX.Element)[] = [];
+    const imagePattern = /\[\[image:(\d+)\]\]/g;
+    let lastIndex = 0;
+    let match;
+
+    while ((match = imagePattern.exec(text)) !== null) {
+      // マッチ前のテキストを追加
+      if (match.index > lastIndex) {
+        const textPart = text.substring(lastIndex, match.index);
+        parts.push(
+          ...textPart.split('\n').flatMap((line, i) => (i > 0 ? [<br key={`br-${lastIndex}-${i}`} />, line] : [line])),
+        );
+      }
+
+      // 画像を追加
+      const fileId = parseInt(match[1], 10);
+      parts.push(
+        <Image
+          key={`image-${fileId}-${match.index}`}
+          src={getImageUrl(fileId)}
+          alt={`Image ${fileId}`}
+          width={448}
+          height={300}
+          className="max-w-md h-auto my-2 rounded border cursor-pointer"
+          onClick={() => handleImageClick(fileId, `Image ${fileId}`)}
+          unoptimized
+        />,
+      );
+
+      lastIndex = imagePattern.lastIndex;
+    }
+
+    // 残りのテキストを追加
+    if (lastIndex < text.length) {
+      const textPart = text.substring(lastIndex);
+      parts.push(
+        ...textPart.split('\n').flatMap((line, i) => (i > 0 ? [<br key={`br-${lastIndex}-${i}`} />, line] : [line])),
+      );
+    }
+
+    return parts.length > 0 ? <>{parts}</> : null;
+  };
+
   if (isNaN(featureId) || isNaN(testId) || isNaN(testCaseId)) {
     return (
       <div className="space-y-6">
@@ -133,6 +709,33 @@ export default function TestCaseDetailPage() {
 
   return (
     <div className="space-y-6">
+      {/* パンくずリスト */}
+      {testCase?.test?.feature && (
+        <Breadcrumb>
+          <BreadcrumbList>
+            <BreadcrumbItem>
+              <BreadcrumbLink href="/features">機能一覧</BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator />
+            <BreadcrumbItem>
+              <BreadcrumbLink href={`/features/${featureId}/tests`}>
+                {testCase.test.feature.name}
+              </BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator />
+            <BreadcrumbItem>
+              <BreadcrumbLink href={`/features/${featureId}/tests/${testId}/test-cases`}>
+                {testCase.test.name}
+              </BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator />
+            <BreadcrumbItem>
+              <BreadcrumbPage>{testCase.title}</BreadcrumbPage>
+            </BreadcrumbItem>
+          </BreadcrumbList>
+        </Breadcrumb>
+      )}
+
       {/* ヘッダー */}
       <div className="flex items-center justify-between">
         <Button variant="ghost" onClick={() => router.push(`/features/${featureId}/tests/${testId}/test-cases`)}>
@@ -142,21 +745,32 @@ export default function TestCaseDetailPage() {
         {testCase && (
           <div className="flex gap-2">
             <Button
-              variant="outline"
+              variant="default"
               size="sm"
-              onClick={() =>
-                router.push(`/features/${featureId}/tests/${testId}/test-cases/${testCaseId}/edit`)
-              }
+              onClick={() => openApprovalDialog('APPROVED')}
+              disabled={approvalLoading}
             >
-              <Pencil className="mr-2 h-4 w-4" />
-              編集
+              <CheckCircle2 className="mr-2 h-4 w-4" />
+              承認
             </Button>
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setDeleteDialogOpen(true)}
-              disabled={deleteLoading}
+              onClick={() => openApprovalDialog('REJECTED')}
+              disabled={approvalLoading}
             >
+              <XCircle className="mr-2 h-4 w-4" />
+              却下
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => router.push(`/features/${featureId}/tests/${testId}/test-cases/${testCaseId}/edit`)}
+            >
+              <Pencil className="mr-2 h-4 w-4" />
+              編集
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => setDeleteDialogOpen(true)} disabled={deleteLoading}>
               <Trash2 className="mr-2 h-4 w-4" />
               削除
             </Button>
@@ -201,9 +815,7 @@ export default function TestCaseDetailPage() {
                 <div className="space-y-2">
                   <div className="flex items-center gap-3">
                     <CardTitle className="text-2xl">{testCase.title}</CardTitle>
-                    <Badge variant={getStatusBadgeVariant(testCase.status)}>
-                      {getStatusLabel(testCase.status)}
-                    </Badge>
+                    <Badge variant={getStatusBadgeVariant(testCase.status)}>{getStatusLabel(testCase.status)}</Badge>
                   </div>
                   <CardDescription>ID: {testCase.id}</CardDescription>
                 </div>
@@ -249,7 +861,7 @@ export default function TestCaseDetailPage() {
                 <CardTitle>実績結果</CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-sm whitespace-pre-wrap">{testCase.actualResult}</p>
+                <div className="text-sm">{renderTextWithImages(testCase.actualResult)}</div>
               </CardContent>
             </Card>
           )}
@@ -259,18 +871,39 @@ export default function TestCaseDetailPage() {
             {/* タグ */}
             <Card>
               <CardHeader>
-                <CardTitle>タグ</CardTitle>
+                <div className="flex items-center justify-between">
+                  <CardTitle>タグ</CardTitle>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setAddTagDialogOpen(true)}
+                    disabled={assignLoading || unassignLoading}
+                  >
+                    <Plus className="mr-2 h-4 w-4" />
+                    タグを追加
+                  </Button>
+                </div>
               </CardHeader>
               <CardContent>
                 {testCase.tags.length > 0 ? (
                   <div className="flex flex-wrap gap-2">
-                    {testCase.tags.map((tag) => (
+                    {testCase.tags.map((tag, tagIndex) => (
                       <Badge
-                        key={tag.id}
+                        key={`${testCase.featureId}-${testCase.testId}-${testCase.id}-${tag.id}-${tagIndex}`}
                         variant="outline"
                         style={tag.color ? { borderColor: tag.color, color: tag.color } : undefined}
+                        className="pr-1"
                       >
                         {tag.name}
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="ml-1 h-4 w-4 p-0 hover:bg-transparent"
+                          onClick={() => handleRemoveTag(tag.id)}
+                          disabled={unassignLoading}
+                        >
+                          <X className="h-3 w-3" />
+                        </Button>
                       </Badge>
                     ))}
                   </div>
@@ -306,6 +939,261 @@ export default function TestCaseDetailPage() {
               </CardContent>
             </Card>
           </div>
+
+          {/* 添付ファイル */}
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle>添付ファイル</CardTitle>
+                <div>
+                  <input
+                    type="file"
+                    id="file-upload"
+                    className="hidden"
+                    onChange={handleFileUpload}
+                    disabled={uploadingFile}
+                  />
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => document.getElementById('file-upload')?.click()}
+                    disabled={uploadingFile}
+                  >
+                    {uploadingFile ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        アップロード中...
+                      </>
+                    ) : (
+                      <>
+                        <Upload className="mr-2 h-4 w-4" />
+                        ファイルを追加
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {testCase.files && testCase.files.length > 0 ? (
+                <div className="space-y-2">
+                  {testCase.files.map((file) => {
+                    const isImage = isImageFile(file.mimeType);
+                    return (
+                      <div
+                        key={file.id}
+                        className="flex items-center justify-between rounded-lg border p-3 hover:bg-accent"
+                      >
+                        <div className="flex items-center gap-3 flex-1 min-w-0">
+                          {isImage ? (
+                            <div
+                              className="w-16 h-16 flex-shrink-0 rounded overflow-hidden cursor-pointer border relative"
+                              onClick={() => handleImageClick(file.id, file.filename)}
+                            >
+                              <Image
+                                src={getImageUrl(file.id)}
+                                alt={file.filename}
+                                fill
+                                className="object-cover"
+                                unoptimized
+                              />
+                            </div>
+                          ) : (
+                            <FileIcon className="h-5 w-5 text-muted-foreground flex-shrink-0" />
+                          )}
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium truncate">{file.filename}</p>
+                            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                              <span>{(file.size / 1024).toFixed(2)} KB</span>
+                              <span>•</span>
+                              <span>{file.uploader.name}</span>
+                              <span>•</span>
+                              <span>{format(new Date(file.createdAt), 'yyyy/MM/dd HH:mm')}</span>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex gap-1 ml-2">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleFileDownload(file.id, file.filename)}
+                            title="ダウンロード"
+                          >
+                            <Download className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleFileDelete(file.id)}
+                            disabled={deletingFileId === file.id}
+                            title="削除"
+                          >
+                            {deletingFileId === file.id ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <Trash2 className="h-4 w-4 text-destructive" />
+                            )}
+                          </Button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">添付ファイルはありません</p>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* コメント（承認履歴含む） */}
+          <Card>
+            <CardHeader>
+              <CardTitle>コメント</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {/* コメント入力欄 */}
+                <div className="space-y-2">
+                  <Textarea
+                    placeholder="コメントを入力してください"
+                    value={commentContent}
+                    onChange={(e) => setCommentContent(e.target.value)}
+                    rows={3}
+                  />
+                  <div className="flex justify-end">
+                    <Button
+                      onClick={handleCreateComment}
+                      disabled={!commentContent.trim() || createCommentLoading}
+                      size="sm"
+                    >
+                      {createCommentLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                      投稿
+                    </Button>
+                  </div>
+                </div>
+
+                {/* 統合コメント一覧（承認履歴含む） */}
+                {unifiedComments.length > 0 ? (
+                  <div className="space-y-3">
+                    {unifiedComments.slice(0, unifiedCommentsDisplayCount).map((item) => {
+                      const isEdited = new Date(item.updatedAt).getTime() > new Date(item.createdAt).getTime();
+                      const isOwnItem = user?.id === item.userId;
+
+                      return (
+                        <div
+                          key={`${item.itemType}-${item.id}`}
+                          className="rounded-lg border p-4 space-y-2"
+                        >
+                          <div className="flex items-start justify-between">
+                            <div className="flex items-center gap-3">
+                              <div>
+                                <p className="text-sm font-medium">{item.user.name}</p>
+                                <p className="text-xs text-muted-foreground">{item.user.email}</p>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              {/* 承認/却下バッジ */}
+                              {item.itemType === 'approval' && (
+                                <Badge
+                                  variant={
+                                    item.status === ApprovalStatus.APPROVED ? 'default' : 'destructive'
+                                  }
+                                >
+                                  {item.status === ApprovalStatus.APPROVED ? '承認' : '却下'}
+                                </Badge>
+                              )}
+                              {/* 編集済みバッジ */}
+                              {isEdited && (
+                                <Badge variant="outline" className="text-xs">
+                                  編集済み
+                                </Badge>
+                              )}
+                              {/* 編集・削除ボタン */}
+                              {isOwnItem && (
+                                <>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-7 w-7"
+                                    onClick={() =>
+                                      item.itemType === 'approval'
+                                        ? openEditApprovalDialog(item)
+                                        : openEditCommentDialog(item)
+                                    }
+                                    title={item.itemType === 'approval' ? 'コメントを編集' : 'コメントを編集'}
+                                  >
+                                    <Pencil className="h-3 w-3" />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-7 w-7"
+                                    onClick={() =>
+                                      item.itemType === 'approval'
+                                        ? openDeleteApprovalDialog(item.id)
+                                        : openDeleteCommentDialog(item.id)
+                                    }
+                                    title={item.itemType === 'approval' ? '承認を削除' : 'コメントを削除'}
+                                  >
+                                    <Trash2 className="h-3 w-3 text-destructive" />
+                                  </Button>
+                                </>
+                              )}
+                            </div>
+                          </div>
+                          {/* コメント内容 */}
+                          {((item.itemType === 'approval' && item.comment) || item.itemType === 'comment') && (
+                            <div className="pt-2 border-t">
+                              <p className="text-sm whitespace-pre-wrap">
+                                {item.itemType === 'approval' ? item.comment : item.content}
+                              </p>
+                            </div>
+                          )}
+                          {/* タイムスタンプ */}
+                          <div className="text-xs text-muted-foreground">
+                            {format(new Date(item.createdAt), 'yyyy年MM月dd日 HH:mm', { locale: ja })}
+                            {isEdited && (
+                              <span className="ml-2">
+                                (編集: {format(new Date(item.updatedAt), 'yyyy年MM月dd日 HH:mm', { locale: ja })})
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                    {/* さらに表示ボタン */}
+                    {unifiedComments.length > unifiedCommentsDisplayCount && (
+                      <div className="pt-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="w-full"
+                          onClick={() => setUnifiedCommentsDisplayCount(unifiedCommentsDisplayCount + 5)}
+                        >
+                          さらに表示 ({unifiedComments.length - unifiedCommentsDisplayCount}件)
+                        </Button>
+                      </div>
+                    )}
+                    {/* 閉じるボタン */}
+                    {unifiedCommentsDisplayCount > 5 && unifiedCommentsDisplayCount >= unifiedComments.length && (
+                      <div className="pt-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="w-full"
+                          onClick={() => setUnifiedCommentsDisplayCount(5)}
+                        >
+                          閉じる
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground">コメントはありません</p>
+                )}
+              </div>
+            </CardContent>
+          </Card>
         </div>
       )}
 
@@ -326,6 +1214,263 @@ export default function TestCaseDetailPage() {
               className="bg-destructive hover:bg-destructive/90"
             >
               {deleteLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              削除
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* タグ追加ダイアログ */}
+      <Dialog open={addTagDialogOpen} onOpenChange={setAddTagDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>タグを追加</DialogTitle>
+            <DialogDescription>このテストケースに割り当てるタグを選択してください</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            {unassignedTags.length > 0 ? (
+              <div className="space-y-2">
+                <label className="text-sm font-medium">タグを選択</label>
+                <Select value={selectedTagId} onValueChange={setSelectedTagId}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="タグを選択してください" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {unassignedTags.map((tag) => (
+                      <SelectItem key={tag.id} value={tag.id.toString()}>
+                        <div className="flex items-center gap-2">
+                          {tag.color && <div className="h-3 w-3 rounded-full" style={{ backgroundColor: tag.color }} />}
+                          <span>{tag.name}</span>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground">すべてのタグが割り当て済みです</p>
+            )}
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setAddTagDialogOpen(false);
+                setSelectedTagId('');
+              }}
+              disabled={assignLoading}
+            >
+              キャンセル
+            </Button>
+            <Button onClick={handleAddTag} disabled={!selectedTagId || assignLoading}>
+              {assignLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              追加
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* 画像プレビューダイアログ */}
+      <Dialog open={previewImageId !== null} onOpenChange={() => setPreviewImageId(null)}>
+        <DialogContent className="max-w-[98vw] max-h-[98vh] p-2">
+          <DialogHeader className="pb-2">
+            <DialogTitle>画像プレビュー</DialogTitle>
+          </DialogHeader>
+          <div className="flex items-center justify-center overflow-auto relative" style={{ maxHeight: 'calc(98vh - 120px)', width: '100%' }}>
+            {previewImageUrl && (
+              <Image
+                src={previewImageUrl}
+                alt="Preview"
+                width={1920}
+                height={1080}
+                className="w-auto h-auto max-w-full max-h-full object-contain"
+                unoptimized
+              />
+            )}
+          </div>
+          <DialogFooter className="pt-2">
+            <Button variant="outline" onClick={() => setPreviewImageId(null)}>
+              閉じる
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* 承認/却下ダイアログ */}
+      <Dialog open={approvalDialogOpen} onOpenChange={setApprovalDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{approvalStatus === 'APPROVED' ? 'テストケースを承認' : 'テストケースを却下'}</DialogTitle>
+            <DialogDescription>
+              {approvalStatus === 'APPROVED'
+                ? 'このテストケースを承認します。コメントを入力してください（任意）。'
+                : 'このテストケースを却下します。却下理由をコメントに入力してください（任意）。'}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">コメント（任意）</label>
+              <Textarea
+                placeholder="コメントを入力してください"
+                value={approvalComment}
+                onChange={(e) => setApprovalComment(e.target.value)}
+                rows={4}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setApprovalDialogOpen(false);
+                setApprovalComment('');
+              }}
+              disabled={approvalLoading}
+            >
+              キャンセル
+            </Button>
+            <Button
+              onClick={handleApproval}
+              disabled={approvalLoading}
+              variant={approvalStatus === 'APPROVED' ? 'default' : 'destructive'}
+            >
+              {approvalLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {approvalStatus === 'APPROVED' ? '承認する' : '却下する'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* コメント編集ダイアログ */}
+      <Dialog open={editingApprovalId !== null} onOpenChange={() => setEditingApprovalId(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>コメントを編集</DialogTitle>
+            <DialogDescription>承認コメントを編集します。</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">コメント（任意）</label>
+              <Textarea
+                placeholder="コメントを入力してください"
+                value={editingComment}
+                onChange={(e) => setEditingComment(e.target.value)}
+                rows={4}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setEditingApprovalId(null);
+                setEditingComment('');
+              }}
+              disabled={updateApprovalLoading}
+            >
+              キャンセル
+            </Button>
+            <Button onClick={handleUpdateApproval} disabled={updateApprovalLoading}>
+              {updateApprovalLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              更新する
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* 承認削除確認ダイアログ */}
+      <AlertDialog open={deleteApprovalDialogOpen} onOpenChange={setDeleteApprovalDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>承認を削除しますか？</AlertDialogTitle>
+            <AlertDialogDescription>
+              この操作は取り消せません。承認履歴を完全に削除します。
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel
+              disabled={deleteApprovalLoading}
+              onClick={() => {
+                setDeleteApprovalDialogOpen(false);
+                setDeletingApprovalId(null);
+              }}
+            >
+              キャンセル
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteApproval}
+              disabled={deleteApprovalLoading}
+              className="bg-destructive hover:bg-destructive/90"
+            >
+              {deleteApprovalLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              削除
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* コメント編集ダイアログ */}
+      <Dialog open={editingCommentId !== null} onOpenChange={() => setEditingCommentId(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>コメントを編集</DialogTitle>
+            <DialogDescription>コメントを編集します。</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">コメント</label>
+              <Textarea
+                placeholder="コメントを入力してください"
+                value={editingCommentContent}
+                onChange={(e) => setEditingCommentContent(e.target.value)}
+                rows={4}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setEditingCommentId(null);
+                setEditingCommentContent('');
+              }}
+              disabled={updateCommentLoading}
+            >
+              キャンセル
+            </Button>
+            <Button onClick={handleUpdateComment} disabled={!editingCommentContent.trim() || updateCommentLoading}>
+              {updateCommentLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              更新する
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* コメント削除確認ダイアログ */}
+      <AlertDialog open={deleteCommentDialogOpen} onOpenChange={setDeleteCommentDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>コメントを削除しますか？</AlertDialogTitle>
+            <AlertDialogDescription>
+              この操作は取り消せません。コメントを完全に削除します。
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel
+              disabled={deleteCommentLoading}
+              onClick={() => {
+                setDeleteCommentDialogOpen(false);
+                setDeletingCommentId(null);
+              }}
+            >
+              キャンセル
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteComment}
+              disabled={deleteCommentLoading}
+              className="bg-destructive hover:bg-destructive/90"
+            >
+              {deleteCommentLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               削除
             </AlertDialogAction>
           </AlertDialogFooter>

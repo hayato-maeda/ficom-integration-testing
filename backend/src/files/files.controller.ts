@@ -40,18 +40,23 @@ export class FilesController {
   /**
    * ファイルアップロード
    * @param file - アップロードされたファイル
+   * @param featureId - 機能ID
+   * @param testId - テストID
+   * @param testCaseId - テストケースID
    * @param user - 現在のユーザー
    * @returns アップロードされたファイル情報
    */
-  @Post('upload/:testCaseId')
+  @Post('upload/:featureId/:testId/:testCaseId')
   @UseInterceptors(
     FileInterceptor('file', {
       storage: diskStorage({
         destination: join(process.cwd(), 'uploads'),
         filename: (_req, file, callback) => {
+          // ファイル名をUTF-8で正しくデコード
+          const originalFilename = Buffer.from(file.originalname, 'latin1').toString('utf8');
           const uuid = randomUUID();
-          const ext = extname(file.originalname);
-          const filename = `${file.originalname.replace(ext, '')}-${uuid}${ext}`;
+          const ext = extname(originalFilename);
+          const filename = `${originalFilename.replace(ext, '')}-${uuid}${ext}`;
           callback(null, filename);
         },
       }),
@@ -62,14 +67,21 @@ export class FilesController {
   )
   async uploadFile(
     @UploadedFile() file: Express.Multer.File,
+    @Param('featureId', ParseIntPipe) featureId: number,
+    @Param('testId', ParseIntPipe) testId: number,
     @Param('testCaseId', ParseIntPipe) testCaseId: number,
     @CurrentUser() user: User,
   ): Promise<File> {
+    // ファイル名をUTF-8で正しくデコード
+    const originalFilename = Buffer.from(file.originalname, 'latin1').toString('utf8');
+
     this.logger.info(
       {
-        filename: file.originalname,
+        filename: originalFilename,
         size: file.size,
         mimeType: file.mimetype,
+        featureId,
+        testId,
         testCaseId,
         userId: user.id,
       },
@@ -77,10 +89,12 @@ export class FilesController {
     );
 
     const uploadedFile = await this.filesService.create(
-      file.originalname,
+      originalFilename,
       file.filename,
       file.mimetype,
       file.size,
+      featureId,
+      testId,
       testCaseId,
       user.id,
     );
@@ -88,6 +102,26 @@ export class FilesController {
     this.logger.info({ fileId: uploadedFile.id }, 'File uploaded successfully');
 
     return uploadedFile;
+  }
+
+  /**
+   * ファイル表示（プレビュー用）
+   * @param id - ファイルID
+   * @param res - Expressレスポンスオブジェクト
+   */
+  @Get(':id/view')
+  async viewFile(@Param('id', ParseIntPipe) id: number, @Res() res: Response): Promise<void> {
+    this.logger.info({ fileId: id }, 'File view requested');
+
+    const file = await this.filesService.findOne(id);
+    const filePath = await this.filesService.getFilePath(id);
+
+    res.setHeader('Content-Type', file.mimeType);
+    res.setHeader('Cache-Control', 'public, max-age=31536000');
+
+    this.logger.info({ fileId: id, filename: file.filename }, 'Sending file for view');
+
+    res.sendFile(filePath);
   }
 
   /**
@@ -102,8 +136,11 @@ export class FilesController {
     const file = await this.filesService.findOne(id);
     const filePath = await this.filesService.getFilePath(id);
 
+    // 日本語ファイル名をRFC 5987形式でエンコード
+    const encodedFilename = encodeURIComponent(file.filename);
+
     res.setHeader('Content-Type', file.mimeType);
-    res.setHeader('Content-Disposition', `attachment; filename="${file.filename}"`);
+    res.setHeader('Content-Disposition', `attachment; filename*=UTF-8''${encodedFilename}`);
 
     this.logger.info({ fileId: id, filename: file.filename }, 'Sending file for download');
 

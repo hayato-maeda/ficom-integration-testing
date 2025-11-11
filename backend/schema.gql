@@ -2,9 +2,31 @@
 # THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
 # ------------------------------------------------------
 
+type Approval {
+  comment: String
+  createdAt: DateTime!
+  featureId: Int!
+  id: Int!
+  status: String!
+  testCase: TestCase
+  testCaseId: Int!
+  testId: Int!
+  updatedAt: DateTime!
+  user: User!
+  userId: Int!
+}
+
+type ApprovalMutationResponse {
+  data: Approval
+  isValid: Boolean!
+  message: String!
+}
+
 input AssignTagInput {
+  featureId: Int!
   tagId: Int!
   testCaseId: Int!
+  testId: Int!
 }
 
 type AuthMutationResponse {
@@ -15,6 +37,40 @@ type AuthMutationResponse {
 
 type AuthResponse {
   user: User!
+}
+
+type Comment {
+  content: String!
+  createdAt: DateTime!
+  featureId: Int!
+  id: Int!
+  testCase: TestCase
+  testCaseId: Int!
+  testId: Int!
+  updatedAt: DateTime!
+  user: User!
+  userId: Int!
+}
+
+type CommentMutationResponse {
+  data: Comment
+  isValid: Boolean!
+  message: String!
+}
+
+input CreateApprovalInput {
+  comment: String
+  featureId: Int!
+  status: String!
+  testCaseId: Int!
+  testId: Int!
+}
+
+input CreateCommentInput {
+  content: String!
+  featureId: Int!
+  testCaseId: Int!
+  testId: Int!
 }
 
 input CreateFeatureInput {
@@ -32,6 +88,7 @@ input CreateTestCaseInput {
   actualResult: String
   description: String
   expectedResult: String!
+  featureId: Int!
   steps: String!
   testId: Int!
   title: String!
@@ -85,19 +142,25 @@ input LoginInput {
 
 type Mutation {
   assignTag(assignTagInput: AssignTagInput!): TagAssignMutationResponse!
+  createApproval(input: CreateApprovalInput!): ApprovalMutationResponse!
+  createComment(createCommentInput: CreateCommentInput!): CommentMutationResponse!
   createFeature(createFeatureInput: CreateFeatureInput!): FeatureMutationResponse!
   createTag(createTagInput: CreateTagInput!): TagMutationResponse!
   createTest(createTestInput: CreateTestInput!): TestMutationResponse!
   createTestCase(createTestCaseInput: CreateTestCaseInput!): TestCaseMutationResponse!
+  deleteApproval(id: Int!): ApprovalMutationResponse!
+  deleteComment(id: Int!): CommentMutationResponse!
   deleteFeature(id: Int!): FeatureMutationResponse!
   deleteTag(id: Int!): TagMutationResponse!
-  deleteTest(id: Int!): TestMutationResponse!
-  deleteTestCase(id: Int!): TestCaseMutationResponse!
+  deleteTest(featureId: Int!, id: Int!): TestMutationResponse!
+  deleteTestCase(featureId: Int!, id: Int!, testId: Int!): TestCaseMutationResponse!
   login(loginInput: LoginInput!): AuthMutationResponse!
   logout: AuthMutationResponse!
   refreshToken: AuthMutationResponse!
   signUp(signUpInput: SignUpInput!): AuthMutationResponse!
-  unassignTag(tagId: Int!, testCaseId: Int!): TagAssignMutationResponse!
+  unassignTag(featureId: Int!, tagId: Int!, testCaseId: Int!, testId: Int!): TagAssignMutationResponse!
+  updateApproval(input: UpdateApprovalInput!): ApprovalMutationResponse!
+  updateComment(updateCommentInput: UpdateCommentInput!): CommentMutationResponse!
   updateFeature(updateFeatureInput: UpdateFeatureInput!): FeatureMutationResponse!
   updateTag(updateTagInput: UpdateTagInput!): TagMutationResponse!
   updateTest(updateTestInput: UpdateTestInput!): TestMutationResponse!
@@ -105,19 +168,23 @@ type Mutation {
 }
 
 type Query {
+  approval(id: Int!): Approval
+  approvalsByTestCase(featureId: Int!, testCaseId: Int!, testId: Int!): [Approval!]!
+  comment(id: Int!): Comment!
+  commentsByTestCase(featureId: Int!, testCaseId: Int!, testId: Int!): [Comment!]!
   feature(id: Int!): Feature
   features: [Feature!]!
   file(id: Int!): File!
   files: [File!]!
-  filesByTestCase(testCaseId: Int!): [File!]!
+  filesByTestCase(featureId: Int!, testCaseId: Int!, testId: Int!): [File!]!
   me: User!
   tag(id: Int!): Tag
   tags: [Tag!]!
-  tagsByTestCase(testCaseId: Int!): [Tag!]!
-  test(id: Int!): Test
-  testCase(id: Int!): TestCase
+  tagsByTestCase(featureId: Int!, testCaseId: Int!, testId: Int!): [Tag!]!
+  test(featureId: Int!, id: Int!): Test
+  testCase(featureId: Int!, id: Int!, testId: Int!): TestCase
   testCases: [TestCase!]!
-  testCasesByTest(testId: Int!): [TestCase!]!
+  testCasesByTest(featureId: Int!, testId: Int!): [TestCase!]!
   tests: [Test!]!
   testsByFeature(featureId: Int!): [Test!]!
 }
@@ -162,11 +229,13 @@ type Test {
 
 type TestCase {
   actualResult: String
+  approvals: [Approval!]
   createdAt: DateTime!
   createdBy: User!
   createdById: Int!
   description: String
   expectedResult: String!
+  featureId: Int!
   files: [File!]
   id: Int!
   status: String!
@@ -190,6 +259,16 @@ type TestMutationResponse {
   message: String!
 }
 
+input UpdateApprovalInput {
+  comment: String
+  id: Int!
+}
+
+input UpdateCommentInput {
+  content: String!
+  id: Int!
+}
+
 input UpdateFeatureInput {
   color: String
   description: String
@@ -208,14 +287,17 @@ input UpdateTestCaseInput {
   actualResult: String
   description: String
   expectedResult: String
+  featureId: Int!
   id: Int!
   status: String
   steps: String
+  testId: Int!
   title: String
 }
 
 input UpdateTestInput {
   description: String
+  featureId: Int!
   id: Int!
   name: String
   status: String

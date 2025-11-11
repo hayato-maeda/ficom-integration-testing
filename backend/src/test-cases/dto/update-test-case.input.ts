@@ -7,7 +7,19 @@ import { TestCaseStatus } from '../models/test-case.model';
  */
 @InputType()
 export class UpdateTestCaseInput {
-  /** テストケースID */
+  /** 機能ID (複合キーの一部) */
+  @Field(() => Int)
+  @IsNotEmpty({ message: 'featureId should not be empty' })
+  @IsInt({ message: 'featureId must be an integer' })
+  featureId: number;
+
+  /** テストID (複合キーの一部) */
+  @Field(() => Int)
+  @IsNotEmpty({ message: 'testId should not be empty' })
+  @IsInt({ message: 'testId must be an integer' })
+  testId: number;
+
+  /** テストケースID (複合キーの一部) */
   @Field(() => Int)
   @IsNotEmpty({ message: 'id should not be empty' })
   @IsInt({ message: 'id must be an integer' })

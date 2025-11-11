@@ -1,13 +1,13 @@
-import { Args, Int, Mutation, Query, Resolver } from '@nestjs/graphql';
 import { UseGuards } from '@nestjs/common';
-import { GqlAuthGuard } from '../auth/guards/gql-auth.guard';
+import { Args, Int, Mutation, Query, Resolver } from '@nestjs/graphql';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import { GqlAuthGuard } from '../auth/guards/gql-auth.guard';
 import { User } from '../users/models/user.model';
-import { ApprovalMutationResponse } from './dto/approval-mutation.response';
 import { ApprovalsService } from './approvals.service';
-import { Approval } from './models/approval.model';
+import { ApprovalMutationResponse } from './dto/approval-mutation.response';
 import { CreateApprovalInput } from './dto/create-approval.input';
 import { UpdateApprovalInput } from './dto/update-approval.input';
+import { Approval } from './models/approval.model';
 
 /**
  * 承認リゾルバー

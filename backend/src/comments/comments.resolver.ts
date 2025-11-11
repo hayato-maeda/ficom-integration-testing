@@ -1,13 +1,13 @@
-import { Args, Int, Mutation, Query, Resolver } from '@nestjs/graphql';
 import { UseGuards } from '@nestjs/common';
+import { Args, Int, Mutation, Query, Resolver } from '@nestjs/graphql';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import { GqlAuthGuard } from '../auth/guards/gql-auth.guard';
+import { User } from '../users/models/user.model';
 import { CommentsService } from './comments.service';
-import { Comment } from './models/comment.model';
+import { CommentMutationResponse } from './dto/comment-mutation.response';
 import { CreateCommentInput } from './dto/create-comment.input';
 import { UpdateCommentInput } from './dto/update-comment.input';
-import { CommentMutationResponse } from './dto/comment-mutation.response';
-import { GqlAuthGuard } from '../auth/guards/gql-auth.guard';
-import { CurrentUser } from '../auth/decorators/current-user.decorator';
-import { User } from '../users/models/user.model';
+import { Comment } from './models/comment.model';
 
 @Resolver(() => Comment)
 @UseGuards(GqlAuthGuard)

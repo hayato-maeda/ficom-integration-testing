@@ -1,4 +1,4 @@
-import { PrismaClient, User, Feature } from '@prisma/client';
+import { Feature, PrismaClient, User } from '@prisma/client';
 
 export async function createTestCases(prisma: PrismaClient, users: User[], features: Feature[]) {
   console.log('Creating tests and test cases...');
@@ -8,18 +8,6 @@ export async function createTestCases(prisma: PrismaClient, users: User[], featu
   if (!authFeature) {
     throw new Error('ユーザー認証機能のFeatureが見つかりません');
   }
-
-  // Test 1-1: ログインテスト
-  const loginTest = await prisma.test.create({
-    data: {
-      featureId: authFeature.id,
-      id: 1,
-      name: 'ログインテスト',
-      description: 'ログイン機能の正常系・異常系テスト',
-      status: 'APPROVED',
-      createdById: users[0].id,
-    },
-  });
 
   // TestCase 1-1-1: 正常ログイン
   await prisma.testCase.create({
@@ -75,18 +63,6 @@ export async function createTestCases(prisma: PrismaClient, users: User[], featu
     },
   });
 
-  // Test 1-2: パスワードリセットテスト
-  const resetTest = await prisma.test.create({
-    data: {
-      featureId: authFeature.id,
-      id: 2,
-      name: 'パスワードリセットテスト',
-      description: 'パスワードリセット機能のテスト',
-      status: 'IN_REVIEW',
-      createdById: users[1].id,
-    },
-  });
-
   // TestCase 1-2-1: メール送信確認
   await prisma.testCase.create({
     data: {
@@ -126,18 +102,6 @@ export async function createTestCases(prisma: PrismaClient, users: User[], featu
   if (!uploadFeature) {
     throw new Error('ファイルアップロードのFeatureが見つかりません');
   }
-
-  // Test 2-1: 正常系
-  const uploadTest = await prisma.test.create({
-    data: {
-      featureId: uploadFeature.id,
-      id: 1,
-      name: '正常系',
-      description: '各種ファイル形式のアップロードテスト',
-      status: 'DRAFT',
-      createdById: users[3].id,
-    },
-  });
 
   // TestCase 2-1-1: zipファイルアップロード
   await prisma.testCase.create({

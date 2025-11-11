@@ -1,7 +1,7 @@
 import { UseGuards } from '@nestjs/common';
 import { Args, Int, Mutation, Parent, Query, ResolveField, Resolver } from '@nestjs/graphql';
-import { Approval } from '../approvals/models/approval.model';
 import { ApprovalsService } from '../approvals/approvals.service';
+import { Approval } from '../approvals/models/approval.model';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { GqlSessionGuard } from '../auth/guards/gql-session.guard';
 import { FilesService } from '../files/files.service';

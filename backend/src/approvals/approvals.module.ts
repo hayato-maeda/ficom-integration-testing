@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
-import { ApprovalsService } from './approvals.service';
-import { ApprovalsResolver } from './approvals.resolver';
 import { PrismaModule } from '../prisma/prisma.module';
+import { ApprovalsResolver } from './approvals.resolver';
+import { ApprovalsService } from './approvals.service';
 
 /**
  * 承認モジュール

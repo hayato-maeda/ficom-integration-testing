@@ -1,8 +1,8 @@
-import { ForbiddenException, Injectable, Logger, NotFoundException } from "@nestjs/common";
-import { PrismaService } from "../prisma/prisma.service";
-import { CreateCommentInput } from "./dto/create-comment.input";
-import { UpdateCommentInput } from "./dto/update-comment.input";
-import { Comment } from "./models/comment.model";
+import { ForbiddenException, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { PrismaService } from '../prisma/prisma.service';
+import { CreateCommentInput } from './dto/create-comment.input';
+import { UpdateCommentInput } from './dto/update-comment.input';
+import { Comment } from './models/comment.model';
 
 @Injectable()
 export class CommentsService {
@@ -28,8 +28,8 @@ export class CommentsService {
     });
 
     if (!testCase) {
-      this.logger.warn({ message: "TestCase not found", featureId, testId, testCaseId });
-      throw new NotFoundException("TestCase not found");
+      this.logger.warn({ message: 'TestCase not found', featureId, testId, testCaseId });
+      throw new NotFoundException('TestCase not found');
     }
 
     const comment = await this.prismaService.comment.create({
@@ -50,7 +50,7 @@ export class CommentsService {
       },
     });
 
-    this.logger.log({ message: "Comment created", commentId: comment.id });
+    this.logger.log({ message: 'Comment created', commentId: comment.id });
     return comment;
   }
 
@@ -68,11 +68,11 @@ export class CommentsService {
         user: true,
       },
       orderBy: {
-        createdAt: "desc",
+        createdAt: 'desc',
       },
     });
 
-    this.logger.log({ message: "Comments fetched", count: comments.length, featureId, testId, testCaseId });
+    this.logger.log({ message: 'Comments fetched', count: comments.length, featureId, testId, testCaseId });
     return comments;
   }
 
@@ -93,8 +93,8 @@ export class CommentsService {
     });
 
     if (!comment) {
-      this.logger.warn({ message: "Comment not found", commentId: id });
-      throw new NotFoundException("Comment not found");
+      this.logger.warn({ message: 'Comment not found', commentId: id });
+      throw new NotFoundException('Comment not found');
     }
 
     return comment;
@@ -112,13 +112,13 @@ export class CommentsService {
     });
 
     if (!comment) {
-      this.logger.warn({ message: "Comment not found", commentId: id });
-      throw new NotFoundException("Comment not found");
+      this.logger.warn({ message: 'Comment not found', commentId: id });
+      throw new NotFoundException('Comment not found');
     }
 
     if (comment.userId !== userId) {
-      this.logger.warn({ message: "Forbidden: User is not the owner", commentId: id, userId });
-      throw new ForbiddenException("You can only update your own comments");
+      this.logger.warn({ message: 'Forbidden: User is not the owner', commentId: id, userId });
+      throw new ForbiddenException('You can only update your own comments');
     }
 
     const updatedComment = await this.prismaService.comment.update({
@@ -134,7 +134,7 @@ export class CommentsService {
       },
     });
 
-    this.logger.log({ message: "Comment updated", commentId: id });
+    this.logger.log({ message: 'Comment updated', commentId: id });
     return updatedComment;
   }
 
@@ -156,20 +156,20 @@ export class CommentsService {
     });
 
     if (!comment) {
-      this.logger.warn({ message: "Comment not found", commentId: id });
-      throw new NotFoundException("Comment not found");
+      this.logger.warn({ message: 'Comment not found', commentId: id });
+      throw new NotFoundException('Comment not found');
     }
 
     if (comment.userId !== userId) {
-      this.logger.warn({ message: "Forbidden: User is not the owner", commentId: id, userId });
-      throw new ForbiddenException("You can only delete your own comments");
+      this.logger.warn({ message: 'Forbidden: User is not the owner', commentId: id, userId });
+      throw new ForbiddenException('You can only delete your own comments');
     }
 
     await this.prismaService.comment.delete({
       where: { id },
     });
 
-    this.logger.log({ message: "Comment deleted", commentId: id });
+    this.logger.log({ message: 'Comment deleted', commentId: id });
     return comment;
   }
 }
